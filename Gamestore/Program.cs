@@ -1,14 +1,21 @@
+using BusinessLogicLayer.Services;
 using DataAccessLayer.StoreContext;
+using DataAccessLayer.UnitOfWork;
+using Gamestore.WebAPI.Mapper;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddAutoMapper(cfg => cfg.AddProfile<GameAutoMapping>());
 builder.Services.AddControllers();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddScoped<IUnitOfWork<GameStoreContext>, UnitOfWork>();
+builder.Services.AddScoped<IGameService, GameService>();
 
 builder.Services.AddDbContext<GameStoreContext>(options =>
   options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));

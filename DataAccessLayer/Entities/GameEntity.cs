@@ -10,11 +10,11 @@ public class GameEntity
 
     [Required]
     [MaxLength(200)]
-    public string? GameName { get; set; }
+    public string GameName { get; set; }
 
     [Required]
     [MaxLength(250)]
-    public string? GameKey { get; set; }
+    public string GameKey { get; set; }
 
     [MaxLength(1000)]
     public string? GameDescription { get; set; }

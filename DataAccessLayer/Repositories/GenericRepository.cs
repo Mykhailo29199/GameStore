@@ -1,4 +1,5 @@
-﻿using DataAccessLayer.StoreContext;
+﻿using DataAccessLayer.Repositories.Interfaces;
+using DataAccessLayer.StoreContext;
 using Microsoft.EntityFrameworkCore;
 
 namespace DataAccessLayer.Repositories;

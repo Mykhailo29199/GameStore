@@ -1,6 +1,6 @@
 ﻿using BusinessLogicLayer.Models;
 
-namespace BusinessLogicLayer.Services;
+namespace BusinessLogicLayer.Services.Interaces;
 
 public interface IGameService
 {

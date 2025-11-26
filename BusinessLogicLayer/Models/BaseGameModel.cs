@@ -1,6 +1,6 @@
 ﻿namespace BusinessLogicLayer.Models;
 
-public class BaseGameModel
+public abstract class BaseGameModel
 {
     public Guid Id { get; set; }
 

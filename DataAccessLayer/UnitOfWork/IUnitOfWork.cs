@@ -1,4 +1,4 @@
-﻿using DataAccessLayer.Repositories;
+﻿using DataAccessLayer.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace DataAccessLayer.UnitOfWork;

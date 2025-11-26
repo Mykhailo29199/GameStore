@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Models;
-using BusinessLogicLayer.Services;
+using BusinessLogicLayer.Services.Interaces;
 using Gamestore.WebAPI.DTOs;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,11 +16,6 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
     [HttpPost("games")]
     public async Task<IActionResult> CreateGame([FromBody] GameCreateRequestDTO requestPostDTO)
     {
-        if (requestPostDTO == null || requestPostDTO.Game == null)
-        {
-            return BadRequest("Invalid request body.");
-        }
-
         var gameModel = _mapper.Map<GameModel>(requestPostDTO);
         await _gameService.CreateGameAsync(gameModel);
 

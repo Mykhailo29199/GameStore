@@ -1,4 +1,5 @@
 ﻿using DataAccessLayer.Entities;
+using DataAccessLayer.Repositories.Interfaces;
 using DataAccessLayer.StoreContext;
 
 namespace DataAccessLayer.Repositories;

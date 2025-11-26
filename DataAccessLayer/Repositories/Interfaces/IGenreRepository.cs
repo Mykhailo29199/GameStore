@@ -1,6 +1,6 @@
 ﻿using DataAccessLayer.Entities;
 
-namespace DataAccessLayer.Repositories;
+namespace DataAccessLayer.Repositories.Interfaces;
 
 public interface IGenreRepository : IGenericRepository<GenreEntity>
 {

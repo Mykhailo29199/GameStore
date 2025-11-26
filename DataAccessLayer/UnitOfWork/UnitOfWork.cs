@@ -1,41 +1,33 @@
-﻿using DataAccessLayer.Repositories;
+﻿using DataAccessLayer.Repositories.Interfaces;
 using DataAccessLayer.StoreContext;
 
 namespace DataAccessLayer.UnitOfWork;
 
-public class UnitOfWork(GameStoreContext context) : IUnitOfWork<GameStoreContext>
+public class UnitOfWork(
+    GameStoreContext context,
+    IGameRepository gameRepository,
+    IPlatformRepository platformRepository,
+    IGenreRepository genreRepository) : IUnitOfWork<GameStoreContext>, IDisposable
 {
-    private IGameRepository? _gameRepository;
-    private IPlatformRepository? _platformRepository;
-    private IGenreRepository? _genreRepository;
-
     public GameStoreContext Context { get; } = context;
 
-    public IGameRepository GameRepository => _gameRepository ??= new GameRepository(Context);
+    public IGameRepository GameRepository { get; } = gameRepository;
 
-    public IPlatformRepository PlatformRepository => _platformRepository ??= new PlatformRepository(Context);
+    public IPlatformRepository PlatformRepository { get; } = platformRepository;
 
-    public IGenreRepository GenreRepository => _genreRepository ??= new GenreRepository(Context);
+    public IGenreRepository GenreRepository { get; } = genreRepository;
 
-    public async Task CreateTransactionAsync()
-    {
+    public async Task CreateTransactionAsync() =>
         await Context.Database.BeginTransactionAsync();
-    }
 
-    public async Task CommitAsync()
-    {
+    public async Task CommitAsync() =>
         await Context.Database.CommitTransactionAsync();
-    }
 
-    public async Task RollbackAsync()
-    {
+    public async Task RollbackAsync() =>
         await Context.Database.RollbackTransactionAsync();
-    }
 
-    public async Task SaveAsync()
-    {
+    public async Task SaveAsync() =>
         await Context.SaveChangesAsync();
-    }
 
     public void Dispose()
     {

@@ -1,4 +1,7 @@
 using BusinessLogicLayer.Services;
+using BusinessLogicLayer.Services.Interaces;
+using DataAccessLayer.Repositories;
+using DataAccessLayer.Repositories.Interfaces;
 using DataAccessLayer.StoreContext;
 using DataAccessLayer.UnitOfWork;
 using Gamestore.WebAPI.Mapper;
@@ -15,6 +18,10 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<IUnitOfWork<GameStoreContext>, UnitOfWork>();
+builder.Services.AddScoped<IGameRepository, GameRepository>();
+builder.Services.AddScoped<IPlatformRepository, PlatformRepository>();
+builder.Services.AddScoped<IGenreRepository, GenreRepository>();
+
 builder.Services.AddScoped<IGameService, GameService>();
 
 builder.Services.AddDbContext<GameStoreContext>(options =>

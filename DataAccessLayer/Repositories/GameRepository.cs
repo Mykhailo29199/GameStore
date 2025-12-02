@@ -13,4 +13,16 @@ public class GameRepository(GameStoreContext context) : GenericRepository<GameEn
     {
         return await _dbSet.FirstOrDefaultAsync(game => game.GameKey == gameKey);
     }
+
+    public async Task<IList<GameEntity>> GetGamesByPlatformIdAsync(Guid platformId)
+    {
+        return await _dbSet.Where(game => game.GamePlatforms != null && game.GamePlatforms.Any(gp => gp.PlatformId == platformId))
+                           .ToListAsync();
+    }
+
+    public async Task<IList<GameEntity>> GetGamesByGenresIdAsync(Guid platformId)
+    {
+        return await _dbSet.Where(game => game.GameGenres != null && game.GameGenres.Any(gg => gg.GenreId == platformId))
+                           .ToListAsync();
+    }
 }

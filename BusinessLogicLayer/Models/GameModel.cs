@@ -2,9 +2,11 @@
 
 public class GameModel
 {
-    public BaseGameModel Game { get; set; }
+    public Guid Id { get; set; }
 
-    public List<Guid> Genres { get; set; } = [];
+    public string Name { get; set; } = string.Empty;
 
-    public List<Guid> Platforms { get; set; } = [];
+    public string Key { get; set; } = string.Empty;
+
+    public string? Description { get; set; }
 }

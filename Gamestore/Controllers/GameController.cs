@@ -16,9 +16,45 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
     [HttpPost("games")]
     public async Task<IActionResult> CreateGame([FromBody] GameCreateRequestDTO requestPostDTO)
     {
-        var gameModel = _mapper.Map<GameModel>(requestPostDTO);
+        var gameModel = _mapper.Map<FullGameModel>(requestPostDTO);
         await _gameService.CreateGameAsync(gameModel);
 
         return NoContent();
+    }
+
+    [HttpGet("games/key/{key}")]
+    public async Task<IActionResult> GetGameByKey([FromRoute] string key)
+    {
+        var gameModel = await _gameService.GetGameByKeyAsync(key);
+        var gameDTO = _mapper.Map<GameWithIdDTO>(gameModel);
+
+        return Ok(gameDTO);
+    }
+
+    [HttpGet("games/id/{gameId}")]
+    public async Task<IActionResult> GetGameById([FromRoute] Guid gameId)
+    {
+        var gameModel = await _gameService.GetGameByIdAsync(gameId);
+        var gameDTO = _mapper.Map<GameWithIdDTO>(gameModel);
+
+        return Ok(gameDTO);
+    }
+
+    [HttpGet("platforms/{platformId}/games")]
+    public async Task<IActionResult> GetGamesByPlatformId([FromRoute] Guid platformId)
+    {
+        var gameModels = await _gameService.GetGamesByPlatformIdAsync(platformId);
+        var gameDTOs = _mapper.Map<IEnumerable<GameWithIdDTO>>(gameModels);
+
+        return Ok(gameDTOs);
+    }
+
+    [HttpGet("genres/{genresId}/games")]
+    public async Task<IActionResult> GetGamesByGenreId([FromRoute] Guid genresId)
+    {
+        var gameModels = await _gameService.GetGamesByGenreIdAsync(genresId);
+        var gameDTOs = _mapper.Map<IEnumerable<GameWithIdDTO>>(gameModels);
+
+        return Ok(gameDTOs);
     }
 }

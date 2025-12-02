@@ -9,10 +9,10 @@ public class GameAutoMapping : Profile
 {
     public GameAutoMapping()
     {
-        CreateMap<BaseGameModel, GameEntity>()
+        CreateMap<GameModel, GameEntity>()
             .ForMember(dest => dest.GameKey, opt => opt.MapFrom(src => src.Key));
 
-        CreateMap<GameModel, GameEntity>()
+        CreateMap<FullGameModel, GameEntity>()
                .ForMember(dest => dest.GameName, opt => opt.MapFrom(src => src.Game.Name))
                .ForMember(dest => dest.GameKey, opt => opt.MapFrom(src => src.Game.Key))
                .ForMember(dest => dest.GameDescription, opt => opt.MapFrom(src => src.Game.Description))
@@ -21,11 +21,17 @@ public class GameAutoMapping : Profile
                .ForMember(dest => dest.GamePlatforms, opt => opt.MapFrom(src =>
                src.Platforms.Select(pid => new GamePlatformEntity { PlatformId = pid })));
 
-        CreateMap<GameEntity, BaseGameModel>()
-            .ForMember(dest => dest.Key, opt => opt.MapFrom(src => src.GameKey));
-
         CreateMap<GameEntity, GameModel>()
-            .ForMember(dest => dest.Game, opt => opt.MapFrom(src => new BaseGameModel
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.GameId))
+                .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.GameName))
+                .ForMember(dest => dest.Key, opt => opt.MapFrom(src => src.GameKey))
+                .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.GameDescription));
+
+        CreateMap<GameModel, GameWithIdDTO>()
+                .ReverseMap();
+
+        CreateMap<GameEntity, FullGameModel>()
+            .ForMember(dest => dest.Game, opt => opt.MapFrom(src => new GameModel
             {
                 Id = src.GameId,
                 Name = src.GameName,
@@ -37,10 +43,10 @@ public class GameAutoMapping : Profile
             .ForMember(dest => dest.Platforms, opt => opt.MapFrom(src =>
             src.GamePlatforms != null ? src.GamePlatforms.Select(gp => gp.PlatformId) : new List<Guid>()));
 
-        CreateMap<BaseGameDTO, BaseGameModel>()
+        CreateMap<BaseGameDTO, GameModel>()
                 .ReverseMap();
 
-        CreateMap<GameCreateRequestDTO, GameModel>()
+        CreateMap<GameCreateRequestDTO, FullGameModel>()
                 .ReverseMap();
     }
 }

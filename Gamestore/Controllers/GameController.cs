@@ -14,7 +14,7 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
     private readonly IMapper _mapper = mapper;
 
     [HttpPost("games")]
-    public async Task<IActionResult> CreateGame([FromBody] GameCreateRequestDTO requestPostDTO)
+    public async Task<IActionResult> CreateGame([FromBody] FullGameDTO requestPostDTO)
     {
         var gameModel = _mapper.Map<FullGameModel>(requestPostDTO);
         await _gameService.CreateGameAsync(gameModel);
@@ -56,5 +56,19 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
         var gameDTOs = _mapper.Map<IEnumerable<GameWithIdDTO>>(gameModels);
 
         return Ok(gameDTOs);
+    }
+
+    [HttpPut]
+    public async Task<IActionResult> UpdateGame([FromBody] FullGameWithIdDTO requestPutDTO)
+    {
+        if (requestPutDTO == null || requestPutDTO.GameWithIdDTO == null)
+        {
+            return BadRequest("Invalid request body.");
+        }
+
+        var gameModel = _mapper.Map<FullGameModel>(requestPutDTO);
+        await _gameService.UpdateGameAsync(gameModel);
+
+        return NoContent();
     }
 }

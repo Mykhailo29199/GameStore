@@ -13,4 +13,6 @@ public interface IGameService
     Task<IList<GameModel>> GetGamesByPlatformIdAsync(Guid platformId);
 
     Task<IList<GameModel>> GetGamesByGenreIdAsync(Guid genreId);
+
+    Task UpdateGameAsync(FullGameModel gameModel);
 }

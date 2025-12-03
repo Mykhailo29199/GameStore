@@ -1,6 +1,6 @@
 ﻿namespace Gamestore.WebAPI.DTOs;
 
-public class GameCreateRequestDTO
+public class FullGameDTO
 {
     public BaseGameDTO Game { get; set; }
 

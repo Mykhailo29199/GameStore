@@ -43,10 +43,18 @@ public class GameAutoMapping : Profile
             .ForMember(dest => dest.Platforms, opt => opt.MapFrom(src =>
             src.GamePlatforms != null ? src.GamePlatforms.Select(gp => gp.PlatformId) : new List<Guid>()));
 
+        CreateMap<GameWithIdDTO, GameModel>();
+
+        // FullGameWithIdDTO → FullGameModel
+        CreateMap<FullGameWithIdDTO, FullGameModel>()
+            .ForMember(dest => dest.Game, opt => opt.MapFrom(src => src.GameWithIdDTO))
+            .ForMember(dest => dest.Genres, opt => opt.MapFrom(src => src.Genres))
+            .ForMember(dest => dest.Platforms, opt => opt.MapFrom(src => src.Platforms));
+
         CreateMap<BaseGameDTO, GameModel>()
                 .ReverseMap();
 
-        CreateMap<GameCreateRequestDTO, FullGameModel>()
+        CreateMap<FullGameDTO, FullGameModel>()
                 .ReverseMap();
     }
 }

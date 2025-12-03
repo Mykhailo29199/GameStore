@@ -21,6 +21,8 @@ builder.Services.AddScoped<IUnitOfWork<GameStoreContext>, UnitOfWork>();
 builder.Services.AddScoped<IGameRepository, GameRepository>();
 builder.Services.AddScoped<IPlatformRepository, PlatformRepository>();
 builder.Services.AddScoped<IGenreRepository, GenreRepository>();
+builder.Services.AddScoped<IGameGenreRepository, GameGenreRepository>();
+builder.Services.AddScoped<IGamePlatformRepository, GamePlatformRepository>();
 
 builder.Services.AddScoped<IGameService, GameService>();
 

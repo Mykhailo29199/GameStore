@@ -7,7 +7,9 @@ public class UnitOfWork(
     GameStoreContext context,
     IGameRepository gameRepository,
     IPlatformRepository platformRepository,
-    IGenreRepository genreRepository) : IUnitOfWork<GameStoreContext>, IDisposable
+    IGenreRepository genreRepository,
+    IGameGenreRepository gameGenreRepository,
+    IGamePlatformRepository gamePlatformRepository) : IUnitOfWork<GameStoreContext>, IDisposable
 {
     public GameStoreContext Context { get; } = context;
 
@@ -16,6 +18,10 @@ public class UnitOfWork(
     public IPlatformRepository PlatformRepository { get; } = platformRepository;
 
     public IGenreRepository GenreRepository { get; } = genreRepository;
+
+    public IGameGenreRepository GameGenreRepository { get; } = gameGenreRepository;
+
+    public IGamePlatformRepository GamePlatformRepository { get; } = gamePlatformRepository;
 
     public async Task CreateTransactionAsync() =>
         await Context.Database.BeginTransactionAsync();

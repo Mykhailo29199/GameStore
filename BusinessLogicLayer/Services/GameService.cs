@@ -18,7 +18,7 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
     public async Task CreateGameAsync(FullGameModel gameModel)
     {
         var game = gameModel.Game;
-        game.Key = GenerateGameKeyIfMissing(game.Key, game.Key);
+        game.Key = await GenerateGameKeyIfMissingAsync(game.Key, game.Key);
 
         if ((await _unitOfWork.GameRepository.GetGameByKeyAsync(game.Key)) == null)
         {
@@ -86,7 +86,71 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
             : throw new NotFoundException($"Game with Genre Id '{genreId}' was not found.");
     }
 
-    private static string GenerateGameKeyIfMissing(string gameKey, string gameName)
+    public async Task UpdateGameAsync(FullGameModel gameModel)
+    {
+        var gameId = gameModel.Game.Id;
+
+        GameEntity existingGame = new();
+
+        // 1. Перевірка наявності за Id
+        if (gameId != Guid.Empty)
+        {
+            existingGame = await _unitOfWork.GameRepository.GetByIdAsync(gameId);
+        }
+
+        if (existingGame == null)
+        {
+            throw new NotFoundException($"Game with Id `{gameId}` was not found.");
+        }
+
+        var actualGameId = existingGame.GameId;
+
+        // 4. Оновлення властивостей гри
+        existingGame.GameName = gameModel.Game.Name;
+
+        if (existingGame.GameKey != gameModel.Game.Key)
+        {
+            gameModel.Game.Key = await GenerateGameKeyIfMissingAsync(gameModel.Game.Key, gameModel.Game.Name);
+        }
+
+        existingGame.GameKey = gameModel.Game.Name;
+        existingGame.GameDescription = gameModel.Game.Description;
+
+        // 5. Оновлення зв’язків з жанрами
+        await _unitOfWork.GameGenreRepository.DeleteByGameIdAsync(actualGameId);
+        foreach (var genreId in gameModel.Genres)
+        {
+            if (await _unitOfWork.GenreRepository.CheckIfExistAsync(genreId))
+            {
+                await _unitOfWork.GameGenreRepository.AddAsync(new GameGenreEntity
+                {
+                    GameId = actualGameId,
+                    GenreId = genreId,
+                });
+            }
+            else
+            {
+                throw new NotFoundException($"Genre with Id `{genreId}` was not found.");
+            }
+        }
+
+        // 6. Оновлення зв’язків з платформами
+        await _unitOfWork.GamePlatformRepository.DeleteByGameIdAsync(actualGameId);
+        foreach (var platformId in gameModel.Platforms)
+        {
+            await _unitOfWork.GamePlatformRepository.AddAsync(new GamePlatformEntity
+            {
+                GameId = actualGameId,
+                PlatformId = platformId,
+            });
+        }
+
+        // 7. Збереження змін
+        await _unitOfWork.GameRepository.UpdateAsync(existingGame);
+        await _unitOfWork.SaveAsync();
+    }
+
+    private async Task<string> GenerateGameKeyIfMissingAsync(string gameKey, string gameName)
     {
         if (string.IsNullOrWhiteSpace(gameKey))
         {
@@ -96,6 +160,15 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
         gameKey = gameKey.ToLower(CultureInfo.CurrentCulture).Replace(" ", "-");
         var pattern = @"[^\p{L}0-9\-]";
         gameKey = Regex.Replace(gameKey, pattern, string.Empty);
+
+        string baseKey = gameKey;
+        int counter = 1;
+
+        while (await _unitOfWork.GameRepository.GetGameByKeyAsync(gameKey) != null)
+        {
+            gameKey = $"{baseKey}-{counter}";
+            counter++;
+        }
 
         return gameKey;
     }

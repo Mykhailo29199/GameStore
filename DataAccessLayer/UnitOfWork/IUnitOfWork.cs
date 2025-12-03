@@ -12,6 +12,10 @@ public interface IUnitOfWork<out TGameStoreContext> : IDisposable
 
     IGenreRepository GenreRepository { get; }
 
+    IGameGenreRepository GameGenreRepository { get; }
+
+    IGamePlatformRepository GamePlatformRepository { get; }
+
     TGameStoreContext Context { get; }
 
     Task CreateTransactionAsync();

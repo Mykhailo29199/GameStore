@@ -15,4 +15,6 @@ public interface IGameService
     Task<IList<GameModel>> GetGamesByGenreIdAsync(Guid genreId);
 
     Task UpdateGameAsync(FullGameModel gameModel);
+
+    Task DeleteGameAsync(string key);
 }

@@ -13,7 +13,7 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
     private readonly IGameService _gameService = gameService;
     private readonly IMapper _mapper = mapper;
 
-    [HttpPost("games")]
+    [HttpPost]
     public async Task<IActionResult> CreateGame([FromBody] FullGameDTO requestPostDTO)
     {
         var gameModel = _mapper.Map<FullGameModel>(requestPostDTO);
@@ -22,7 +22,7 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
         return NoContent();
     }
 
-    [HttpGet("games/key/{key}")]
+    [HttpGet("{key}")]
     public async Task<IActionResult> GetGameByKey([FromRoute] string key)
     {
         var gameModel = await _gameService.GetGameByKeyAsync(key);
@@ -31,7 +31,7 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
         return Ok(gameDTO);
     }
 
-    [HttpGet("games/id/{gameId}")]
+    [HttpGet("find/{gameId}")]
     public async Task<IActionResult> GetGameById([FromRoute] Guid gameId)
     {
         var gameModel = await _gameService.GetGameByIdAsync(gameId);
@@ -68,6 +68,19 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
 
         var gameModel = _mapper.Map<FullGameModel>(requestPutDTO);
         await _gameService.UpdateGameAsync(gameModel);
+
+        return NoContent();
+    }
+
+    [HttpDelete("{key}")]
+    public async Task<IActionResult> DeleteGame([FromRoute] string key)
+    {
+        if (string.IsNullOrEmpty(key))
+        {
+            return BadRequest("Invalid request body.");
+        }
+
+        await _gameService.DeleteGameAsync(key);
 
         return NoContent();
     }

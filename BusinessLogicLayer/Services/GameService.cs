@@ -92,7 +92,6 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
 
         GameEntity existingGame = new();
 
-        // 1. Перевірка наявності за Id
         if (gameId != Guid.Empty)
         {
             existingGame = await _unitOfWork.GameRepository.GetByIdAsync(gameId);
@@ -105,7 +104,6 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
 
         var actualGameId = existingGame.GameId;
 
-        // 4. Оновлення властивостей гри
         existingGame.GameName = gameModel.Game.Name;
 
         if (existingGame.GameKey != gameModel.Game.Key)
@@ -116,7 +114,6 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
         existingGame.GameKey = gameModel.Game.Name;
         existingGame.GameDescription = gameModel.Game.Description;
 
-        // 5. Оновлення зв’язків з жанрами
         await _unitOfWork.GameGenreRepository.DeleteByGameIdAsync(actualGameId);
         foreach (var genreId in gameModel.Genres)
         {
@@ -134,7 +131,6 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
             }
         }
 
-        // 6. Оновлення зв’язків з платформами
         await _unitOfWork.GamePlatformRepository.DeleteByGameIdAsync(actualGameId);
         foreach (var platformId in gameModel.Platforms)
         {
@@ -145,8 +141,16 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
             });
         }
 
-        // 7. Збереження змін
         await _unitOfWork.GameRepository.UpdateAsync(existingGame);
+        await _unitOfWork.SaveAsync();
+    }
+
+    public async Task DeleteGameAsync(string key)
+    {
+        var gameEntity = await _unitOfWork.GameRepository.GetGameByKeyAsync(key)
+            ?? throw new NotFoundException($"Game with Key '{key}' was not found.");
+
+        await _unitOfWork.GameRepository.DeleteAsync(gameEntity);
         await _unitOfWork.SaveAsync();
     }
 

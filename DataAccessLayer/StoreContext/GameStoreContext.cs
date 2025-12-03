@@ -30,5 +30,29 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
 
         modelBuilder.Entity<GameGenreEntity>().HasKey(gg => new { gg.GameId, gg.GenreId });
         modelBuilder.Entity<GamePlatformEntity>().HasKey(gp => new { gp.GameId, gp.PlatformId });
+
+        modelBuilder.Entity<GameGenreEntity>()
+            .HasOne(gg => gg.Game)
+            .WithMany(g => g.GameGenres)
+            .HasForeignKey(gg => gg.GameId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<GameGenreEntity>()
+            .HasOne(gg => gg.Genre)
+            .WithMany()
+            .HasForeignKey(gg => gg.GenreId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<GamePlatformEntity>()
+            .HasOne(gp => gp.Game)
+            .WithMany(g => g.GamePlatforms)
+            .HasForeignKey(gp => gp.GameId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<GamePlatformEntity>()
+            .HasOne(gp => gp.Platform)
+            .WithMany()
+            .HasForeignKey(gp => gp.PlatformId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

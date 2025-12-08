@@ -84,4 +84,26 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
 
         return NoContent();
     }
+
+    [HttpGet("{gameKey}/file")]
+    public async Task<IActionResult> DownloadGameFile([FromRoute] string gameKey)
+    {
+        var filePath = await _gameService.GetGameFilePathAsync(gameKey);
+
+        if (string.IsNullOrEmpty(filePath))
+        {
+            return NotFound("Game file not found.");
+        }
+
+        if (!System.IO.File.Exists(filePath))
+        {
+            return NotFound($"Physical file with path '{filePath}' not found on server.");
+        }
+
+        var fileName = Path.GetFileName(filePath);
+        var contentType = "application/octet-stream";
+
+        var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+        return File(fileStream, contentType, fileName);
+    }
 }

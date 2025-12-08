@@ -15,6 +15,8 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
 
     public DbSet<PlatformEntity> Platforms { get; set; }
 
+    public DbSet<GameFileEntity> Files { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

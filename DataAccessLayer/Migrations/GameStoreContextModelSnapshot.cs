@@ -50,6 +50,26 @@ namespace DataAccessLayer.Migrations
                     b.ToTable("Games");
                 });
 
+            modelBuilder.Entity("DataAccessLayer.Entities.GameFileEntity", b =>
+                {
+                    b.Property<Guid>("FileId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("FilePath")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("GameId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("FileId");
+
+                    b.HasIndex("GameId");
+
+                    b.ToTable("Files");
+                });
+
             modelBuilder.Entity("DataAccessLayer.Entities.GameGenreEntity", b =>
                 {
                     b.Property<Guid>("GameId")
@@ -118,6 +138,15 @@ namespace DataAccessLayer.Migrations
                         .IsUnique();
 
                     b.ToTable("Platforms");
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Entities.GameFileEntity", b =>
+                {
+                    b.HasOne("DataAccessLayer.Entities.GameEntity", "Game")
+                        .WithMany()
+                        .HasForeignKey("GameId");
+
+                    b.Navigation("Game");
                 });
 
             modelBuilder.Entity("DataAccessLayer.Entities.GameGenreEntity", b =>

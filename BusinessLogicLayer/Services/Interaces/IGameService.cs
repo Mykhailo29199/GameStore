@@ -17,4 +17,6 @@ public interface IGameService
     Task UpdateGameAsync(FullGameModel gameModel);
 
     Task DeleteGameAsync(string key);
+
+    Task<string?> GetGameFilePathAsync(string gameKey);
 }

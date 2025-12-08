@@ -154,6 +154,17 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
         await _unitOfWork.SaveAsync();
     }
 
+    public async Task<string?> GetGameFilePathAsync(string gameKey)
+    {
+        if (await _unitOfWork.GameRepository.GetGameByKeyAsync(gameKey) == null)
+        {
+            throw new NotFoundException($"Game with Key '{gameKey}' was not found.");
+        }
+
+        var fileEntity = await _unitOfWork.GameFileRepository.GetGameFileByKeyAsync(gameKey);
+        return fileEntity?.FilePath;
+    }
+
     private async Task<string> GenerateGameKeyIfMissingAsync(string gameKey, string gameName)
     {
         if (string.IsNullOrWhiteSpace(gameKey))

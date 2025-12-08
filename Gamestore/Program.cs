@@ -23,6 +23,7 @@ builder.Services.AddScoped<IPlatformRepository, PlatformRepository>();
 builder.Services.AddScoped<IGenreRepository, GenreRepository>();
 builder.Services.AddScoped<IGameGenreRepository, GameGenreRepository>();
 builder.Services.AddScoped<IGamePlatformRepository, GamePlatformRepository>();
+builder.Services.AddScoped<IGameFileRepository, GameFileRepository>();
 
 builder.Services.AddScoped<IGameService, GameService>();
 

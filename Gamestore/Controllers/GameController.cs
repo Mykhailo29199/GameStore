@@ -106,4 +106,13 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
         var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
         return File(fileStream, contentType, fileName);
     }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAllGames()
+    {
+        var gameModels = await _gameService.GetAllGamesAsync();
+        var gameDTOs = _mapper.Map<IEnumerable<GameWithIdDTO>>(gameModels);
+
+        return Ok(gameDTOs);
+    }
 }

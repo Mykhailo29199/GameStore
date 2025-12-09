@@ -165,6 +165,12 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
         return fileEntity?.FilePath;
     }
 
+    public async Task<IList<GameModel>> GetAllGamesAsync()
+    {
+        var gameEntities = await _unitOfWork.GameRepository.GetAllAsync();
+        return _mapper.Map<IList<GameModel>>(gameEntities);
+    }
+
     private async Task<string> GenerateGameKeyIfMissingAsync(string gameKey, string gameName)
     {
         if (string.IsNullOrWhiteSpace(gameKey))

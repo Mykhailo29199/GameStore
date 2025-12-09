@@ -19,4 +19,6 @@ public interface IGameService
     Task DeleteGameAsync(string key);
 
     Task<string?> GetGameFilePathAsync(string gameKey);
+
+    Task<IList<GameModel>> GetAllGamesAsync();
 }

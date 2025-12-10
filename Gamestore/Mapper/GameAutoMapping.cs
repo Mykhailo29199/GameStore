@@ -1,7 +1,8 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Models;
 using DataAccessLayer.Entities;
-using Gamestore.WebAPI.DTOs;
+using Gamestore.WebAPI.DTOs.GameDTO;
+using Gamestore.WebAPI.DTOs.GenreDTO;
 
 namespace Gamestore.WebAPI.Mapper;
 
@@ -45,16 +46,34 @@ public class GameAutoMapping : Profile
 
         CreateMap<GameWithIdDTO, GameModel>();
 
-        // FullGameWithIdDTO → FullGameModel
         CreateMap<FullGameWithIdDTO, FullGameModel>()
             .ForMember(dest => dest.Game, opt => opt.MapFrom(src => src.GameWithIdDTO))
             .ForMember(dest => dest.Genres, opt => opt.MapFrom(src => src.Genres))
             .ForMember(dest => dest.Platforms, opt => opt.MapFrom(src => src.Platforms));
 
-        CreateMap<BaseGameDTO, GameModel>()
+        CreateMap<GameDTO, GameModel>()
                 .ReverseMap();
 
         CreateMap<FullGameDTO, FullGameModel>()
                 .ReverseMap();
+
+        CreateMap<GenreNameAndParentGenreIdDTO, GenreModel>().ReverseMap();
+
+        CreateMap<GenreModel, GenreEntity>().ReverseMap();
+
+        CreateMap<GenreDTO, GenreModel>().ReverseMap();
+
+        CreateMap<FullGenreDTO, GenreModel>()
+    .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
+    .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Genre.Name))
+    .ForMember(dest => dest.ParentGenreId, opt => opt.MapFrom(src => src.Genre.ParentGenreId));
+
+        CreateMap<GenreModel, FullGenreDTO>()
+    .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
+    .ForMember(dest => dest.Genre, opt => opt.MapFrom(src => new GenreNameAndParentGenreIdDTO
+    {
+        Name = src.Name,
+        ParentGenreId = src.ParentGenreId,
+    }));
     }
 }

@@ -1,4 +1,5 @@
-﻿using DataAccessLayer.Repositories.Interfaces;
+﻿using System.Linq.Expressions;
+using DataAccessLayer.Repositories.Interfaces;
 using DataAccessLayer.StoreContext;
 using Microsoft.EntityFrameworkCore;
 
@@ -38,5 +39,10 @@ public class GenericRepository<T>(GameStoreContext context) : IGenericRepository
     {
         _dbSet.Update(entity);
         await context.SaveChangesAsync();
+    }
+
+    public async Task<List<T>> FindAsync(Expression<Func<T, bool>> predicate)
+    {
+        return await _dbSet.Where(predicate).ToListAsync();
     }
 }

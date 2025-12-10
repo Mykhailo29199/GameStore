@@ -1,4 +1,4 @@
-﻿namespace Gamestore.WebAPI.DTOs;
+﻿namespace Gamestore.WebAPI.DTOs.GameDTO;
 
 public class FullGameWithIdDTO
 {

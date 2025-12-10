@@ -6,11 +6,11 @@ public class GenreEntity
 {
     [Key]
     [Required]
-    public Guid GenreId { get; set; }
+    public Guid Id { get; set; }
 
     [Required]
     [MaxLength(200)]
-    public string GenreName { get; set; }
+    public string Name { get; set; }
 
     public Guid? ParentGenreId { get; set; }
 

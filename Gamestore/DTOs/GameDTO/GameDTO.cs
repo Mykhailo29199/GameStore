@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Gamestore.WebAPI.DTOs;
+namespace Gamestore.WebAPI.DTOs.GameDTO;
 
-public abstract class BaseGameDTO
+public class GameDTO
 {
     [Required(ErrorMessage = "Game name is required.")]
     [StringLength(200, MinimumLength = 1, ErrorMessage = "Game name must be between 1 and 100 characters.")]

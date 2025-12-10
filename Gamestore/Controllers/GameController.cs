@@ -1,7 +1,8 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Models;
 using BusinessLogicLayer.Services.Interaces;
-using Gamestore.WebAPI.DTOs;
+using Gamestore.WebAPI.DTOs.GameDTO;
+using Gamestore.WebAPI.DTOs.GenreDTO;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Gamestore.WebAPI.Controllers;
@@ -114,5 +115,14 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
         var gameDTOs = _mapper.Map<IEnumerable<GameWithIdDTO>>(gameModels);
 
         return Ok(gameDTOs);
+    }
+
+    [HttpGet("{key}/genres")]
+    public async Task<IActionResult> GetGenresByGameKey([FromRoute] string key)
+    {
+        var genreModels = await _gameService.GetGenresByGameKeyAsync(key);
+        var genreDTOs = _mapper.Map<IEnumerable<GenreDTO>>(genreModels);
+
+        return Ok(genreDTOs);
     }
 }

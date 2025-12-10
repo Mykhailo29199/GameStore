@@ -20,7 +20,7 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
         var game = gameModel.Game;
         game.Key = await GenerateGameKeyIfMissingAsync(game.Key, game.Key);
 
-        if ((await _unitOfWork.GameRepository.GetGameByKeyAsync(game.Key)) == null)
+        if ((await _unitOfWork.GameRepository.GetGameByKeyAsync(game.Key)) != null)
         {
             throw new GameKeyNotUniqueException(game.Key);
         }
@@ -39,7 +39,7 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
 
         foreach (var genreId in gameModel.Genres)
         {
-            if (!allGenres.Any(g => g.GenreId == genreId))
+            if (!allGenres.Any(g => g.Id == genreId))
             {
                 throw new NotFoundException("Genre", genreId);
             }
@@ -169,6 +169,15 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
     {
         var gameEntities = await _unitOfWork.GameRepository.GetAllAsync();
         return _mapper.Map<IList<GameModel>>(gameEntities);
+    }
+
+    public async Task<IList<GenreModel>> GetGenresByGameKeyAsync(string key)
+    {
+        var genres = await _unitOfWork.GameRepository.GetGenresByGameKeyAsync(key);
+
+        return genres == null || genres.Count == 0
+            ? throw new NotFoundException($"Game with Key '{key}' was not found or has no genres.")
+            : _mapper.Map<IList<GenreModel>>(genres);
     }
 
     private async Task<string> GenerateGameKeyIfMissingAsync(string gameKey, string gameName)

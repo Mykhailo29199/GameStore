@@ -21,4 +21,6 @@ public interface IGameService
     Task<string?> GetGameFilePathAsync(string gameKey);
 
     Task<IList<GameModel>> GetAllGamesAsync();
+
+    Task<IList<GenreModel>> GetGenresByGameKeyAsync(string key);
 }

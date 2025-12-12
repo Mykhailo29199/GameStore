@@ -47,7 +47,7 @@ namespace DataAccessLayer.Migrations
                     b.HasIndex("GameKey")
                         .IsUnique();
 
-                    b.ToTable("Games", (string)null);
+                    b.ToTable("Games");
                 });
 
             modelBuilder.Entity("DataAccessLayer.Entities.GameFileEntity", b =>
@@ -67,7 +67,7 @@ namespace DataAccessLayer.Migrations
 
                     b.HasIndex("GameId");
 
-                    b.ToTable("Files", (string)null);
+                    b.ToTable("Files");
                 });
 
             modelBuilder.Entity("DataAccessLayer.Entities.GameGenreEntity", b =>
@@ -82,7 +82,7 @@ namespace DataAccessLayer.Migrations
 
                     b.HasIndex("GenreId");
 
-                    b.ToTable("GameGenres", (string)null);
+                    b.ToTable("GameGenres");
                 });
 
             modelBuilder.Entity("DataAccessLayer.Entities.GamePlatformEntity", b =>
@@ -97,7 +97,7 @@ namespace DataAccessLayer.Migrations
 
                     b.HasIndex("PlatformId");
 
-                    b.ToTable("GamePlatforms", (string)null);
+                    b.ToTable("GamePlatforms");
                 });
 
             modelBuilder.Entity("DataAccessLayer.Entities.GenreEntity", b =>
@@ -118,26 +118,26 @@ namespace DataAccessLayer.Migrations
 
                     b.HasIndex("ParentGenreId");
 
-                    b.ToTable("Genres", (string)null);
+                    b.ToTable("Genres");
                 });
 
             modelBuilder.Entity("DataAccessLayer.Entities.PlatformEntity", b =>
                 {
-                    b.Property<Guid>("PlatformId")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("PlatformType")
+                    b.Property<string>("Type")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.HasKey("PlatformId");
+                    b.HasKey("Id");
 
-                    b.HasIndex("PlatformType")
+                    b.HasIndex("Type")
                         .IsUnique();
 
-                    b.ToTable("Platforms", (string)null);
+                    b.ToTable("Platforms");
                 });
 
             modelBuilder.Entity("DataAccessLayer.Entities.GameFileEntity", b =>

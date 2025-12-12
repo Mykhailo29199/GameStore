@@ -3,6 +3,7 @@ using BusinessLogicLayer.Models;
 using BusinessLogicLayer.Services.Interaces;
 using Gamestore.WebAPI.DTOs.GameDTO;
 using Gamestore.WebAPI.DTOs.GenreDTO;
+using Gamestore.WebAPI.DTOs.PlatformDTO;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Gamestore.WebAPI.Controllers;
@@ -39,24 +40,6 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
         var gameDTO = _mapper.Map<GameWithIdDTO>(gameModel);
 
         return Ok(gameDTO);
-    }
-
-    [HttpGet("platforms/{platformId}/games")]
-    public async Task<IActionResult> GetGamesByPlatformId([FromRoute] Guid platformId)
-    {
-        var gameModels = await _gameService.GetGamesByPlatformIdAsync(platformId);
-        var gameDTOs = _mapper.Map<IEnumerable<GameWithIdDTO>>(gameModels);
-
-        return Ok(gameDTOs);
-    }
-
-    [HttpGet("genres/{genresId}/games")]
-    public async Task<IActionResult> GetGamesByGenreId([FromRoute] Guid genresId)
-    {
-        var gameModels = await _gameService.GetGamesByGenreIdAsync(genresId);
-        var gameDTOs = _mapper.Map<IEnumerable<GameWithIdDTO>>(gameModels);
-
-        return Ok(gameDTOs);
     }
 
     [HttpPut]
@@ -124,5 +107,14 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
         var genreDTOs = _mapper.Map<IEnumerable<GenreDTO>>(genreModels);
 
         return Ok(genreDTOs);
+    }
+
+    [HttpGet("{key}/platforms")]
+    public async Task<IActionResult> GetPlatformsByGameKey([FromRoute] string key)
+    {
+        var platformModels = await _gameService.GetPlatformsByGameKeyAsync(key);
+        var platformDTOs = _mapper.Map<IEnumerable<PlatformDTO>>(platformModels);
+
+        return Ok(platformDTOs);
     }
 }

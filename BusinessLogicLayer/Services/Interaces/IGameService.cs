@@ -10,10 +10,7 @@ public interface IGameService
 
     Task<GameModel> GetGameByIdAsync(Guid gameId);
 
-    Task<IList<GameModel>> GetGamesByPlatformIdAsync(Guid platformId);
-
-    Task<IList<GameModel>> GetGamesByGenreIdAsync(Guid genreId);
-
+    // Task<IList<GameModel>> GetGamesByGenreIdAsync(Guid genreId);
     Task UpdateGameAsync(FullGameModel gameModel);
 
     Task DeleteGameAsync(string key);
@@ -23,4 +20,6 @@ public interface IGameService
     Task<IList<GameModel>> GetAllGamesAsync();
 
     Task<IList<GenreModel>> GetGenresByGameKeyAsync(string key);
+
+    Task<IList<PlatformModel>> GetPlatformsByGameKeyAsync(string key);
 }

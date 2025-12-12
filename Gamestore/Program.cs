@@ -27,6 +27,7 @@ builder.Services.AddScoped<IGameFileRepository, GameFileRepository>();
 
 builder.Services.AddScoped<IGameService, GameService>();
 builder.Services.AddScoped<IGenreService, GenreService>();
+builder.Services.AddScoped<IPlatformService, PlatformService>();
 
 builder.Services.AddDbContext<GameStoreContext>(options =>
   options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));

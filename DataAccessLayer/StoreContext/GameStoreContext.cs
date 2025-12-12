@@ -28,7 +28,7 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
             .WithOne(g => g.ParentGenre)
             .HasForeignKey(g => g.ParentGenreId);
 
-        modelBuilder.Entity<PlatformEntity>().HasIndex(p => p.PlatformType).IsUnique();
+        modelBuilder.Entity<PlatformEntity>().HasIndex(p => p.Type).IsUnique();
 
         modelBuilder.Entity<GameGenreEntity>().HasKey(gg => new { gg.GameId, gg.GenreId });
         modelBuilder.Entity<GamePlatformEntity>().HasKey(gp => new { gp.GameId, gp.PlatformId });

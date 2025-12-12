@@ -89,4 +89,16 @@ public class GenreService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapp
         await _unitOfWork.GenreRepository.DeleteAsync(existingGenreEntity);
         await _unitOfWork.SaveAsync();
     }
+
+    public async Task<List<GameModel>> GetGamesByGenreIdAsync(Guid genreId)
+    {
+        _ = await _unitOfWork.GenreRepository.GetByIdAsync(genreId)
+          ?? throw new NotFoundException($"Platform with id '{genreId}' does not exist.");
+
+        var gameEntities = await _unitOfWork.GameGenreRepository.GetGamesByGenreIdAsync(genreId);
+
+        var gameModels = _mapper.Map<List<GameModel>>(gameEntities);
+
+        return gameModels;
+    }
 }

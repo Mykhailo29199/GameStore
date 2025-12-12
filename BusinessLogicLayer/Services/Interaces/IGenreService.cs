@@ -15,4 +15,6 @@ public interface IGenreService
     Task UpdateGenreAsync(GenreModel genreModel);
 
     Task DeleteGenreAsync(Guid id);
+
+    Task<List<GameModel>> GetGamesByGenreIdAsync(Guid genreId);
 }

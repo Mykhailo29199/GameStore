@@ -6,9 +6,9 @@ public class PlatformEntity
 {
     [Key]
     [Required]
-    public Guid PlatformId { get; set; }
+    public Guid Id { get; set; }
 
     [Required]
     [MaxLength(200)]
-    public string PlatformType { get; set; }
+    public string Type { get; set; }
 }

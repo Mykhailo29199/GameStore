@@ -14,4 +14,12 @@ public class GamePlatformRepository(GameStoreContext context) : GenericRepositor
         var list = await _dbSet.Where(x => x.GameId == actualGameId).ToListAsync();
         _dbSet.RemoveRange(list);
     }
+
+    public async Task<IList<GameEntity>> GetGamesByPlatformIdAsync(Guid platformId)
+    {
+        return await _dbSet
+            .Where(gp => gp.PlatformId == platformId)
+            .Select(gp => gp.Game!)
+            .ToListAsync();
+    }
 }

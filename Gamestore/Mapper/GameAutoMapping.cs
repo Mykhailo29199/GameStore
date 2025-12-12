@@ -3,6 +3,7 @@ using BusinessLogicLayer.Models;
 using DataAccessLayer.Entities;
 using Gamestore.WebAPI.DTOs.GameDTO;
 using Gamestore.WebAPI.DTOs.GenreDTO;
+using Gamestore.WebAPI.DTOs.PlatformDTO;
 
 namespace Gamestore.WebAPI.Mapper;
 
@@ -75,5 +76,8 @@ public class GameAutoMapping : Profile
         Name = src.Name,
         ParentGenreId = src.ParentGenreId,
     }));
+
+        CreateMap<PlatformDTO, PlatformModel>().ReverseMap();
+        CreateMap<PlatformModel, PlatformEntity>().ReverseMap();
     }
 }

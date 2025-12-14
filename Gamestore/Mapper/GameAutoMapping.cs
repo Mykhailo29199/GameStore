@@ -29,7 +29,7 @@ public class GameAutoMapping : Profile
                 .ForMember(dest => dest.Key, opt => opt.MapFrom(src => src.GameKey))
                 .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.GameDescription));
 
-        CreateMap<GameModel, GameWithIdDTO>()
+        CreateMap<GameModel, GameWithIdDto>()
                 .ReverseMap();
 
         CreateMap<GameEntity, FullGameModel>()
@@ -45,39 +45,39 @@ public class GameAutoMapping : Profile
             .ForMember(dest => dest.Platforms, opt => opt.MapFrom(src =>
             src.GamePlatforms != null ? src.GamePlatforms.Select(gp => gp.PlatformId) : new List<Guid>()));
 
-        CreateMap<GameWithIdDTO, GameModel>();
+        CreateMap<GameWithIdDto, GameModel>();
 
-        CreateMap<FullGameWithIdDTO, FullGameModel>()
+        CreateMap<FullGameWithIdDto, FullGameModel>()
             .ForMember(dest => dest.Game, opt => opt.MapFrom(src => src.GameWithIdDTO))
             .ForMember(dest => dest.Genres, opt => opt.MapFrom(src => src.Genres))
             .ForMember(dest => dest.Platforms, opt => opt.MapFrom(src => src.Platforms));
 
-        CreateMap<GameDTO, GameModel>()
+        CreateMap<GameDto, GameModel>()
                 .ReverseMap();
 
-        CreateMap<FullGameDTO, FullGameModel>()
+        CreateMap<FullGameDto, FullGameModel>()
                 .ReverseMap();
 
-        CreateMap<GenreNameAndParentGenreIdDTO, GenreModel>().ReverseMap();
+        CreateMap<GenreNameAndParentGenreIdDto, GenreModel>().ReverseMap();
 
         CreateMap<GenreModel, GenreEntity>().ReverseMap();
 
-        CreateMap<GenreDTO, GenreModel>().ReverseMap();
+        CreateMap<GenreDto, GenreModel>().ReverseMap();
 
-        CreateMap<FullGenreDTO, GenreModel>()
+        CreateMap<FullGenreDto, GenreModel>()
     .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
     .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Genre.Name))
     .ForMember(dest => dest.ParentGenreId, opt => opt.MapFrom(src => src.Genre.ParentGenreId));
 
-        CreateMap<GenreModel, FullGenreDTO>()
+        CreateMap<GenreModel, FullGenreDto>()
     .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
-    .ForMember(dest => dest.Genre, opt => opt.MapFrom(src => new GenreNameAndParentGenreIdDTO
+    .ForMember(dest => dest.Genre, opt => opt.MapFrom(src => new GenreNameAndParentGenreIdDto
     {
         Name = src.Name,
         ParentGenreId = src.ParentGenreId,
     }));
 
-        CreateMap<PlatformDTO, PlatformModel>().ReverseMap();
+        CreateMap<PlatformDto, PlatformModel>().ReverseMap();
         CreateMap<PlatformModel, PlatformEntity>().ReverseMap();
     }
 }

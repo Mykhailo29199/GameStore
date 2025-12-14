@@ -2,7 +2,7 @@
 
 namespace Gamestore.WebAPI.DTOs.GenreDTO;
 
-public class GenreNameAndParentGenreIdDTO
+public class GenreNameAndParentGenreIdDto
 {
     [Required(ErrorMessage = "Genre name is required.")]
     [StringLength(200, MinimumLength = 1, ErrorMessage = "Genre name must be between 1 and 200 characters.")]

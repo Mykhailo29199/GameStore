@@ -15,7 +15,7 @@ public class GenreController(IGenreService genreService, IMapper mapper) : Contr
     private readonly IMapper _mapper = mapper;
 
     [HttpPost]
-    public async Task<IActionResult> CreateGenreAsync([FromBody] GenreNameAndParentGenreIdDTO genreDTO)
+    public async Task<IActionResult> CreateGenreAsync([FromBody] GenreNameAndParentGenreIdDto genreDTO)
     {
         var genreModel = _mapper.Map<GenreModel>(genreDTO);
         await _genreService.CreateGenreAsync(genreModel);
@@ -27,7 +27,7 @@ public class GenreController(IGenreService genreService, IMapper mapper) : Contr
     public async Task<IActionResult> GetGenreByIdAsync([FromRoute] Guid genreId)
     {
         var genreModel = await _genreService.GetGenreByIdAsync(genreId);
-        var genreDTO = _mapper.Map<FullGenreDTO>(genreModel);
+        var genreDTO = _mapper.Map<FullGenreDto>(genreModel);
 
         return Ok(genreDTO);
     }
@@ -36,7 +36,7 @@ public class GenreController(IGenreService genreService, IMapper mapper) : Contr
     public async Task<IActionResult> GetAllGenresAsync()
     {
         var genreModels = await _genreService.GetAllGenresAsync();
-        var genreDTOs = _mapper.Map<List<FullGenreDTO>>(genreModels);
+        var genreDTOs = _mapper.Map<List<FullGenreDto>>(genreModels);
 
         return Ok(genreDTOs);
     }
@@ -45,13 +45,13 @@ public class GenreController(IGenreService genreService, IMapper mapper) : Contr
     public async Task<IActionResult> GetGenresByParentGenreIdAsync([FromRoute] Guid parentGenreId)
     {
         var genreModels = await _genreService.GetGenresByParentGenreIdAsync(parentGenreId);
-        var genreDTOs = _mapper.Map<List<GenreDTO>>(genreModels);
+        var genreDTOs = _mapper.Map<List<GenreDto>>(genreModels);
 
         return Ok(genreDTOs);
     }
 
     [HttpPut]
-    public async Task<IActionResult> UpdateGenreAsync([FromBody] FullGenreDTO genreDTO)
+    public async Task<IActionResult> UpdateGenreAsync([FromBody] FullGenreDto genreDTO)
     {
         var genreModel = _mapper.Map<GenreModel>(genreDTO);
         await _genreService.UpdateGenreAsync(genreModel);
@@ -71,7 +71,7 @@ public class GenreController(IGenreService genreService, IMapper mapper) : Contr
     public async Task<IActionResult> GetGamesByGenreIdAsync([FromRoute] Guid genreId)
     {
         var gameModels = await _genreService.GetGamesByGenreIdAsync(genreId);
-        var gameDTOs = _mapper.Map<IEnumerable<GameWithIdDTO>>(gameModels);
+        var gameDTOs = _mapper.Map<IEnumerable<GameWithIdDto>>(gameModels);
 
         return Ok(gameDTOs);
     }

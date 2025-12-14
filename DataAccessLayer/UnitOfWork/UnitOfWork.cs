@@ -12,6 +12,8 @@ public class UnitOfWork(
     IGameFileRepository gameFileRepository,
     IGamePlatformRepository gamePlatformRepository) : IUnitOfWork<GameStoreContext>, IDisposable
 {
+    private bool _disposed;
+
     public GameStoreContext Context { get; } = context;
 
     public IGameRepository GameRepository { get; } = gameRepository;
@@ -42,5 +44,18 @@ public class UnitOfWork(
     {
         Context.Dispose();
         GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                Context.Dispose();
+            }
+
+            _disposed = true;
+        }
     }
 }

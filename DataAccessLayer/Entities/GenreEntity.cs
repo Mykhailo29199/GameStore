@@ -16,5 +16,5 @@ public class GenreEntity
 
     public GenreEntity? ParentGenre { get; set; }
 
-    public ICollection<GenreEntity>? SubGenres { get; set; } = new List<GenreEntity>();
+    public ICollection<GenreEntity>? SubGenres { get; set; }
 }

@@ -19,7 +19,7 @@ public class GameEntity
     [MaxLength(1000)]
     public string? GameDescription { get; set; }
 
-    public ICollection<GameGenreEntity>? GameGenres { get; set; } = new List<GameGenreEntity>();
+    public ICollection<GameGenreEntity> GameGenres { get; set; }
 
-    public ICollection<GamePlatformEntity>? GamePlatforms { get; set; } = new List<GamePlatformEntity>();
+    public ICollection<GamePlatformEntity> GamePlatforms { get; set; }
 }

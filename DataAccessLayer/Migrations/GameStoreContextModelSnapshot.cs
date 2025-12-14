@@ -47,7 +47,7 @@ namespace DataAccessLayer.Migrations
                     b.HasIndex("GameKey")
                         .IsUnique();
 
-                    b.ToTable("Games");
+                    b.ToTable("Games", (string)null);
                 });
 
             modelBuilder.Entity("DataAccessLayer.Entities.GameFileEntity", b =>
@@ -67,7 +67,7 @@ namespace DataAccessLayer.Migrations
 
                     b.HasIndex("GameId");
 
-                    b.ToTable("Files");
+                    b.ToTable("Files", (string)null);
                 });
 
             modelBuilder.Entity("DataAccessLayer.Entities.GameGenreEntity", b =>
@@ -82,7 +82,7 @@ namespace DataAccessLayer.Migrations
 
                     b.HasIndex("GenreId");
 
-                    b.ToTable("GameGenres");
+                    b.ToTable("GameGenres", (string)null);
                 });
 
             modelBuilder.Entity("DataAccessLayer.Entities.GamePlatformEntity", b =>
@@ -97,7 +97,7 @@ namespace DataAccessLayer.Migrations
 
                     b.HasIndex("PlatformId");
 
-                    b.ToTable("GamePlatforms");
+                    b.ToTable("GamePlatforms", (string)null);
                 });
 
             modelBuilder.Entity("DataAccessLayer.Entities.GenreEntity", b =>
@@ -118,7 +118,7 @@ namespace DataAccessLayer.Migrations
 
                     b.HasIndex("ParentGenreId");
 
-                    b.ToTable("Genres");
+                    b.ToTable("Genres", (string)null);
                 });
 
             modelBuilder.Entity("DataAccessLayer.Entities.PlatformEntity", b =>
@@ -137,7 +137,7 @@ namespace DataAccessLayer.Migrations
                     b.HasIndex("Type")
                         .IsUnique();
 
-                    b.ToTable("Platforms");
+                    b.ToTable("Platforms", (string)null);
                 });
 
             modelBuilder.Entity("DataAccessLayer.Entities.GameFileEntity", b =>

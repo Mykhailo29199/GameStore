@@ -10,12 +10,11 @@ public interface IGameService
 
     Task<GameModel> GetGameByIdAsync(Guid gameId);
 
-    // Task<IList<GameModel>> GetGamesByGenreIdAsync(Guid genreId);
     Task UpdateGameAsync(FullGameModel gameModel);
 
     Task DeleteGameAsync(string key);
 
-    Task<string?> GetGameFilePathAsync(string gameKey);
+    Task<string> GetGameFilePathAsync(string gameKey);
 
     Task<IList<GameModel>> GetAllGamesAsync();
 

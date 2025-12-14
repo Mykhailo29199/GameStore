@@ -1,10 +1,10 @@
 ﻿namespace Gamestore.WebAPI.DTOs.GameDTO;
 
-public class FullGameDTO
+public class FullGameDto
 {
-    public GameDTO Game { get; set; }
+    public GameDto Game { get; set; }
 
-    public List<Guid>? Genres { get; set; } = [];
+    public List<Guid> Genres { get; set; }
 
-    public List<Guid>? Platforms { get; set; } = [];
+    public List<Guid> Platforms { get; set; }
 }

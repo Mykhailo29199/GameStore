@@ -15,13 +15,8 @@ public class PlatformController(IPlatformService platformService, IMapper mapper
     private readonly IMapper _mapper = mapper;
 
     [HttpPost]
-    public async Task<IActionResult> CreatePlatformAsync([FromBody] PlatformDTO platformType)
+    public async Task<IActionResult> CreatePlatformAsync([FromBody] PlatformDto platformType)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
-
         await _platformService.CreatePlatformAsync(platformType.Type);
 
         return NoContent();
@@ -31,7 +26,7 @@ public class PlatformController(IPlatformService platformService, IMapper mapper
     public async Task<IActionResult> GetPlatformByIdAsync([FromRoute] Guid platformId)
     {
         var platformModel = await _platformService.GetPlatformByIdAsync(platformId);
-        var platformDTO = _mapper.Map<PlatformDTO>(platformModel);
+        var platformDTO = _mapper.Map<PlatformDto>(platformModel);
 
         return Ok(platformDTO);
     }
@@ -40,19 +35,14 @@ public class PlatformController(IPlatformService platformService, IMapper mapper
     public async Task<IActionResult> GetAllPlatformsAsync()
     {
         var platformModels = await _platformService.GetAllPlatformsAsync();
-        var platformDTOs = _mapper.Map<List<PlatformDTO>>(platformModels);
+        var platformDTOs = _mapper.Map<List<PlatformDto>>(platformModels);
 
         return Ok(platformDTOs);
     }
 
     [HttpPut]
-    public async Task<IActionResult> UpdatePlatformAsync([FromBody] PlatformDTO platformDTO)
+    public async Task<IActionResult> UpdatePlatformAsync([FromBody] PlatformDto platformDTO)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
-
         var model = _mapper.Map<PlatformModel>(platformDTO);
 
         await _platformService.UpdatePlatformAsync(model);
@@ -71,7 +61,7 @@ public class PlatformController(IPlatformService platformService, IMapper mapper
     public async Task<IActionResult> GetGamesByPlatformIdAsync([FromRoute] Guid platformId)
     {
         var gameModels = await _platformService.GetGamesByPlatformIdAsync(platformId);
-        var gameDTOs = _mapper.Map<List<GameWithIdDTO>>(gameModels);
+        var gameDTOs = _mapper.Map<List<GameWithIdDto>>(gameModels);
 
         return Ok(gameDTOs);
     }

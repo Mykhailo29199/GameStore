@@ -72,29 +72,10 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
     {
         var gameId = gameModel.Game.Id;
 
-        GameEntity existingGame = new();
-
-        if (gameId != Guid.Empty)
-        {
-            existingGame = await _unitOfWork.GameRepository.GetByIdAsync(gameId);
-        }
-
-        if (existingGame == null)
-        {
-            throw new NotFoundException($"Game with Id `{gameId}` was not found.");
-        }
-
+        GameEntity existingGame = await _unitOfWork.GameRepository.GetByIdAsync(gameId) ?? throw new NotFoundException($"Game with Id `{gameId}` was not found.");
         var actualGameId = existingGame.GameId;
 
-        existingGame.GameName = gameModel.Game.Name;
-
-        if (existingGame.GameKey != gameModel.Game.Key)
-        {
-            gameModel.Game.Key = await GenerateGameKeyIfMissingAsync(gameModel.Game.Key, gameModel.Game.Name);
-        }
-
-        existingGame.GameKey = gameModel.Game.Name;
-        existingGame.GameDescription = gameModel.Game.Description;
+        existingGame = _mapper.Map<GameEntity>(gameModel);
 
         await _unitOfWork.GameGenreRepository.DeleteByGameIdAsync(actualGameId);
         foreach (var genreId in gameModel.Genres)
@@ -136,7 +117,7 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
         await _unitOfWork.SaveAsync();
     }
 
-    public async Task<string?> GetGameFilePathAsync(string gameKey)
+    public async Task<string> GetGameFilePathAsync(string gameKey)
     {
         if (await _unitOfWork.GameRepository.GetGameByKeyAsync(gameKey) == null)
         {
@@ -144,7 +125,20 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
         }
 
         var fileEntity = await _unitOfWork.GameFileRepository.GetGameFileByKeyAsync(gameKey);
-        return fileEntity?.FilePath;
+        var filePath = fileEntity?.FilePath;
+
+        if (string.IsNullOrEmpty(filePath))
+        {
+            throw new NotFoundException("Game file not found.");
+        }
+
+        if (!File.Exists(filePath))
+        {
+            throw new NotFoundException(
+                $"Physical file with path '{filePath}' not found on server.");
+        }
+
+        return filePath;
     }
 
     public async Task<IList<GameModel>> GetAllGamesAsync()

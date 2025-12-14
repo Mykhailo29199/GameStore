@@ -16,7 +16,7 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
     private readonly IMapper _mapper = mapper;
 
     [HttpPost]
-    public async Task<IActionResult> CreateGame([FromBody] FullGameDTO requestPostDTO)
+    public async Task<IActionResult> CreateGame([FromBody] FullGameDto requestPostDTO)
     {
         var gameModel = _mapper.Map<FullGameModel>(requestPostDTO);
         await _gameService.CreateGameAsync(gameModel);
@@ -28,7 +28,7 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
     public async Task<IActionResult> GetGameByKey([FromRoute] string key)
     {
         var gameModel = await _gameService.GetGameByKeyAsync(key);
-        var gameDTO = _mapper.Map<GameWithIdDTO>(gameModel);
+        var gameDTO = _mapper.Map<GameWithIdDto>(gameModel);
 
         return Ok(gameDTO);
     }
@@ -37,19 +37,14 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
     public async Task<IActionResult> GetGameById([FromRoute] Guid gameId)
     {
         var gameModel = await _gameService.GetGameByIdAsync(gameId);
-        var gameDTO = _mapper.Map<GameWithIdDTO>(gameModel);
+        var gameDTO = _mapper.Map<GameWithIdDto>(gameModel);
 
         return Ok(gameDTO);
     }
 
     [HttpPut]
-    public async Task<IActionResult> UpdateGame([FromBody] FullGameWithIdDTO requestPutDTO)
+    public async Task<IActionResult> UpdateGame([FromBody] FullGameWithIdDto requestPutDTO)
     {
-        if (requestPutDTO == null || requestPutDTO.GameWithIdDTO == null)
-        {
-            return BadRequest("Invalid request body.");
-        }
-
         var gameModel = _mapper.Map<FullGameModel>(requestPutDTO);
         await _gameService.UpdateGameAsync(gameModel);
 
@@ -59,11 +54,6 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
     [HttpDelete("{key}")]
     public async Task<IActionResult> DeleteGame([FromRoute] string key)
     {
-        if (string.IsNullOrEmpty(key))
-        {
-            return BadRequest("Invalid request body.");
-        }
-
         await _gameService.DeleteGameAsync(key);
 
         return NoContent();
@@ -73,16 +63,6 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
     public async Task<IActionResult> DownloadGameFile([FromRoute] string gameKey)
     {
         var filePath = await _gameService.GetGameFilePathAsync(gameKey);
-
-        if (string.IsNullOrEmpty(filePath))
-        {
-            return NotFound("Game file not found.");
-        }
-
-        if (!System.IO.File.Exists(filePath))
-        {
-            return NotFound($"Physical file with path '{filePath}' not found on server.");
-        }
 
         var fileName = Path.GetFileName(filePath);
         var contentType = "application/octet-stream";
@@ -95,7 +75,7 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
     public async Task<IActionResult> GetAllGames()
     {
         var gameModels = await _gameService.GetAllGamesAsync();
-        var gameDTOs = _mapper.Map<IEnumerable<GameWithIdDTO>>(gameModels);
+        var gameDTOs = _mapper.Map<IEnumerable<GameWithIdDto>>(gameModels);
 
         return Ok(gameDTOs);
     }
@@ -104,7 +84,7 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
     public async Task<IActionResult> GetGenresByGameKey([FromRoute] string key)
     {
         var genreModels = await _gameService.GetGenresByGameKeyAsync(key);
-        var genreDTOs = _mapper.Map<IEnumerable<GenreDTO>>(genreModels);
+        var genreDTOs = _mapper.Map<IEnumerable<GenreDto>>(genreModels);
 
         return Ok(genreDTOs);
     }
@@ -113,7 +93,7 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
     public async Task<IActionResult> GetPlatformsByGameKey([FromRoute] string key)
     {
         var platformModels = await _gameService.GetPlatformsByGameKeyAsync(key);
-        var platformDTOs = _mapper.Map<IEnumerable<PlatformDTO>>(platformModels);
+        var platformDTOs = _mapper.Map<IEnumerable<PlatformDto>>(platformModels);
 
         return Ok(platformDTOs);
     }

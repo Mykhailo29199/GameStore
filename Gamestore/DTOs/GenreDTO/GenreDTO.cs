@@ -1,8 +1,11 @@
-﻿namespace Gamestore.WebAPI.DTOs.GenreDTO;
+﻿using System.ComponentModel.DataAnnotations;
 
-public class GenreDTO
+namespace Gamestore.WebAPI.DTOs.GenreDTO;
+
+public class GenreDto
 {
-    public Guid Id { get; set; }
+    [Required(ErrorMessage = "Genre ID is required")]
+    public Guid? Id { get; set; }
 
     public string Name { get; set; }
 }

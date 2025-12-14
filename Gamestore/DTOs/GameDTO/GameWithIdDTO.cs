@@ -2,8 +2,8 @@
 
 namespace Gamestore.WebAPI.DTOs.GameDTO;
 
-public class GameWithIdDTO : GameDTO
+public class GameWithIdDto : GameDto
 {
-    [Required]
-    public Guid Id { get; set; }
+    [Required(ErrorMessage = "Game ID is required")]
+    public Guid? Id { get; set; }
 }

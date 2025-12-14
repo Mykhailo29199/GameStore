@@ -10,7 +10,7 @@ public class UnitOfWork(
     IGenreRepository genreRepository,
     IGameGenreRepository gameGenreRepository,
     IGameFileRepository gameFileRepository,
-    IGamePlatformRepository gamePlatformRepository) : IUnitOfWork<GameStoreContext>, IDisposable
+    IGamePlatformRepository gamePlatformRepository) : IUnitOfWork<GameStoreContext>
 {
     private bool _disposed;
 
@@ -42,7 +42,7 @@ public class UnitOfWork(
 
     public void Dispose()
     {
-        Context.Dispose();
+        Dispose(true);
         GC.SuppressFinalize(this);
     }
 

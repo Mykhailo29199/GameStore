@@ -46,7 +46,7 @@ public class GenreService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapp
 
     public async Task<IList<GenreModel>> GetGenresByParentGenreIdAsync(Guid parentGenreId)
     {
-        var parentGenreEntity = await _unitOfWork.GenreRepository.GetByIdAsync(parentGenreId)
+        _ = await _unitOfWork.GenreRepository.GetByIdAsync(parentGenreId)
             ?? throw new NotFoundException($"Parent genre with Id {parentGenreId} does not exist.");
 
         var genreEntities = await _unitOfWork.GenreRepository

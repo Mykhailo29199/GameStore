@@ -127,18 +127,12 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
         var fileEntity = await _unitOfWork.GameFileRepository.GetGameFileByKeyAsync(gameKey);
         var filePath = fileEntity?.FilePath;
 
-        if (string.IsNullOrEmpty(filePath))
-        {
-            throw new NotFoundException("Game file not found.");
-        }
+        _ = filePath ?? throw new NotFoundException("Game file not found.");
 
-        if (!File.Exists(filePath))
-        {
-            throw new NotFoundException(
-                $"Physical file with path '{filePath}' not found on server.");
-        }
-
-        return filePath;
+        return !File.Exists(filePath)
+            ? throw new NotFoundException(
+                $"Physical file with path '{filePath}' not found on server.")
+            : filePath;
     }
 
     public async Task<IList<GameModel>> GetAllGamesAsync()

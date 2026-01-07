@@ -161,6 +161,13 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
             : _mapper.Map<IList<PlatformModel>>(platforms);
     }
 
+    public async Task<int> GetTotalGamesCountAsync()
+    {
+        var games = await _unitOfWork.GameRepository.GetAllAsync();
+
+        return games.Count();
+    }
+
     private async Task<string> GenerateGameKeyIfMissingAndMakeItUniqueAsync(string gameKey, string gameName)
     {
         if (string.IsNullOrWhiteSpace(gameKey))

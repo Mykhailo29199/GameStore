@@ -102,9 +102,7 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
             }
             else
             {
-                {
-                    throw new NotFoundException($"Platform with Id `{platformId}` was not found.");
-                }
+                throw new NotFoundException($"Platform with Id `{platformId}` was not found.");
             }
         }
 

@@ -65,7 +65,7 @@ public class GenreService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapp
         {
             _ = await _unitOfWork.GenreRepository
                 .GetByIdAsync(genreModel.ParentGenreId.Value)
-                ?? throw new ArgumentException($"Parent genre with Id {genreModel.ParentGenreId} does not exist.");
+                ?? throw new NotFoundException($"Parent genre with Id {genreModel.ParentGenreId} does not exist.");
         }
 
         _mapper.Map(genreModel, existingGenreEntity);
@@ -93,7 +93,7 @@ public class GenreService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapp
     public async Task<List<GameModel>> GetGamesByGenreIdAsync(Guid genreId)
     {
         _ = await _unitOfWork.GenreRepository.GetByIdAsync(genreId)
-          ?? throw new NotFoundException($"Platform with id '{genreId}' does not exist.");
+          ?? throw new NotFoundException($"Genre with id '{genreId}' does not exist.");
 
         var gameEntities = await _unitOfWork.GameGenreRepository.GetGamesByGenreIdAsync(genreId);
 

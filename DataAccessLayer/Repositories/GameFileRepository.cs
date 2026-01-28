@@ -11,7 +11,7 @@ public class GameFileRepository(GameStoreContext context) : GenericRepository<Ga
 
     public async Task<GameFileEntity?> GetGameFileByKeyAsync(string gameKey)
     {
-        var file = await _dbSet.FirstOrDefaultAsync(x => x.Game.GameKey == gameKey);
+        var file = await _dbSet.FirstOrDefaultAsync(x => x.Game != null && x.Game.GameKey == gameKey);
         return file;
     }
 }

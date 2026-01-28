@@ -21,4 +21,6 @@ public interface IGameService
     Task<IList<GenreModel>> GetGenresByGameKeyAsync(string key);
 
     Task<IList<PlatformModel>> GetPlatformsByGameKeyAsync(string key);
+
+    Task<int> GetTotalGamesCountAsync();
 }

@@ -26,7 +26,8 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
         modelBuilder.Entity<GenreEntity>()
             .HasMany(g => g.SubGenres)
             .WithOne(g => g.ParentGenre)
-            .HasForeignKey(g => g.ParentGenreId);
+            .HasForeignKey(g => g.ParentGenreId)
+            .OnDelete(DeleteBehavior.ClientSetNull);
 
         modelBuilder.Entity<PlatformEntity>().HasIndex(p => p.Type).IsUnique();
 

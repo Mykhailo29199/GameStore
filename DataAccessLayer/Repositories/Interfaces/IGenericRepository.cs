@@ -11,6 +11,8 @@ public interface IGenericRepository<T>
 
     Task AddAsync(T entity);
 
+    Task AddRangeAsync(IEnumerable<T> entities);
+
     Task UpdateAsync(T entity);
 
     Task DeleteAsync(T entity);

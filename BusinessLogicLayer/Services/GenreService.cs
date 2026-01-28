@@ -76,15 +76,8 @@ public class GenreService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapp
 
     public async Task DeleteGenreAsync(Guid id)
     {
-        var existingGenreEntity = await _unitOfWork.GenreRepository.GetByIdAsync(id)
+        var existingGenreEntity = await _unitOfWork.GenreRepository.GetWithSubGenresAsync(id)
             ?? throw new NotFoundException($"Genre with Id {id} does not exist.");
-
-        var subGenres = await _unitOfWork.GenreRepository.FindAsync(g => g.ParentGenreId == existingGenreEntity.Id);
-
-        foreach (var sub in subGenres)
-        {
-            sub.ParentGenreId = null;
-        }
 
         await _unitOfWork.GenreRepository.DeleteAsync(existingGenreEntity);
         await _unitOfWork.SaveAsync();

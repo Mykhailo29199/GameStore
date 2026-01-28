@@ -57,6 +57,8 @@ dotnet_diagnostic.SA0001.severity = none
 
 dotnet_diagnostic.SA1101.severity = none
 
+dotnet_diagnostic.SA1124.severity = none
+
 dotnet_diagnostic.SA1200.severity = none
 
 dotnet_diagnostic.SA1204.severity = none
@@ -92,6 +94,8 @@ dotnet_diagnostic.IDE0065.severity = error
 dotnet_diagnostic.IDE0002.severity = error
 
 dotnet_diagnostic.IDE0005.severity = error
+
+dotnet_diagnostic.IDE0028.severity = none
 
 dotnet_diagnostic.IDE0059.severity = error
 
@@ -212,5 +216,5 @@ dotnet_sort_system_directives_first = true
 dotnet_analyzer_diagnostic.severity = error
 
 # Ignore paths
-[/*.Tests/**]
+[**/GameStore.Services.Tests/**]
 dotnet_diagnostic.CA1707.severity = none

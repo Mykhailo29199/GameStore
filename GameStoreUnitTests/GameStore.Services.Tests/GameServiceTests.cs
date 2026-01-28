@@ -5,8 +5,10 @@ using DataAccessLayer.Entities;
 using DataAccessLayer.StoreContext;
 using DataAccessLayer.UnitOfWork;
 using GameStore.Shared.Exceptions;
+using GameStore.Shared.FileSystem;
 using Moq;
 using Xunit;
+using static GameStoreUnitTests.GameStore.Services.Tests.TestConstants;
 
 namespace GameStoreUnitTests.GameStore.Services.Tests;
 
@@ -15,479 +17,403 @@ public class GameServiceTests
     private readonly GameService _gameService;
     private readonly Mock<IUnitOfWork<GameStoreContext>> _unitOfWorkMock;
     private readonly Mock<IMapper> _mapperMock;
+    private readonly Mock<IFileSystem> _fileSystemMock;
 
     public GameServiceTests()
     {
         _unitOfWorkMock = new Mock<IUnitOfWork<GameStoreContext>>();
         _mapperMock = new Mock<IMapper>();
-        _gameService = new GameService(_unitOfWorkMock.Object, _mapperMock.Object);
+        _fileSystemMock = new Mock<IFileSystem>();
+        _gameService = new GameService(_unitOfWorkMock.Object, _mapperMock.Object, _fileSystemMock.Object);
     }
 
     [Fact]
-    public async Task CreateGameAsyncPlatformNotExisthrowNotFoundException()
+    public async Task CreateGameAsync_WhenPlatformDoesNotExist_ShouldThrowNotFound()
     {
-        List<Guid> platformIds =
-        [
-            Guid.Parse("10000000-0000-0000-0000-000000000002"),
-        ];
-        FullGameModel gameModel = CreateGameModel(platforms: platformIds);
-
-        GameEntity nullGameEntity = null;
+        // Arrange
+        var missingPlatformId = NonExistingPlatformId;
+        var gameModel = CreateGameModel(platforms: [missingPlatformId]);
 
         _unitOfWorkMock.Setup(x => x.GameRepository.GetGameByKeyAsync(It.IsAny<string>()))
-            .ReturnsAsync(nullGameEntity);
-
-        PlatformEntity platformEntity1 = new()
-        {
-            Id = Guid.Parse("10000000-0000-0000-0000-000000000001"),
-            Type = "PC",
-        };
-
-        PlatformEntity platformEntity2 = new()
-        {
-            Id = Guid.Parse("20000000-0000-0000-0000-000000000002"),
-            Type = "Xbox",
-        };
-
-        IEnumerable<PlatformEntity> platformEntities = [platformEntity1, platformEntity2];
+            .ReturnsAsync((GameEntity)null);
 
         _unitOfWorkMock.Setup(x => x.PlatformRepository.GetAllAsync())
-            .ReturnsAsync(platformEntities);
+            .ReturnsAsync(ExistingPlatforms);
 
+        // Act
         var exception = await Assert.ThrowsAsync<NotFoundException>(() =>
             _gameService.CreateGameAsync(gameModel));
 
-        Assert.Equal("Platform with ID '10000000-0000-0000-0000-000000000002' was not found.", exception.Message);
+        // Assert
+        Assert.Equal($"Platform with ID '{missingPlatformId}' was not found.", exception.Message);
     }
 
     [Fact]
-    public async Task CreateGameAsyncGenreNotExisthrowNotFoundException()
+    public async Task CreateGameAsync_WhenGenreDoesNotExist_ShouldThrowNotFound()
     {
-        FullGameModel fullGameModel = CreateGameModel(
-                               platforms: [Guid.Parse("10000000-0000-0000-0000-000000000001")],
-                               genres: [Guid.Parse("30000000-0000-0000-0000-000000000003")]);
-
-        GameEntity nullGameEntity = null;
+        // Arrange
+        var missingGenreId = NonExistingGenreId;
+        var gameModel = CreateGameModel(
+            platforms: ExistingPlatformIds,
+            genres: [missingGenreId]);
 
         _unitOfWorkMock.Setup(x => x.GameRepository.GetGameByKeyAsync(It.IsAny<string>()))
-            .ReturnsAsync(nullGameEntity);
-
-        PlatformEntity platformEntity1 = new()
-        {
-            Id = Guid.Parse("10000000-0000-0000-0000-000000000001"),
-            Type = "PC",
-        };
-
-        PlatformEntity platformEntity2 = new()
-        {
-            Id = Guid.Parse("20000000-0000-0000-0000-000000000002"),
-            Type = "Xbox",
-        };
-
-        IEnumerable<PlatformEntity> platformEntities = [platformEntity1, platformEntity2];
+            .ReturnsAsync((GameEntity)null);
 
         _unitOfWorkMock.Setup(x => x.PlatformRepository.GetAllAsync())
-            .ReturnsAsync(platformEntities);
-
-        IEnumerable<GenreEntity> genreEntities = [
-            new()
-            {
-                Id = Guid.Parse("10000000-0000-0000-0000-000000000001"),
-                Name = "Action",
-            },
-            new()
-            {
-                Id = Guid.Parse("20000000-0000-0000-0000-000000000002"),
-                Name = "Adventure",
-            },
-        ];
+            .ReturnsAsync(ExistingPlatforms);
 
         _unitOfWorkMock.Setup(x => x.GenreRepository.GetAllAsync())
-            .ReturnsAsync(genreEntities);
+            .ReturnsAsync(ExistingGenres);
 
+        // Act
         var exception = await Assert.ThrowsAsync<NotFoundException>(() =>
-            _gameService.CreateGameAsync(fullGameModel));
+            _gameService.CreateGameAsync(gameModel));
 
-        Assert.Equal("Genre with ID '30000000-0000-0000-0000-000000000003' was not found.", exception.Message);
+        // Assert
+        Assert.Equal($"Genre with ID '{missingGenreId}' was not found.", exception.Message);
     }
 
     [Fact]
-    public async Task CreateGameAsyncGoodDataSuccessCreation()
+    public async Task CreateGameAsync_WhenDataIsValid_ShouldCreateGame()
     {
-        FullGameModel fullgameModel = CreateGameModel(
-            platforms: [Guid.Parse("10000000-0000-0000-0000-000000000001")],
-            genres: [Guid.Parse("30000000-0000-0000-0000-000000000003")]);
-
-        GameEntity nullGameEntity = null;
+        // Arrange
+        var gameModel = CreateGameModel(
+            platforms: ExistingPlatformIds,
+            genres: ExistingGenreIds);
 
         _unitOfWorkMock.Setup(x => x.GameRepository.GetGameByKeyAsync(It.IsAny<string>()))
-            .ReturnsAsync(nullGameEntity);
-
-        PlatformEntity platformEntity1 = new()
-        {
-            Id = Guid.Parse("10000000-0000-0000-0000-000000000001"),
-            Type = "PC",
-        };
-
-        PlatformEntity platformEntity2 = new()
-        {
-            Id = Guid.Parse("20000000-0000-0000-0000-000000000002"),
-            Type = "Xbox",
-        };
-
-        IEnumerable<PlatformEntity> platformEntities = [platformEntity1, platformEntity2];
+            .ReturnsAsync((GameEntity)null);
 
         _unitOfWorkMock.Setup(x => x.PlatformRepository.GetAllAsync())
-            .ReturnsAsync(platformEntities);
-
-        IEnumerable<GenreEntity> genreEntities = [
-            new()
-            {
-                Id = Guid.Parse("30000000-0000-0000-0000-000000000003"),
-                Name = "Action",
-            },
-            new()
-            {
-                Id = Guid.Parse("20000000-0000-0000-0000-000000000002"),
-                Name = "Adventure",
-            },
-        ];
+            .ReturnsAsync(ExistingPlatforms);
 
         _unitOfWorkMock.Setup(x => x.GenreRepository.GetAllAsync())
-            .ReturnsAsync(genreEntities);
+            .ReturnsAsync(ExistingGenres);
 
-        GameEntity gameEntity = new();
-        _mapperMock.Setup(x => x.Map<GameEntity>(fullgameModel))
+        var gameEntity = new GameEntity();
+        _mapperMock.Setup(x => x.Map<GameEntity>(gameModel))
             .Returns(gameEntity);
 
         _unitOfWorkMock.Setup(x => x.GameRepository.AddAsync(gameEntity));
         _unitOfWorkMock.Setup(x => x.SaveAsync());
 
-        await _gameService.CreateGameAsync(fullgameModel);
+        // Act
+        await _gameService.CreateGameAsync(gameModel);
 
+        // Assert
         _unitOfWorkMock.Verify(x => x.GameRepository.AddAsync(gameEntity), Times.Once);
-
         _unitOfWorkMock.Verify(x => x.SaveAsync(), Times.Once);
     }
 
     [Fact]
-    public async Task GetGameByKeyAsyncGameNotExisthrowNotFoundException()
+    public async Task GetGameByKeyAsync_WhenGameDoesNotExist_ShouldThrowNotFound()
     {
-        GameEntity nullGameEntity = null;
-
+        // Arrange
         _unitOfWorkMock.Setup(x => x.GameRepository.GetGameByKeyAsync(It.IsAny<string>()))
-            .ReturnsAsync(nullGameEntity);
+            .ReturnsAsync((GameEntity)null);
 
-        string key = "non-existing-key";
-
+        // Act
         var exception = await Assert.ThrowsAsync<NotFoundException>(() =>
-                   _gameService.GetGameByKeyAsync(key));
+            _gameService.GetGameByKeyAsync(NonExistingGameKey));
 
-        Assert.Equal($"Game with Key '{key}' was not found.", exception.Message);
+        // Assert
+        Assert.Equal($"Game with Key '{NonExistingGameKey}' was not found.", exception.Message);
     }
 
     [Fact]
-    public async Task GetGameByKeyAsyncGameExistsSuccessfulGetting()
+    public async Task GetGameByKeyAsync_WhenGameExists_ShouldReturnGame()
     {
-        GameEntity gameEntity = new();
-
+        // Arrange
+        var gameEntity = new GameEntity();
         _unitOfWorkMock.Setup(x => x.GameRepository.GetGameByKeyAsync(It.IsAny<string>()))
             .ReturnsAsync(gameEntity);
 
-        string key = "existing-key";
+        var gameModel = new GameModel { Key = ExistingGameKey };
+        _mapperMock.Setup(x => x.Map<GameModel>(gameEntity)).Returns(gameModel);
 
-        GameModel gameModel = new()
-        {
-            Key = key,
-        };
-        _mapperMock.Setup(x => x.Map<GameModel>(gameEntity))
-            .Returns(gameModel);
+        // Act
+        var result = await _gameService.GetGameByKeyAsync(ExistingGameKey);
 
-        GameModel result = await _gameService.GetGameByKeyAsync(key);
-
+        // Assert
         Assert.Equal(gameModel, result);
     }
 
     [Fact]
-    public async Task UpdateGameAsyncGameIdNotExisthrowNotFoundException()
+    public async Task UpdateGameAsync_WhenGameDoesNotExist_ShouldThrowNotFound()
     {
-        Guid gameId = Guid.Parse("10000000-0000-0700-0000-000000009991");
+        // Arrange
+        var gameModel = CreateGameModel();
+        gameModel.Game.Id = NonExistingGameId;
 
-        FullGameModel gameModel = CreateGameModel();
+        _unitOfWorkMock.Setup(x => x.GameRepository.GetByIdAsync(NonExistingGameId))
+            .ReturnsAsync((GameEntity)null);
 
-        gameModel.Game.Id = gameId;
-
-        GameEntity nullGameEntity = null;
-
-        _unitOfWorkMock.Setup(x => x.GameRepository.GetByIdAsync(gameId))
-            .ReturnsAsync(nullGameEntity);
-
+        // Act
         var exception = await Assert.ThrowsAsync<NotFoundException>(() =>
-                   _gameService.UpdateGameAsync(gameModel));
+            _gameService.UpdateGameAsync(gameModel));
 
-        Assert.Equal($"Game with Id `{gameModel.Game.Id}` was not found.", exception.Message);
+        // Assert
+        Assert.Equal($"Game with Id `{NonExistingGameId}` was not found.", exception.Message);
     }
 
     [Fact]
-    public async Task UpdateGameAsyncGenreNotExisthrowNotFoundException()
+    public async Task UpdateGameAsync_WhenGenreDoesNotExist_ShouldThrowNotFound()
     {
-        var gameId = Guid.Parse("10000000-0000-0000-0000-000000000001");
-        var missingGenreId = Guid.Parse("11111111-1111-1111-1111-111111155555");
-        FullGameModel gameModel = CreateGameModel(
-                       genres: [missingGenreId]);
+        // Arrange
+        var missingGenreId = NonExistingGenreId;
+        var gameModel = CreateGameModel(
+            platforms: ExistingPlatformIds,
+            genres: [missingGenreId]);
+        gameModel.Game.Id = ExistingGameId;
 
-        gameModel.Game.Id = gameId;
+        var existingGame = new GameEntity { GameId = ExistingGameId };
 
-        GameEntity existingGameEntity = new()
-        {
-            GameId = gameId,
-        };
+        _unitOfWorkMock.Setup(x => x.GameRepository.GetByIdAsync(ExistingGameId))
+            .ReturnsAsync(existingGame);
 
-        _unitOfWorkMock.Setup(x => x.GameRepository.GetByIdAsync(gameId))
-            .ReturnsAsync(existingGameEntity);
+        _unitOfWorkMock.Setup(x => x.GameGenreRepository.DeleteByGameIdAsync(existingGame.GameId))
+            .Returns(Task.CompletedTask);
 
-        _unitOfWorkMock.Setup(x => x.GameGenreRepository.
-        DeleteByGameIdAsync(existingGameEntity.GameId))
-        .Returns(Task.CompletedTask);
+        _unitOfWorkMock.Setup(x => x.GamePlatformRepository.DeleteByGameIdAsync(existingGame.GameId))
+            .Returns(Task.CompletedTask);
 
-        _mapperMock
-       .Setup(x => x.Map<GameEntity>(gameModel))
-       .Returns(existingGameEntity);
+        _unitOfWorkMock.Setup(x => x.GenreRepository.GetAllAsync())
+            .ReturnsAsync(ExistingGenres);
 
-        _unitOfWorkMock.Setup(x => x.GenreRepository.CheckIfExistAsync(missingGenreId))
-            .ReturnsAsync(false);
+        _unitOfWorkMock.Setup(x => x.PlatformRepository.GetAllAsync())
+            .ReturnsAsync(ExistingPlatforms);
 
+        _mapperMock.Setup(x => x.Map<GameEntity>(gameModel))
+            .Returns(existingGame);
+
+        // Act
         var exception = await Assert.ThrowsAsync<NotFoundException>(() =>
-                          _gameService.UpdateGameAsync(gameModel));
+            _gameService.UpdateGameAsync(gameModel));
 
+        // Assert
         Assert.Equal($"Genre with Id `{missingGenreId}` was not found.", exception.Message);
     }
 
     [Fact]
-    public async Task UpdateGameAsyncPlatformNotExisthrowNotFoundException()
+    public async Task UpdateGameAsync_WhenPlatformDoesNotExist_ShouldThrowNotFound()
     {
-        var gameId = Guid.Parse("10000000-0000-0000-0000-000000000001");
-        var genreId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var missingPlatformId = Guid.Parse("22222222-2222-2222-2222-222222225555");
-
-        FullGameModel gameModel = CreateGameModel(
+        // Arrange
+        var missingPlatformId = NonExistingPlatformId;
+        var gameModel = CreateGameModel(
             platforms: [missingPlatformId],
-            genres: [genreId]);
-        gameModel.Game.Id = gameId;
+            genres: ExistingGenreIds);
+        gameModel.Game.Id = ExistingGameId;
 
-        GameEntity existingGameEntity = new()
-        {
-            GameId = gameId,
-        };
+        var existingGame = new GameEntity { GameId = ExistingGameId };
 
-        _unitOfWorkMock.Setup(x => x.GameRepository.GetByIdAsync(gameId))
-            .ReturnsAsync(existingGameEntity);
+        _unitOfWorkMock.Setup(x => x.GameRepository.GetByIdAsync(ExistingGameId))
+            .ReturnsAsync(existingGame);
+
+        _unitOfWorkMock.Setup(x => x.GameGenreRepository.DeleteByGameIdAsync(existingGame.GameId))
+            .Returns(Task.CompletedTask);
+
+        _unitOfWorkMock.Setup(x => x.GamePlatformRepository.DeleteByGameIdAsync(existingGame.GameId))
+            .Returns(Task.CompletedTask);
+
+        _unitOfWorkMock.Setup(x => x.GenreRepository.GetAllAsync())
+            .ReturnsAsync(ExistingGenres);
+
+        _unitOfWorkMock.Setup(x => x.PlatformRepository.GetAllAsync())
+            .ReturnsAsync(ExistingPlatforms);
 
         _mapperMock.Setup(x => x.Map<GameEntity>(gameModel))
-        .Returns(existingGameEntity);
+            .Returns(existingGame);
 
-        _unitOfWorkMock.Setup(x => x.GameGenreRepository.DeleteByGameIdAsync(existingGameEntity.GameId))
-            .Returns(Task.CompletedTask);
-
-        _unitOfWorkMock.Setup(x => x.GenreRepository.CheckIfExistAsync(genreId))
-            .ReturnsAsync(true);
-
-        _unitOfWorkMock.Setup(x => x.GameGenreRepository.AddAsync(It.IsAny<GameGenreEntity>()))
-            .Returns(Task.CompletedTask);
-
-        _unitOfWorkMock.Setup(x => x.GamePlatformRepository.DeleteByGameIdAsync(existingGameEntity.GameId))
-            .Returns(Task.CompletedTask);
-
-        _unitOfWorkMock.Setup(x => x.PlatformRepository.CheckIfExistAsync(missingPlatformId))
-            .ReturnsAsync(false);
-
+        // Act
         var exception = await Assert.ThrowsAsync<NotFoundException>(() =>
-                                 _gameService.UpdateGameAsync(gameModel));
+            _gameService.UpdateGameAsync(gameModel));
 
+        // Assert
         Assert.Equal($"Platform with Id `{missingPlatformId}` was not found.", exception.Message);
     }
 
     [Fact]
-    public async Task UpdateGameAsyncValidDataSuccessUpdate()
+    public async Task UpdateGameAsync_WhenDataIsValid_ShouldUpdateGame()
     {
-        var gameId = Guid.Parse("10000000-0000-0000-0000-000000000001");
-        var genreId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var platformId = Guid.Parse("AAAAAAAA-0000-0000-0000-000000000001");
+        // Arrange
+        var gameModel = CreateGameModel(
+            platforms: ExistingPlatformIds,
+            genres: ExistingGenreIds);
+        gameModel.Game.Id = ExistingGameId;
 
-        FullGameModel gameModel = CreateGameModel(
-                       platforms: [platformId],
-                       genres: [genreId]);
-        gameModel.Game.Id = gameId;
+        var existingGame = new GameEntity { GameId = ExistingGameId };
 
-        GameEntity existingGameEntity = new()
-        {
-            GameId = gameId,
-        };
+        _unitOfWorkMock.Setup(x => x.GameRepository.GetByIdAsync(ExistingGameId))
+            .ReturnsAsync(existingGame);
 
-        _unitOfWorkMock.Setup(x => x.GameRepository.GetByIdAsync(gameId))
-            .ReturnsAsync(existingGameEntity);
+        _unitOfWorkMock.Setup(x => x.GameGenreRepository.DeleteByGameIdAsync(existingGame.GameId))
+            .Returns(Task.CompletedTask);
+
+        _unitOfWorkMock.Setup(x => x.GamePlatformRepository.DeleteByGameIdAsync(existingGame.GameId))
+            .Returns(Task.CompletedTask);
+
+        _unitOfWorkMock.Setup(x => x.GenreRepository.GetAllAsync())
+            .ReturnsAsync(ExistingGenres);
+
+        _unitOfWorkMock.Setup(x => x.PlatformRepository.GetAllAsync())
+            .ReturnsAsync(ExistingPlatforms);
 
         _mapperMock.Setup(x => x.Map<GameEntity>(gameModel))
-        .Returns(existingGameEntity);
+            .Returns(existingGame);
 
-        _unitOfWorkMock.Setup(x => x.GameGenreRepository.DeleteByGameIdAsync(existingGameEntity.GameId))
+        _unitOfWorkMock.Setup(x => x.GameGenreRepository.AddRangeAsync(It.IsAny<List<GameGenreEntity>>()))
             .Returns(Task.CompletedTask);
 
-        _unitOfWorkMock.Setup(x => x.GenreRepository.CheckIfExistAsync(genreId))
-            .ReturnsAsync(true);
-
-        _unitOfWorkMock.Setup(x => x.GameGenreRepository.AddAsync(It.IsAny<GameGenreEntity>()))
+        _unitOfWorkMock.Setup(x => x.GamePlatformRepository.AddRangeAsync(It.IsAny<List<GamePlatformEntity>>()))
             .Returns(Task.CompletedTask);
 
-        _unitOfWorkMock.Setup(x => x.GamePlatformRepository.DeleteByGameIdAsync(existingGameEntity.GameId))
+        _unitOfWorkMock.Setup(x => x.GameRepository.UpdateAsync(existingGame))
             .Returns(Task.CompletedTask);
 
-        _unitOfWorkMock.Setup(x => x.PlatformRepository.CheckIfExistAsync(platformId))
-            .ReturnsAsync(true);
-
-        _unitOfWorkMock.Setup(x => x.GamePlatformRepository.AddAsync(It.IsAny<GamePlatformEntity>()))
+        _unitOfWorkMock.Setup(x => x.SaveAsync())
             .Returns(Task.CompletedTask);
 
+        // Act
         await _gameService.UpdateGameAsync(gameModel);
 
+        // Assert
+        _unitOfWorkMock.Verify(x => x.GameGenreRepository.AddRangeAsync(It.IsAny<List<GameGenreEntity>>()), Times.Once);
+        _unitOfWorkMock.Verify(x => x.GamePlatformRepository.AddRangeAsync(It.IsAny<List<GamePlatformEntity>>()), Times.Once);
+        _unitOfWorkMock.Verify(x => x.GameRepository.UpdateAsync(existingGame), Times.Once);
         _unitOfWorkMock.Verify(x => x.SaveAsync(), Times.Once);
     }
 
     [Fact]
-    public async Task DeleteGameAsyncGameNotExisthrowNotFoundException()
+    public async Task DeleteGameAsync_WhenGameDoesNotExist_ShouldThrowNotFound()
     {
-        string gameKey = "non-existing-key";
-        GameEntity nullGameEntity = null;
+        // Arrange
+        _unitOfWorkMock.Setup(x => x.GameRepository.GetGameByKeyAsync(NonExistingGameKey))
+            .ReturnsAsync((GameEntity)null);
 
-        _unitOfWorkMock.Setup(x => x.GameRepository.GetGameByKeyAsync(gameKey))
-            .ReturnsAsync(nullGameEntity);
-
+        // Act
         var exception = await Assert.ThrowsAsync<NotFoundException>(() =>
-                          _gameService.DeleteGameAsync(gameKey));
+            _gameService.DeleteGameAsync(NonExistingGameKey));
 
-        Assert.Equal($"Game with Key '{gameKey}' was not found.", exception.Message);
+        // Assert
+        Assert.Equal($"Game with Key '{NonExistingGameKey}' was not found.", exception.Message);
     }
 
     [Fact]
-    public async Task DeleteGameAsyncValidDataSuccessDelete()
+    public async Task DeleteGameAsync_WhenGameExists_ShouldDeleteGame()
     {
-        string gameKey = "existing-key";
-        GameEntity existingGameEntity = new();
+        // Arrange
+        var existingGame = new GameEntity();
 
-        _unitOfWorkMock.Setup(x => x.GameRepository.GetGameByKeyAsync(gameKey))
-            .ReturnsAsync(existingGameEntity);
+        _unitOfWorkMock.Setup(x => x.GameRepository.GetGameByKeyAsync(ExistingGameKey))
+            .ReturnsAsync(existingGame);
 
-        _unitOfWorkMock.Setup(x => x.GameRepository.DeleteAsync(existingGameEntity))
+        _unitOfWorkMock.Setup(x => x.GameRepository.DeleteAsync(existingGame))
             .Returns(Task.CompletedTask);
 
-        _unitOfWorkMock
-         .Setup(x => x.SaveAsync())
-         .Returns(Task.CompletedTask);
+        _unitOfWorkMock.Setup(x => x.SaveAsync())
+            .Returns(Task.CompletedTask);
 
-        await _gameService.DeleteGameAsync(gameKey);
+        // Act
+        await _gameService.DeleteGameAsync(ExistingGameKey);
 
-        _unitOfWorkMock.Verify(
-            x => x.GameRepository.DeleteAsync(existingGameEntity),
-            Times.Once);
-
-        _unitOfWorkMock.Verify(
-            x => x.SaveAsync(),
-            Times.Once);
+        // Assert
+        _unitOfWorkMock.Verify(x => x.GameRepository.DeleteAsync(existingGame), Times.Once);
+        _unitOfWorkMock.Verify(x => x.SaveAsync(), Times.Once);
     }
 
     [Fact]
-    public async Task GetGameFilePathAsyncGameKeyNotExisthrowNotFoundException()
+    public async Task GetGameFilePathAsync_WhenGameDoesNotExist_ShouldThrowNotFound()
     {
-        string gameKey = "non-existing-key";
-        GameEntity nullGameEntity = null;
+        // Arrange
+        _unitOfWorkMock.Setup(x => x.GameRepository.GetGameByKeyAsync(NonExistingGameKey))
+            .ReturnsAsync((GameEntity)null);
 
-        _unitOfWorkMock.Setup(x => x.GameRepository.GetGameByKeyAsync(gameKey))
-            .ReturnsAsync(nullGameEntity);
-
+        // Act
         var exception = await Assert.ThrowsAsync<NotFoundException>(() =>
-                                 _gameService.GetGameFilePathAsync(gameKey));
+            _gameService.GetGameByKeyAsync(NonExistingGameKey));
 
-        Assert.Equal($"Game with Key '{gameKey}' was not found.", exception.Message);
+        // Assert
+        Assert.Equal($"Game with Key '{NonExistingGameKey}' was not found.", exception.Message);
     }
 
     [Fact]
-    public async Task GetGameFilePathAsyncGameFileNotExisthrowNotFoundException()
+    public async Task GetGameFilePathAsync_WhenGameFileEntityDoesNotExist_ShouldThrowNotFound()
     {
-        string gameKey = "existing-key";
+        // Arrange
+        var gameEntity = new GameEntity();
 
-        _unitOfWorkMock
-       .Setup(x => x.GameRepository.GetGameByKeyAsync(gameKey))
-       .ReturnsAsync(new GameEntity());
+        _unitOfWorkMock.Setup(x => x.GameRepository.GetGameByKeyAsync(ExistingGameKey))
+            .ReturnsAsync(gameEntity);
 
-        _unitOfWorkMock
-            .Setup(x => x.GameFileRepository.GetGameFileByKeyAsync(gameKey))
-            .ReturnsAsync((GameFileEntity)null);
+        _unitOfWorkMock.Setup(x => x.GameFileRepository.GetGameFileByKeyAsync(ExistingGameKey))
+        .ReturnsAsync((GameFileEntity)null);
 
+        // Act
         var exception = await Assert.ThrowsAsync<NotFoundException>(() =>
-            _gameService.GetGameFilePathAsync(gameKey));
+            _gameService.GetGameFilePathAsync(ExistingGameKey));
 
-        Assert.Equal("Game file not found.", exception.Message);
+        // Assert
+        Assert.Equal($"Game file for game with Key '{ExistingGameKey}' was not found.", exception.Message);
     }
 
     [Fact]
-    public async Task GetGameFilePathAsyncPhysicalFileMissingThrowsNotFoundException()
+    public async Task GetGameFilePathAsync_WhenPhysicalFileDoesNotExist_ShouldThrowNotFound()
     {
-        string gameKey = "existing-key";
-        string filePath = "/files/game.zip";
+        // Arrange
+        string fakeFilePath = "/non-existing-file-path.zip";
 
-        _unitOfWorkMock.Setup(x => x.GameRepository.GetGameByKeyAsync(gameKey))
-            .ReturnsAsync(new GameEntity());
+        _unitOfWorkMock.Setup(x => x.GameRepository.GetGameByKeyAsync(ExistingGameKey))
+        .ReturnsAsync(new GameEntity());
 
-        _unitOfWorkMock.Setup(x => x.GameFileRepository.GetGameFileByKeyAsync(gameKey)).
+        _unitOfWorkMock.Setup(x => x.GameFileRepository.GetGameFileByKeyAsync(ExistingGameKey)).
+            ReturnsAsync(new GameFileEntity
+            {
+                FilePath = fakeFilePath,
+            });
+
+        // Act
+        var exception = await Assert.ThrowsAsync<NotFoundException>(() =>
+            _gameService.GetGameFilePathAsync(ExistingGameKey));
+
+        // Assert
+        Assert.Equal(
+            $"Physical file with path '{fakeFilePath}' not found on server.",
+            exception.Message);
+    }
+
+    [Fact]
+    public async Task GetGameFilePathAsync_WhenFileExists_ShouldReturnFilePath()
+    {
+        // Arrange
+        string filePath = "tempPath";
+
+        _unitOfWorkMock.Setup(x => x.GameRepository.GetGameByKeyAsync(ExistingGameKey))
+        .ReturnsAsync(new GameEntity());
+
+        _unitOfWorkMock.Setup(x => x.GameFileRepository.GetGameFileByKeyAsync(ExistingGameKey)).
             ReturnsAsync(new GameFileEntity
             {
                 FilePath = filePath,
             });
 
-        var exception = await Assert.ThrowsAsync<NotFoundException>(() =>
-            _gameService.GetGameFilePathAsync(gameKey));
+        _fileSystemMock.Setup(x => x.FileExists(filePath))
+            .Returns(true);
 
-        Assert.Equal(
-            $"Physical file with path '{filePath}' not found on server.",
-            exception.Message);
+        // Act
+        string result = await _gameService.GetGameFilePathAsync(ExistingGameKey);
+
+        // Assert
+        Assert.Equal(filePath, result);
     }
 
     [Fact]
-    public async Task GetGameFilePathAsyncValidDataReturnsFilePath()
+    public async Task GetAllGamesAsync_WhenGamesExist_ShouldReturnMappedGames()
     {
-        string gameKey = "existing-key";
-        string filePath = Path.GetTempFileName();
-
-        try
-        {
-            _unitOfWorkMock.Setup(x => x.GameRepository.GetGameByKeyAsync(gameKey))
-            .ReturnsAsync(new GameEntity());
-
-            _unitOfWorkMock.Setup(x => x.GameFileRepository.GetGameFileByKeyAsync(gameKey)).
-                ReturnsAsync(new GameFileEntity
-                {
-                    FilePath = filePath,
-                });
-
-            string result = await _gameService.GetGameFilePathAsync(gameKey);
-
-            Assert.Equal(filePath, result);
-        }
-        finally
-        {
-            File.Delete(filePath);
-        }
-    }
-
-    [Fact]
-    public async Task GetAllGamesAsyncReturnsMappedGames()
-    {
-        Guid id = Guid.NewGuid();
-        Guid anotherId = Guid.NewGuid();
         List<GameEntity> gameEntities =
         [
-            new GameEntity { GameId = id, GameName = "Game 1", GameKey = "game-1" },
-            new GameEntity { GameId = anotherId, GameName = "Game 2", GameKey = "game-2" },
+            new GameEntity { GameId = ExistingGameId, GameName = "Game 1", GameKey = ExistingGameKey },
+            new GameEntity { GameId = ExistingGameId2, GameName = "Game 2", GameKey = ExistingGameKey2 },
         ];
 
         _unitOfWorkMock.Setup(x => x.GameRepository.GetAllAsync())
@@ -495,44 +421,48 @@ public class GameServiceTests
 
         List<GameModel> mappedGames =
         [
-            new GameModel { Id = id, Name = "Game 1", Key = "game-1" },
-            new GameModel { Id = anotherId, Name = "Game 2", Key = "game-2" },
+            new GameModel { Id = ExistingGameId, Name = "Game 1", Key = ExistingGameKey },
+            new GameModel { Id = ExistingGameId2, Name = "Game 2", Key = ExistingGameKey2 },
         ];
 
         _mapperMock.Setup(x => x.Map<IList<GameModel>>(gameEntities))
             .Returns(mappedGames);
 
+        // Act
         IList<GameModel> result = await _gameService.GetAllGamesAsync();
 
+        // Assert
         Assert.Equal(mappedGames, result);
     }
 
     [Fact]
-    public async Task GetGenresByGameKeyAsyncGameKeyNotExisthrowNotFoundException()
+    public async Task GetGenresByGameKeyAsync_WhenGameDoesNotExist_ShouldThrowNotFound()
     {
-        string gameKey = "non-existing-key";
+        // Arrange
         List<GenreEntity> emptyGenreEntities = [];
 
-        _unitOfWorkMock.Setup(x => x.GameRepository.GetGenresByGameKeyAsync(gameKey))
+        _unitOfWorkMock.Setup(x => x.GameRepository.GetGenresByGameKeyAsync(NonExistingGameKey))
             .ReturnsAsync(emptyGenreEntities);
 
+        // Act
         var exception = await Assert.ThrowsAsync<NotFoundException>(() =>
-                          _gameService.GetGenresByGameKeyAsync(gameKey));
+                          _gameService.GetGenresByGameKeyAsync(NonExistingGameKey));
 
-        Assert.Equal($"Game with Key '{gameKey}' was not found or has no genres.", exception.Message);
+        // Assert
+        Assert.Equal($"Game with Key '{NonExistingGameKey}' was not found or has no genres.", exception.Message);
     }
 
     [Fact]
-    public async Task GetGenresByGameKeyAsyncValidDataReturnsMappedGenres()
+    public async Task GetGenresByGameKeyAsync_WhenValidData_ShouldReturnMappedGenres()
     {
-        string gameKey = "existing-key";
+        // Arrange
         List<GenreEntity> genreEntities =
         [
-            new GenreEntity { Id = Guid.NewGuid(), Name = "Action" },
-            new GenreEntity { Id = Guid.NewGuid(), Name = "Adventure" },
+            new GenreEntity { Id = ExistingGenreId, Name = "Action" },
+            new GenreEntity { Id = AnotherExistingGenreId, Name = "Adventure" },
         ];
 
-        _unitOfWorkMock.Setup(x => x.GameRepository.GetGenresByGameKeyAsync(gameKey))
+        _unitOfWorkMock.Setup(x => x.GameRepository.GetGenresByGameKeyAsync(ExistingGameKey))
             .ReturnsAsync(genreEntities);
 
         List<GenreModel> mappedGenres =
@@ -544,37 +474,41 @@ public class GameServiceTests
         _mapperMock.Setup(x => x.Map<IList<GenreModel>>(genreEntities))
             .Returns(mappedGenres);
 
-        IList<GenreModel> result = await _gameService.GetGenresByGameKeyAsync(gameKey);
+        // Act
+        IList<GenreModel> result = await _gameService.GetGenresByGameKeyAsync(ExistingGameKey);
 
+        // Assert
         Assert.Equal(mappedGenres, result);
     }
 
     [Fact]
-    public async Task GetPlatformsByGameKeyAsyncGameKeyNotExisthrowNotFoundException()
+    public async Task GetPlatformsByGameKeyAsync_WhenGameDoesNotExist_ShouldThrowNotFound()
     {
-        string gameKey = "non-existing-key";
+        // Arrange
         List<PlatformEntity> emptyPlatformEntities = [];
 
-        _unitOfWorkMock.Setup(x => x.GameRepository.GetPlatformsByGameKeyAsync(gameKey))
+        _unitOfWorkMock.Setup(x => x.GameRepository.GetPlatformsByGameKeyAsync(NonExistingGameKey))
             .ReturnsAsync(emptyPlatformEntities);
 
+        // Act
         var exception = await Assert.ThrowsAsync<NotFoundException>(() =>
-                                 _gameService.GetPlatformsByGameKeyAsync(gameKey));
+                                 _gameService.GetPlatformsByGameKeyAsync(NonExistingGameKey));
 
-        Assert.Equal($"Game with Key '{gameKey}' was not found or has no platforms.", exception.Message);
+        // Assert
+        Assert.Equal($"Game with Key '{NonExistingGameKey}' was not found or has no platforms.", exception.Message);
     }
 
     [Fact]
-    public async Task GetPlatformsByGameKeyAsyncValidDataReturnsMappedGenres()
+    public async Task GetPlatformsByGameKeyAsync_WhenValidData_ShouldReturnMappedPlatforms()
     {
-        string gameKey = "existing-key";
+        // Arrange
         List<PlatformEntity> platformEntities =
         [
-            new PlatformEntity { Id = Guid.NewGuid(), Type = "PC" },
-            new PlatformEntity { Id = Guid.NewGuid(), Type = "Xbox" },
+            new PlatformEntity { Id = ExistingPlatformId, Type = "PC" },
+            new PlatformEntity { Id = AnotherExistingPlatformId, Type = "Xbox" },
         ];
 
-        _unitOfWorkMock.Setup(x => x.GameRepository.GetPlatformsByGameKeyAsync(gameKey))
+        _unitOfWorkMock.Setup(x => x.GameRepository.GetPlatformsByGameKeyAsync(ExistingGameKey))
             .ReturnsAsync(platformEntities);
 
         List<PlatformModel> mappedPlatforms =
@@ -586,8 +520,10 @@ public class GameServiceTests
         _mapperMock.Setup(x => x.Map<IList<PlatformModel>>(platformEntities))
             .Returns(mappedPlatforms);
 
-        IList<PlatformModel> result = await _gameService.GetPlatformsByGameKeyAsync(gameKey);
+        // Act
+        IList<PlatformModel> result = await _gameService.GetPlatformsByGameKeyAsync(ExistingGameKey);
 
+        // Assert
         Assert.Equal(mappedPlatforms, result);
     }
 

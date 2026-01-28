@@ -191,7 +191,8 @@ namespace DataAccessLayer.Migrations
                 {
                     b.HasOne("DataAccessLayer.Entities.GenreEntity", "ParentGenre")
                         .WithMany("SubGenres")
-                        .HasForeignKey("ParentGenreId");
+                        .HasForeignKey("ParentGenreId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("ParentGenre");
                 });

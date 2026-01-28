@@ -6,19 +6,21 @@ using DataAccessLayer.Entities;
 using DataAccessLayer.StoreContext;
 using DataAccessLayer.UnitOfWork;
 using GameStore.Shared.Exceptions;
+using GameStore.Shared.FileSystem;
 using CultureInfo = System.Globalization.CultureInfo;
 
 namespace BusinessLogicLayer.Services;
 
-public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapper) : IGameService
+public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapper, IFileSystem fileSystem) : IGameService
 {
     private readonly IUnitOfWork<GameStoreContext> _unitOfWork = unitOfWork;
     private readonly IMapper _mapper = mapper;
+    private readonly IFileSystem _fileSystem = fileSystem;
 
     public async Task CreateGameAsync(FullGameModel gameModel)
     {
         var game = gameModel.Game;
-        game.Key = await GenerateGameKeyIfMissingAndMakeItUniqueAsync(game.Key, game.Name);
+        game.Key = await EnsureUniqueGameKeyAsync(game.Key, game.Name);
 
         var allPlatforms = await _unitOfWork.PlatformRepository.GetAllAsync();
 
@@ -68,16 +70,21 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
         var gameId = gameModel.Game.Id;
 
         GameEntity existingGame = await _unitOfWork.GameRepository.GetByIdAsync(gameId) ?? throw new NotFoundException($"Game with Id `{gameId}` was not found.");
-        var actualGameId = existingGame.GameId;
+        Guid actualGameId = existingGame.GameId;
 
         existingGame = _mapper.Map<GameEntity>(gameModel);
 
         await _unitOfWork.GameGenreRepository.DeleteByGameIdAsync(actualGameId);
+
+        var allGenres = await _unitOfWork.GenreRepository.GetAllAsync();
+
+        List<GameGenreEntity> gameGenreEntities = [];
+
         foreach (var genreId in gameModel.Genres)
         {
-            if (await _unitOfWork.GenreRepository.CheckIfExistAsync(genreId))
+            if (allGenres.Any(x => x.Id == genreId))
             {
-                await _unitOfWork.GameGenreRepository.AddAsync(new GameGenreEntity
+                gameGenreEntities.Add(new GameGenreEntity
                 {
                     GameId = actualGameId,
                     GenreId = genreId,
@@ -89,12 +96,18 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
             }
         }
 
+        await _unitOfWork.GameGenreRepository.AddRangeAsync(gameGenreEntities);
+
         await _unitOfWork.GamePlatformRepository.DeleteByGameIdAsync(actualGameId);
+
+        var allPlatforms = await _unitOfWork.PlatformRepository.GetAllAsync();
+        List<GamePlatformEntity> gamePlatformEntities = [];
+
         foreach (var platformId in gameModel.Platforms)
         {
-            if (await _unitOfWork.PlatformRepository.CheckIfExistAsync(platformId))
+            if (allPlatforms.Any(x => x.Id == platformId))
             {
-                await _unitOfWork.GamePlatformRepository.AddAsync(new GamePlatformEntity
+                gamePlatformEntities.Add(new GamePlatformEntity
                 {
                     GameId = actualGameId,
                     PlatformId = platformId,
@@ -105,6 +118,8 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
                 throw new NotFoundException($"Platform with Id `{platformId}` was not found.");
             }
         }
+
+        await _unitOfWork.GamePlatformRepository.AddRangeAsync(gamePlatformEntities);
 
         await _unitOfWork.GameRepository.UpdateAsync(existingGame);
         await _unitOfWork.SaveAsync();
@@ -126,12 +141,13 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
             throw new NotFoundException($"Game with Key '{gameKey}' was not found.");
         }
 
-        var fileEntity = await _unitOfWork.GameFileRepository.GetGameFileByKeyAsync(gameKey);
-        var filePath = fileEntity?.FilePath;
+        var fileEntity = await _unitOfWork.GameFileRepository.GetGameFileByKeyAsync(gameKey)
+            ?? throw new NotFoundException($"Game file for game with Key '{gameKey}' was not found.");
 
+        var filePath = fileEntity?.FilePath;
         _ = filePath ?? throw new NotFoundException("Game file not found.");
 
-        return !File.Exists(filePath)
+        return !_fileSystem.FileExists(filePath)
             ? throw new NotFoundException(
                 $"Physical file with path '{filePath}' not found on server.")
             : filePath;
@@ -168,7 +184,7 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
         return games.Count();
     }
 
-    private async Task<string> GenerateGameKeyIfMissingAndMakeItUniqueAsync(string gameKey, string gameName)
+    private async Task<string> EnsureUniqueGameKeyAsync(string gameKey, string gameName)
     {
         if (string.IsNullOrWhiteSpace(gameKey))
         {

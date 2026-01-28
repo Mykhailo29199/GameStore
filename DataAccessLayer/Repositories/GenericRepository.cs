@@ -15,6 +15,11 @@ public class GenericRepository<T>(GameStoreContext context) : IGenericRepository
         await _dbSet.AddAsync(entity);
     }
 
+    public async Task AddRangeAsync(IEnumerable<T> entities)
+    {
+        await _dbSet.AddRangeAsync(entities);
+    }
+
     public async Task<bool> CheckIfExistAsync(Guid id)
     {
         return await GetByIdAsync(id) != null;

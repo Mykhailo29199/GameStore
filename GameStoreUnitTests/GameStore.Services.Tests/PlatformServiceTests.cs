@@ -9,6 +9,7 @@ using FluentAssertions;
 using GameStore.Shared.Exceptions;
 using Moq;
 using Xunit;
+using static GameStoreUnitTests.GameStore.Services.Tests.TestConstants;
 
 namespace GameStoreUnitTests.GameStore.Services.Tests;
 
@@ -26,37 +27,32 @@ public class PlatformServiceTests
     }
 
     [Fact]
-    public async Task CreatePlatformAsyncShouldThrowArgumentExceptionWhenPlatformTypeExists()
+    public async Task CreatePlatformAsync_WhenPlatformTypeExists_ThrowsArgumentException()
     {
-        var existingPlatformType = "PC";
-        var existingPlatformEntity = new PlatformEntity
-        {
-            Id = Guid.NewGuid(),
-            Type = existingPlatformType,
-        };
-
+        // Arrange
         _unitOfWorkMock.Setup(uow => uow.PlatformRepository
                    .FindAsync(It.IsAny<Expression<Func<PlatformEntity, bool>>>()))
-            .ReturnsAsync([existingPlatformEntity]);
+            .ReturnsAsync(new List<PlatformEntity> { ExistingPlatform1 });
 
-        var exeption = await Assert.ThrowsAsync<ArgumentException>(() => _platformService.CreatePlatformAsync(existingPlatformType));
+        // Act
+        var exception = await Assert.ThrowsAsync<ArgumentException>(
+            () => _platformService.CreatePlatformAsync(ExistingPlatform1.Type));
 
-        Assert.Equal($"Platform with type '{existingPlatformType}' already exists.", exeption.Message);
+        exception.Message.Should().Be($"Platform with type '{ExistingPlatform1.Type}' already exists.");
 
-        _unitOfWorkMock.Verify(
-            uow => uow.PlatformRepository.FindAsync(
-                It.IsAny<Expression<Func<PlatformEntity, bool>>>()),
-            Times.Once);
+        // Assert
+        _unitOfWorkMock.Verify(uow => uow.PlatformRepository.FindAsync(It.IsAny<Expression<Func<PlatformEntity, bool>>>()), Times.Once);
     }
 
     [Fact]
-    public async Task CreatePlatformAsyncShouldCreatePlatformWhenPlatformTypeNotExists()
+    public async Task CreatePlatformAsync_WhenPlatformTypeNotExists_AddsPlatform()
     {
-        var newPlatformType = "Xbox";
-        List<PlatformEntity> platformEntities = [];
+        // Arrange
+        var newPlatformType = "PlayStation";
+
         _unitOfWorkMock.Setup(uow => uow.PlatformRepository
-                          .FindAsync(It.IsAny<Expression<Func<PlatformEntity, bool>>>()))
-            .ReturnsAsync(platformEntities);
+                   .FindAsync(It.IsAny<Expression<Func<PlatformEntity, bool>>>()))
+            .ReturnsAsync(new List<PlatformEntity>());
 
         _mapperMock.Setup(m => m.Map<PlatformEntity>(It.IsAny<PlatformModel>()))
             .Returns((PlatformModel model) => new PlatformEntity
@@ -71,291 +67,206 @@ public class PlatformServiceTests
         _unitOfWorkMock.Setup(uow => uow.SaveAsync())
             .Returns(Task.CompletedTask);
 
+        // Act
         await _platformService.CreatePlatformAsync(newPlatformType);
 
-        _unitOfWorkMock.Verify(
-                       uow => uow.PlatformRepository.FindAsync(
-                       It.IsAny<Expression<Func<PlatformEntity, bool>>>()),
-                       Times.Once);
-
-        _unitOfWorkMock.Verify(
-                       uow => uow.PlatformRepository.AddAsync(
-                       It.Is<PlatformEntity>(p => p.Type == newPlatformType)),
-                       Times.Once);
-
+        // Assert
+        _unitOfWorkMock.Verify(uow => uow.PlatformRepository.FindAsync(It.IsAny<Expression<Func<PlatformEntity, bool>>>()), Times.Once);
+        _unitOfWorkMock.Verify(uow => uow.PlatformRepository.AddAsync(It.Is<PlatformEntity>(p => p.Type == newPlatformType)), Times.Once);
         _unitOfWorkMock.Verify(uow => uow.SaveAsync(), Times.Once);
     }
 
     [Fact]
-    public async Task GetPlatformByIdAsyncShouldThrowNotFoundExceptionWhenPlatformDoesNotExist()
+    public async Task GetPlatformByIdAsync_WhenPlatformDoesNotExist_ThrowsNotFoundException()
     {
-        var nonExistentPlatformId = Guid.NewGuid();
-
-        _unitOfWorkMock.Setup(uow => uow.PlatformRepository.GetByIdAsync(nonExistentPlatformId))
+        // Arrange
+        _unitOfWorkMock.Setup(uow => uow.PlatformRepository.GetByIdAsync(NonExistingPlatformId))
             .ReturnsAsync((PlatformEntity?)null);
 
+        // Act
         var exception = await Assert.ThrowsAsync<NotFoundException>(() =>
-                   _platformService.GetPlatformByIdAsync(nonExistentPlatformId));
+            _platformService.GetPlatformByIdAsync(NonExistingPlatformId));
 
-        Assert.Equal($"Platform with id '{nonExistentPlatformId}' does not exist.", exception.Message);
-
-        _unitOfWorkMock.Verify(
-                       uow => uow.PlatformRepository.GetByIdAsync(nonExistentPlatformId),
-                       Times.Once);
+        // Assert
+        exception.Message.Should().Be($"Platform with id '{NonExistingPlatformId}' does not exist.");
     }
 
     [Fact]
-    public async Task GetPlatformByIdAsyncShouldReturnPlatformWhenItExists()
+    public async Task GetPlatformByIdAsync_WhenPlatformExists_ShouldReturnMappedPlatform()
     {
-        var existingPlatformId = Guid.NewGuid();
-        var existingPlatformEntity = new PlatformEntity
+        // Arrange
+        var expectedModel = new PlatformModel
         {
-            Id = existingPlatformId,
-            Type = "PlayStation",
+            Id = ExistingPlatform1.Id,
+            Type = ExistingPlatform1.Type,
         };
 
-        var expectedPlatformModel = new PlatformModel
-        {
-            Id = existingPlatformId,
-            Type = "PlayStation",
-        };
+        _unitOfWorkMock.Setup(uow => uow.PlatformRepository.GetByIdAsync(ExistingPlatformId))
+            .ReturnsAsync(ExistingPlatform1);
 
-        _unitOfWorkMock.Setup(uow => uow.PlatformRepository.GetByIdAsync(existingPlatformId))
-            .ReturnsAsync(existingPlatformEntity);
+        _mapperMock.Setup(m => m.Map<PlatformModel>(ExistingPlatform1))
+            .Returns(expectedModel);
 
-        _mapperMock.Setup(m => m.Map<PlatformModel>(existingPlatformEntity))
-            .Returns(expectedPlatformModel);
+        // Act
+        var result = await _platformService.GetPlatformByIdAsync(ExistingPlatform1.Id);
 
-        var result = await _platformService.GetPlatformByIdAsync(existingPlatformId);
-
-        Assert.Equal(expectedPlatformModel.Id, result.Id);
-        Assert.Equal(expectedPlatformModel.Type, result.Type);
-
-        _unitOfWorkMock.Verify(
-               uow => uow.PlatformRepository.GetByIdAsync(existingPlatformId),
-               Times.Once);
-
-        _mapperMock.Verify(
-                m => m.Map<PlatformModel>(existingPlatformEntity),
-                Times.Once);
+        // Assert
+        result.Should().BeEquivalentTo(expectedModel);
     }
 
     [Fact]
-    public async Task GetAllPlatformsAsyncShouldReturnAllPlatforms()
+    public async Task GetAllPlatformsAsync_ShouldReturnAllMappedPlatforms()
     {
-        var platformEntities = new List<PlatformEntity>
-    {
-        new() { Id = Guid.NewGuid(), Type = "PC" },
-        new() { Id = Guid.NewGuid(), Type = "Xbox" },
-    };
-
-        var expectedPlatformModels = new List<PlatformModel>
-    {
-        new() { Id = platformEntities[0].Id, Type = "PC" },
-        new() { Id = platformEntities[1].Id, Type = "Xbox" },
-    };
-
+        // Arrange
         _unitOfWorkMock.Setup(uow => uow.PlatformRepository.GetAllAsync())
-            .ReturnsAsync(platformEntities);
+            .ReturnsAsync(ExistingPlatforms);
 
-        _mapperMock.Setup(m => m.Map<List<PlatformModel>>(platformEntities))
-            .Returns(expectedPlatformModels);
+        var expectedModels = ExistingPlatforms
+            .Select(p => new PlatformModel { Id = p.Id, Type = p.Type }).ToList();
 
+        _mapperMock.Setup(m => m.Map<List<PlatformModel>>(ExistingPlatforms))
+            .Returns(expectedModels);
+
+        // Act
         var result = await _platformService.GetAllPlatformsAsync();
 
-        result.Should().BeEquivalentTo(expectedPlatformModels);
-
-        _unitOfWorkMock.Verify(uow => uow.PlatformRepository.GetAllAsync(), Times.Once);
-        _mapperMock.Verify(m => m.Map<List<PlatformModel>>(platformEntities), Times.Once);
+        // Assert
+        result.Should().BeEquivalentTo(expectedModels);
     }
 
     [Fact]
-    public async Task UpdatePlatformAsyncShouldThrowNotFoundExceptionWhenPlatformDoesNotExist()
+    public async Task UpdatePlatformAsync_WhenPlatformDoesNotExist_ShouldThrowNotFoundException()
     {
-        var nonExistentPlatformModel = new PlatformModel
+        // Arrange
+        var platformModel = new PlatformModel
         {
-            Id = Guid.NewGuid(),
-            Type = "NonExistentPlatform",
+            Id = NonExistingPlatformId,
+            Type = "NonExisting",
         };
 
-        _unitOfWorkMock.Setup(uow => uow.PlatformRepository.GetByIdAsync(nonExistentPlatformModel.Id))
+        _unitOfWorkMock.Setup(uow => uow.PlatformRepository.GetByIdAsync(platformModel.Id))
             .ReturnsAsync((PlatformEntity?)null);
 
-        var exception = await Assert.ThrowsAsync<NotFoundException>(() =>
-                          _platformService.UpdatePlatformAsync(nonExistentPlatformModel));
+        // Act
+        var exception = await Assert.ThrowsAsync<NotFoundException>(
+            () => _platformService.UpdatePlatformAsync(platformModel));
 
-        Assert.Equal($"Platform with id '{nonExistentPlatformModel.Id}' does not exist.", exception.Message);
-
-        _unitOfWorkMock.Verify(
-                                  uow => uow.PlatformRepository.GetByIdAsync(nonExistentPlatformModel.Id),
-                                  Times.Once);
+        // Assert
+        Assert.Equal($"Platform with id '{platformModel.Id}' does not exist.", exception.Message);
     }
 
     [Fact]
-    public async Task UpdatePlatformAsyncShouldUpdatePlatformWhenItExists()
+    public async Task UpdatePlatformAsync_WhenPlatformExists_ShouldUpdateAndSave()
     {
-        var existingPlatformId = Guid.NewGuid();
-        var existingPlatformEntity = new PlatformEntity
+        // Arrange
+        var platformModel = new PlatformModel
         {
-            Id = existingPlatformId,
-            Type = "OldType",
+            Id = ExistingPlatform1.Id,
+            Type = "UpdatedType",
         };
 
-        var updatedPlatformModel = new PlatformModel
-        {
-            Id = existingPlatformId,
-            Type = "NewType",
-        };
+        _unitOfWorkMock.Setup(uow => uow.PlatformRepository.GetByIdAsync(ExistingPlatformId))
+            .ReturnsAsync(ExistingPlatform1);
 
-        _unitOfWorkMock.Setup(uow => uow.PlatformRepository.GetByIdAsync(existingPlatformId))
-            .ReturnsAsync(existingPlatformEntity);
+        _mapperMock.Setup(m => m.Map(platformModel, ExistingPlatform1))
+            .Callback<PlatformModel, PlatformEntity>((m, e) => e.Type = m.Type);
 
-        _mapperMock.Setup(m => m.Map(updatedPlatformModel, existingPlatformEntity))
-            .Callback<PlatformModel, PlatformEntity>((model, entity) =>
-            {
-                entity.Type = model.Type;
-            });
-
-        _unitOfWorkMock.Setup(uow => uow.PlatformRepository.UpdateAsync(existingPlatformEntity))
+        _unitOfWorkMock.Setup(uow => uow.PlatformRepository.UpdateAsync(ExistingPlatform1))
             .Returns(Task.CompletedTask);
 
         _unitOfWorkMock.Setup(uow => uow.SaveAsync())
             .Returns(Task.CompletedTask);
 
-        await _platformService.UpdatePlatformAsync(updatedPlatformModel);
+        // Act
+        await _platformService.UpdatePlatformAsync(platformModel);
 
-        _unitOfWorkMock.Verify(
-               uow => uow.PlatformRepository.GetByIdAsync(existingPlatformId),
-               Times.Once);
-
-        _mapperMock.Verify(
-                 m => m.Map(updatedPlatformModel, existingPlatformEntity),
-                 Times.Once);
-
-        _unitOfWorkMock.Verify(
-                 uow => uow.PlatformRepository.UpdateAsync(existingPlatformEntity),
-                 Times.Once);
-
+        // Assert
+        ExistingPlatform1.Type.Should().Be("UpdatedType");
+        _unitOfWorkMock.Verify(uow => uow.PlatformRepository.UpdateAsync(ExistingPlatform1), Times.Once);
         _unitOfWorkMock.Verify(uow => uow.SaveAsync(), Times.Once);
     }
 
     [Fact]
-    public async Task DeletePlatformAsyncShouldThrowNotFoundExceptionWhenPlatformDoesNotExist()
+    public async Task DeletePlatformAsync_WhenPlatformDoesNotExist_ShouldThrowNotFoundException()
     {
-        var nonExistentPlatformId = Guid.NewGuid();
-
-        _unitOfWorkMock.Setup(uow => uow.PlatformRepository.GetByIdAsync(nonExistentPlatformId))
+        // Arrange
+        _unitOfWorkMock.Setup(uow => uow.PlatformRepository.GetByIdAsync(NonExistingPlatformId))
             .ReturnsAsync((PlatformEntity?)null);
 
-        var exception = await Assert.ThrowsAsync<NotFoundException>(() =>
-                          _platformService.DeletePlatformAsync(nonExistentPlatformId));
+        // Act
+        var exception = await Assert.ThrowsAsync<NotFoundException>(
+            () => _platformService.DeletePlatformAsync(NonExistingPlatformId));
 
-        Assert.Equal($"Platform with id '{nonExistentPlatformId}' does not exist.", exception.Message);
-
-        _unitOfWorkMock.Verify(
-                  uow => uow.PlatformRepository.GetByIdAsync(nonExistentPlatformId),
-                  Times.Once);
+        // Assert
+        Assert.Equal($"Platform with id '{NonExistingPlatformId}' does not exist.", exception.Message);
     }
 
     [Fact]
-    public async Task DeletePlatformAsyncShouldDeletePlatformWhenItExists()
+    public async Task DeletePlatformAsync_WhenPlatformExists_ShouldDeleteAndSave()
     {
-        var existingPlatformId = Guid.NewGuid();
-        var existingPlatformEntity = new PlatformEntity
-        {
-            Id = existingPlatformId,
-            Type = "ToBeDeleted",
-        };
+        // Arrange
+        _unitOfWorkMock.Setup(uow => uow.PlatformRepository.GetByIdAsync(ExistingPlatformId))
+            .ReturnsAsync(ExistingPlatform1);
 
-        _unitOfWorkMock.Setup(uow => uow.PlatformRepository.GetByIdAsync(existingPlatformId))
-            .ReturnsAsync(existingPlatformEntity);
-
-        _unitOfWorkMock.Setup(uow => uow.PlatformRepository.DeleteAsync(existingPlatformEntity))
+        _unitOfWorkMock.Setup(uow => uow.PlatformRepository.DeleteAsync(ExistingPlatform1))
             .Returns(Task.CompletedTask);
 
         _unitOfWorkMock.Setup(uow => uow.SaveAsync())
             .Returns(Task.CompletedTask);
 
-        await _platformService.DeletePlatformAsync(existingPlatformId);
+        // Act
+        await _platformService.DeletePlatformAsync(ExistingPlatform1.Id);
 
-        _unitOfWorkMock.Verify(
-                    uow => uow.PlatformRepository.GetByIdAsync(existingPlatformId),
-                    Times.Once);
-
-        _unitOfWorkMock.Verify(
-                    uow => uow.PlatformRepository.DeleteAsync(existingPlatformEntity),
-                    Times.Once);
-
+        // Assert
+        _unitOfWorkMock.Verify(uow => uow.PlatformRepository.DeleteAsync(ExistingPlatform1), Times.Once);
         _unitOfWorkMock.Verify(uow => uow.SaveAsync(), Times.Once);
     }
 
     [Fact]
-    public async Task GetGamesByPlatformIdAsyncShouldThrowNotFoundExceptionWhenPlatformDoesNotExist()
+    public async Task GetGamesByPlatformIdAsync_WhenPlatformDoesNotExist_ShouldThrowNotFoundException()
     {
-        var nonExistentPlatformId = Guid.NewGuid();
-
-        _unitOfWorkMock.Setup(uow => uow.PlatformRepository.GetByIdAsync(nonExistentPlatformId))
+        // Arrange
+        _unitOfWorkMock.Setup(uow => uow.PlatformRepository.GetByIdAsync(NonExistingPlatformId))
             .ReturnsAsync((PlatformEntity?)null);
 
-        var exception = await Assert.ThrowsAsync<NotFoundException>(() =>
-                          _platformService.GetGamesByPlatformIdAsync(nonExistentPlatformId));
+        // Act
+        var exception = await Assert.ThrowsAsync<NotFoundException>(
+            () => _platformService.GetGamesByPlatformIdAsync(NonExistingPlatformId));
 
-        Assert.Equal($"Platform with id '{nonExistentPlatformId}' does not exist.", exception.Message);
-
-        _unitOfWorkMock.Verify(
-                  uow => uow.PlatformRepository.GetByIdAsync(nonExistentPlatformId),
-                  Times.Once);
+        // Assert
+        Assert.Equal($"Platform with id '{NonExistingPlatformId}' does not exist.", exception.Message);
     }
 
     [Fact]
-    public async Task GetGamesByPlatformIdAsyncWhenPlatformExistsShouldReturnGames()
+    public async Task GetGamesByPlatformIdAsync_WhenPlatformExists_ShouldReturnMappedGames()
     {
-        var platformId = Guid.NewGuid();
-
-        var platformEntity = new PlatformEntity
-        {
-            Id = platformId,
-            Type = "PC",
-        };
-
+        // Arrange
         var gameEntities = new List<GameEntity>
+    {
+        new() { GameId = ExistingGameId, GameName = "Game 1", GameKey = ExistingGameKey },
+        new() { GameId = ExistingGameId2, GameName = "Game 2", GameKey = ExistingGameKey2 },
+    };
+
+        var gameModels = gameEntities.Select(g => new GameModel
         {
-        new() { GameId = Guid.NewGuid(), GameName = "Game 1" },
-        new() { GameId = Guid.NewGuid(), GameName = "Game 2" },
-        };
+            Id = g.GameId,
+            Name = g.GameName,
+            Key = g.GameKey,
+        }).ToList();
 
-        var expectedGameModels = new List<GameModel>
-        {
-        new() { Id = gameEntities[0].GameId, Name = "Game 1" },
-        new() { Id = gameEntities[1].GameId, Name = "Game 2" },
-        };
+        _unitOfWorkMock.Setup(uow => uow.PlatformRepository.GetByIdAsync(ExistingPlatformId))
+            .ReturnsAsync(ExistingPlatform1);
 
-        _unitOfWorkMock
-            .Setup(uow => uow.PlatformRepository.GetByIdAsync(platformId))
-            .ReturnsAsync(platformEntity);
-
-        _unitOfWorkMock
-            .Setup(uow => uow.GamePlatformRepository.GetGamesByPlatformIdAsync(platformId))
+        _unitOfWorkMock.Setup(uow => uow.GamePlatformRepository.GetGamesByPlatformIdAsync(ExistingPlatform1.Id))
             .ReturnsAsync(gameEntities);
 
-        _mapperMock
-            .Setup(m => m.Map<List<GameModel>>(gameEntities))
-            .Returns(expectedGameModels);
+        _mapperMock.Setup(m => m.Map<List<GameModel>>(gameEntities))
+            .Returns(gameModels);
 
-        var result = await _platformService.GetGamesByPlatformIdAsync(platformId);
+        // Act
+        var result = await _platformService.GetGamesByPlatformIdAsync(ExistingPlatform1.Id);
 
-        result.Should().BeEquivalentTo(expectedGameModels);
-
-        _unitOfWorkMock.Verify(
-            uow => uow.PlatformRepository.GetByIdAsync(platformId),
-            Times.Once);
-
-        _unitOfWorkMock.Verify(
-            uow => uow.GamePlatformRepository.GetGamesByPlatformIdAsync(platformId),
-            Times.Once);
-
-        _mapperMock.Verify(
-            m => m.Map<List<GameModel>>(gameEntities),
-            Times.Once);
+        // Assert
+        result.Should().BeEquivalentTo(gameModels);
     }
 }

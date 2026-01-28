@@ -8,6 +8,7 @@ using DataAccessLayer.UnitOfWork;
 using GameStore.Shared.Exceptions;
 using Moq;
 using Xunit;
+using static GameStoreUnitTests.GameStore.Services.Tests.TestConstants;
 
 namespace GameStoreUnitTests.GameStore.Services.Tests;
 
@@ -24,303 +25,253 @@ public class GenreServiceTests
         _genreService = new GenreService(_unitOfWorkMock.Object, _mapperMock.Object);
     }
 
+    #region CreateGenreAsync
     [Fact]
-    public async Task CreateGenreAsyncThrowsArgumentExceptionWhenParentGenreDoesNotExist()
+    public async Task CreateGenreAsync_WhenParentGenreDoesNotExist_ShouldThrowANotFoundException()
     {
-        var genreModel = new GenreModel
-        {
-            Id = Guid.NewGuid(),
-            Name = "Action",
-            ParentGenreId = Guid.NewGuid(),
-        };
+        // Arrange
+        GenreModel genreModel = CreateGenreModel(
+            id: NonExistingGenreId,
+            name: ExistingGenre1.Name,
+            parentGenreId: NonExistingGenreId);
 
         _unitOfWorkMock
-        .Setup(x => x.GenreRepository.GetByIdAsync(genreModel.ParentGenreId.Value))
-        .ReturnsAsync((GenreEntity?)null);
+            .Setup(x => x.GenreRepository.GetByIdAsync(NonExistingGenreId))
+            .ReturnsAsync((GenreEntity?)null);
 
-        var exception = await Assert.ThrowsAsync<ArgumentException>(
+        // Act
+        ArgumentException exception = await Assert.ThrowsAsync<ArgumentException>(
             () => _genreService.CreateGenreAsync(genreModel));
 
-        Assert.Equal($"Parent genre with Id {genreModel.ParentGenreId} does not exist.", exception.Message);
+        // Assert
+        Assert.Equal(
+            $"Parent genre with Id {NonExistingGenreId} does not exist.",
+            exception.Message);
     }
 
     [Fact]
-    public async Task CreateGenreAsyncAddsGenreToRepositoryAndSavesChanges()
+    public async Task CreateGenreAsync_ValidData_AddsGenreAndSaves()
     {
-        var genreModel = new GenreModel
-        {
-            Id = Guid.NewGuid(),
-            Name = "Action",
-            ParentGenreId = null,
-        };
+        // Arrange
+        GenreModel genreModel = CreateGenreModel(
+            id: ExistingGenreId,
+            name: ExistingGenre1.Name);
 
         GenreEntity genreEntity = new()
         {
             Id = genreModel.Id,
             Name = genreModel.Name,
-            ParentGenreId = genreModel.ParentGenreId,
         };
 
-        _mapperMock.Setup(m => m.Map<GenreEntity>(genreModel))
+        _mapperMock
+            .Setup(m => m.Map<GenreEntity>(genreModel))
             .Returns(genreEntity);
 
-        _unitOfWorkMock.Setup(uow => uow.GenreRepository.AddAsync(genreEntity))
+        _unitOfWorkMock
+            .Setup(u => u.GenreRepository.AddAsync(genreEntity))
             .Returns(Task.CompletedTask);
 
+        // Act
         await _genreService.CreateGenreAsync(genreModel);
 
-        _unitOfWorkMock.Verify(uow => uow.GenreRepository.AddAsync(genreEntity), Times.Once);
-        _unitOfWorkMock.Verify(uow => uow.SaveAsync(), Times.Once);
-    }
-
-    [Fact]
-    public async Task GetGenreByIdAsyncGenreIdDoesNotExistThrowNotFoundException()
-    {
-        Guid genreId = Guid.NewGuid();
-        GenreEntity nullGameEntity = null;
-
-        _unitOfWorkMock.Setup(x => x.GenreRepository.GetByIdAsync(genreId)).ReturnsAsync(nullGameEntity);
-
-        var exception = await Assert.ThrowsAsync<NotFoundException>(
-        () => _genreService.GetGenreByIdAsync(genreId));
-
-        Assert.Equal($"Genre with Id {genreId} does not exist.", exception.Message);
+        // Assert
+        _unitOfWorkMock.Verify(
+            u => u.GenreRepository.AddAsync(genreEntity),
+            Times.Once);
 
         _unitOfWorkMock.Verify(
-       u => u.GenreRepository.GetByIdAsync(genreId),
-       Times.Once);
-    }
-
-    [Fact]
-    public async Task GetGenreByIdAsyncReturnsGenreModelWhenGenreExists()
-    {
-        var genreId = Guid.NewGuid();
-        var genreEntity = new GenreEntity
-        {
-            Id = genreId,
-            Name = "Action",
-        };
-
-        _unitOfWorkMock.Setup(uow => uow.GenreRepository.GetByIdAsync(genreId))
-            .ReturnsAsync(genreEntity);
-
-        var genreModel = new GenreModel
-        {
-            Id = genreId,
-            Name = "Action",
-        };
-
-        _mapperMock.Setup(m => m.Map<GenreModel>(genreEntity))
-            .Returns(genreModel);
-
-        var result = await _genreService.GetGenreByIdAsync(genreId);
-
-        Assert.Equal(genreId, result.Id);
-        Assert.Equal("Action", result.Name);
-    }
-
-    [Fact]
-    public async Task GetAllGenresAsyncReturnsListOfGenreModels()
-    {
-        var genreEntities = new List<GenreEntity>
-        {
-            new() { Id = Guid.NewGuid(), Name = "Action" },
-            new() { Id = Guid.NewGuid(), Name = "Adventure" },
-        };
-
-        _unitOfWorkMock.Setup(uow => uow.GenreRepository.GetAllAsync())
-            .ReturnsAsync(genreEntities);
-
-        var genreModels = new List<GenreModel>
-        {
-            new() { Id = genreEntities[0].Id, Name = "Action" },
-            new() { Id = genreEntities[1].Id, Name = "Adventure" },
-        };
-
-        _mapperMock.Setup(m => m.Map<List<GenreModel>>(genreEntities))
-            .Returns(genreModels);
-
-        var result = await _genreService.GetAllGenresAsync();
-
-        Assert.Equal(2, result.Count);
-        Assert.Equal("Action", result[0].Name);
-        Assert.Equal("Adventure", result[1].Name);
-    }
-
-    [Fact]
-    public async Task GetGenresByParentGenreIdAsyncParentGenreIdDoesNotExistThrowNotFoundException()
-    {
-        Guid parentGenreId = Guid.NewGuid();
-        GenreEntity nullGenreEntity = null;
-
-        _unitOfWorkMock.Setup(x => x.GenreRepository.GetByIdAsync(parentGenreId))
-            .ReturnsAsync(nullGenreEntity);
-
-        var exeption = await Assert.ThrowsAsync<NotFoundException>(
-            () => _genreService.GetGenresByParentGenreIdAsync(parentGenreId));
-
-        Assert.Equal($"Parent genre with Id {parentGenreId} does not exist.", exeption.Message);
-
-        _unitOfWorkMock.Verify(
-            x => x.GenreRepository.GetByIdAsync(parentGenreId),
+            u => u.SaveAsync(),
             Times.Once);
     }
+    #endregion
+
+    #region GetGenreByIdAsync
 
     [Fact]
-    public async Task GetGenresByParentGenreIdAsyncWhenParentGenreExistsReturnsGenreModels()
+    public async Task GetGenreByIdAsync_WhenGenreDoesNotExist_ShouldThrowNotFound()
     {
-        Guid parentGenreId = Guid.NewGuid();
-        GenreEntity genreEntity = new();
+        // Arrange
+        _unitOfWorkMock
+            .Setup(x => x.GenreRepository.GetByIdAsync(NonExistingGenreId))
+            .ReturnsAsync((GenreEntity?)null);
 
-        _unitOfWorkMock.Setup(x => x.GenreRepository.GetByIdAsync(parentGenreId))
-            .ReturnsAsync(genreEntity);
+        // Act
+        NotFoundException exception = await Assert.ThrowsAsync<NotFoundException>(
+            () => _genreService.GetGenreByIdAsync(NonExistingGenreId));
+
+        // Assert
+        Assert.Equal(
+            $"Genre with Id {NonExistingGenreId} does not exist.",
+            exception.Message);
+    }
+
+    [Fact]
+    public async Task GetGenreByIdAsync_ValidData_ReturnsMappedGenre()
+    {
+        // Arrange
+        GenreModel genreModel = CreateGenreModel(
+            id: ExistingGenre1.Id,
+            name: ExistingGenre1.Name);
+
+        _unitOfWorkMock
+            .Setup(x => x.GenreRepository.GetByIdAsync(ExistingGenre1.Id))
+            .ReturnsAsync(ExistingGenre1);
+
+        _mapperMock
+            .Setup(m => m.Map<GenreModel>(ExistingGenre1))
+            .Returns(genreModel);
+
+        // Act
+        GenreModel result = await _genreService.GetGenreByIdAsync(ExistingGenre1.Id);
+
+        // Assert
+        Assert.Equal(genreModel, result);
+    }
+
+    #endregion
+
+    #region GetGenresByParentGenreIdAsync
+    [Fact]
+    public async Task GetGenresByParentGenreIdAsync_WhenParentGenreDoesNotExist_ShouldThrowNotFound()
+    {
+        // Arrange
+        _unitOfWorkMock
+            .Setup(x => x.GenreRepository.GetByIdAsync(NonExistingGenreId))
+            .ReturnsAsync((GenreEntity?)null);
+
+        // Act
+        NotFoundException exception = await Assert.ThrowsAsync<NotFoundException>(
+            () => _genreService.GetGenresByParentGenreIdAsync(NonExistingGenreId));
+
+        // Assert
+        Assert.Equal(
+            $"Parent genre with Id {NonExistingGenreId} does not exist.",
+            exception.Message);
+    }
+
+    [Fact]
+    public async Task GetGenresByParentGenreIdAsync_ValidData_ReturnsMappedGenres()
+    {
+        // Arrange
+        Guid parentGenreId = ExistingGenreId;
+        GenreEntity parentGenre = ExistingGenre1;
 
         List<GenreEntity> genreEntities =
         [
-        new GenreEntity { Id = Guid.NewGuid(), Name = "Child 1", ParentGenreId = parentGenreId },
-            new GenreEntity { Id = Guid.NewGuid(), Name = "Child 2", ParentGenreId = parentGenreId },
+            new GenreEntity
+            {
+                Id = AnotherExistingGenreId,
+                Name = ExistingGenre2.Name,
+                ParentGenreId = parentGenreId,
+            },
+        ];
+
+        List<GenreModel> mappedGenres =
+        [
+            new GenreModel
+            {
+                Id = genreEntities[0].Id,
+                Name = genreEntities[0].Name,
+                ParentGenreId = parentGenreId,
+            },
         ];
 
         _unitOfWorkMock
-            .Setup(u => u.GenreRepository.FindAsync(It.IsAny<Expression<Func<GenreEntity, bool>>>()))
+            .Setup(x => x.GenreRepository.GetByIdAsync(parentGenreId))
+            .ReturnsAsync(parentGenre);
+
+        _unitOfWorkMock
+            .Setup(x => x.GenreRepository.FindAsync(
+                It.IsAny<Expression<Func<GenreEntity, bool>>>()))
             .ReturnsAsync(genreEntities);
 
-        List<GenreModel> genreModels = genreEntities.Select(g => new GenreModel
-        {
-            Id = g.Id,
-            Name = g.Name,
-        }).ToList();
+        _mapperMock
+            .Setup(x => x.Map<List<GenreModel>>(genreEntities))
+            .Returns(mappedGenres);
 
-        _mapperMock.Setup(m => m.Map<List<GenreModel>>(genreEntities))
-            .Returns(genreModels);
+        // Act
+        IList<GenreModel> result =
+            await _genreService.GetGenresByParentGenreIdAsync(parentGenreId);
 
-        var result = await _genreService.GetGenresByParentGenreIdAsync(parentGenreId);
-
-        Assert.NotNull(result);
-        Assert.Equal(2, result.Count);
-        Assert.Collection(
-            result,
-            item => Assert.Equal("Child 1", item.Name),
-            item => Assert.Equal("Child 2", item.Name));
-
-        _unitOfWorkMock.Verify(u => u.GenreRepository.GetByIdAsync(parentGenreId), Times.Once);
-        _unitOfWorkMock.Verify(
-            u => u.GenreRepository.FindAsync(
-        It.IsAny<Expression<Func<GenreEntity, bool>>>()),
-            Times.Once);
+        // Assert
+        Assert.Equal(mappedGenres, result);
     }
 
+    #endregion
+
+    #region UpdateGenreAsync
+
     [Fact]
-    public async Task UpdateGenreAsyncGenreIdDoesNotExistThrowNotFoundException()
+    public async Task UpdateGenreAsync_WhenGenreDoesNotExist_ShouldThrowNotFound()
     {
-        Guid genreId = Guid.NewGuid();
+        // Arrange
+        GenreModel genreModel = CreateGenreModel(
+            id: NonExistingGenreId);
 
-        GenreModel genreModel = new()
-        {
-            Id = genreId,
-            Name = "Action",
-        };
+        _unitOfWorkMock
+            .Setup(x => x.GenreRepository.GetByIdAsync(genreModel.Id))
+            .ReturnsAsync((GenreEntity?)null);
 
-        _unitOfWorkMock.Setup(x => x.GenreRepository.GetByIdAsync(genreId))
-        .ReturnsAsync((GenreEntity?)null);
-
+        // Act
         NotFoundException exception = await Assert.ThrowsAsync<NotFoundException>(
             () => _genreService.UpdateGenreAsync(genreModel));
 
-        Assert.Equal($"Genre with Id {genreModel.Id} does not exist.", exception.Message);
-    }
-
-    [Fact]
-    public async Task UpdateGenreAsyncParentGenreIdDoesNotExistThrowNotFoundException()
-    {
-        Guid genreId = Guid.NewGuid();
-        Guid parentGenreId = Guid.NewGuid();
-
-        GenreModel genreModel = new()
-        {
-            Id = genreId,
-            Name = "Action",
-            ParentGenreId = parentGenreId,
-        };
-
-        GenreEntity genreEntity = new()
-        {
-            Id = genreId,
-            ParentGenreId = Guid.NewGuid(),
-        };
-
-        GenreEntity nullGenreEntity = null;
-
-        _unitOfWorkMock.Setup(x => x.GenreRepository.GetByIdAsync(genreId))
-            .ReturnsAsync(genreEntity);
-
-        _unitOfWorkMock.Setup(x => x.GenreRepository.GetByIdAsync(parentGenreId))
-            .ReturnsAsync(nullGenreEntity);
-
-        NotFoundException exception = await Assert.ThrowsAsync<NotFoundException>(
-            () => _genreService.UpdateGenreAsync(genreModel));
-
+        // Assert
         Assert.Equal(
-      $"Parent genre with Id {parentGenreId} does not exist.",
-      exception.Message);
-
-        _unitOfWorkMock.Verify(
-            x => x.GenreRepository.GetByIdAsync(parentGenreId),
-            Times.Once);
+            $"Genre with Id {genreModel.Id} does not exist.",
+            exception.Message);
     }
 
     [Fact]
-    public async Task UpdateGenreAsyncWhenDataIsValidUpdatesGenreAndSaves()
+    public async Task UpdateGenreAsync_WhenParentGenreDoesNotExist_ShouldThrowNotFound()
     {
-        Guid genreId = Guid.NewGuid();
-        Guid parentGenreId = Guid.NewGuid();
+        // Arrange
+        GenreModel genreModel = CreateGenreModel(
+            id: ExistingGenreId,
+            parentGenreId: NonExistingGenreId);
 
-        GenreModel genreModel = new()
-        {
-            Id = genreId,
-            Name = "Action",
-            ParentGenreId = parentGenreId,
-        };
+        _unitOfWorkMock
+            .Setup(x => x.GenreRepository.GetByIdAsync(genreModel.Id))
+            .ReturnsAsync(ExistingGenre1);
 
-        GenreEntity existingGenre = new()
-        {
-            Id = genreId,
-            Name = "Old Name",
-            ParentGenreId = parentGenreId,
-        };
+        _unitOfWorkMock
+            .Setup(x => x.GenreRepository.GetByIdAsync(genreModel.ParentGenreId!.Value))
+            .ReturnsAsync((GenreEntity?)null);
 
-        GenreEntity parentGenre = new()
-        {
-            Id = parentGenreId,
-            Name = "Parent",
-        };
+        // Act
+        NotFoundException exception = await Assert.ThrowsAsync<NotFoundException>(
+            () => _genreService.UpdateGenreAsync(genreModel));
 
-        _unitOfWorkMock.Setup(x => x.GenreRepository.GetByIdAsync(genreId))
+        // Assert
+        Assert.Equal(
+            $"Parent genre with Id {genreModel.ParentGenreId} does not exist.",
+            exception.Message);
+    }
+
+    [Fact]
+    public async Task UpdateGenreAsync_ValidData_ShouldUpdateGenreAndSave()
+    {
+        // Arrange
+        GenreModel genreModel = CreateGenreModel(
+            id: ExistingGenreId,
+            parentGenreId: AnotherExistingGenreId);
+
+        GenreEntity existingGenre = ExistingGenre1;
+
+        _unitOfWorkMock
+            .Setup(x => x.GenreRepository.GetByIdAsync(genreModel.Id))
             .ReturnsAsync(existingGenre);
 
         _unitOfWorkMock
-       .Setup(x => x.GenreRepository.GetByIdAsync(parentGenreId))
-       .ReturnsAsync(parentGenre);
+            .Setup(x => x.GenreRepository.GetByIdAsync(genreModel.ParentGenreId!.Value))
+            .ReturnsAsync(ExistingGenre2);
 
-        _mapperMock
-        .Setup(m => m.Map(genreModel, existingGenre));
-
-        _unitOfWorkMock
-       .Setup(x => x.GenreRepository.UpdateAsync(existingGenre))
-       .Returns(Task.CompletedTask);
-
-        _unitOfWorkMock
-            .Setup(x => x.SaveAsync())
-            .Returns(Task.CompletedTask);
-
+        // Act
         await _genreService.UpdateGenreAsync(genreModel);
 
-        _unitOfWorkMock.Verify(
-           x => x.GenreRepository.GetByIdAsync(It.IsAny<Guid>()),
-           Times.Exactly(2));
-
+        // Assert
         _mapperMock.Verify(
-            m => m.Map(genreModel, existingGenre),
+            x => x.Map(genreModel, existingGenre),
             Times.Once);
 
         _unitOfWorkMock.Verify(
@@ -332,59 +283,42 @@ public class GenreServiceTests
             Times.Once);
     }
 
-    [Fact]
-    public async Task DeleteGenreAsyncGenreIdDoesNotExistThrowNotFoundException()
-    {
-        Guid genreId = Guid.NewGuid();
+    #endregion
 
-        _unitOfWorkMock.Setup(x => x.GenreRepository.GetByIdAsync(genreId))
+    #region DeleteGenreAsync
+
+    [Fact]
+    public async Task DeleteGenreAsync_WhenGenreDoesNotExist_ShouldThrowNotFound()
+    {
+        // Arrange
+        _unitOfWorkMock
+            .Setup(x => x.GenreRepository.GetWithSubGenresAsync(NonExistingGenreId))
             .ReturnsAsync((GenreEntity?)null);
 
+        // Act
         NotFoundException exception = await Assert.ThrowsAsync<NotFoundException>(
-            () => _genreService.DeleteGenreAsync(genreId));
+            () => _genreService.DeleteGenreAsync(NonExistingGenreId));
 
-        Assert.Equal($"Genre with Id {genreId} does not exist.", exception.Message);
+        // Assert
+        Assert.Equal(
+            $"Genre with Id {NonExistingGenreId} does not exist.",
+            exception.Message);
     }
 
     [Fact]
-    public async Task DeleteGenreAsyncWhenDataIsValidDeleteGenreAndSaves()
+    public async Task DeleteGenreAsync_ValidData_ShouldDeleteGenreAndSave()
     {
-        Guid genreId = Guid.NewGuid();
-
-        GenreEntity genre = new()
-        {
-            Id = genreId,
-            Name = "Parent Genre",
-        };
-
-        List<GenreEntity> subGenres =
-       [
-        new GenreEntity { Id = Guid.NewGuid(), Name = "Child 1", ParentGenreId = genreId },
-           new GenreEntity { Id = Guid.NewGuid(), Name = "Child 2", ParentGenreId = genreId },
-       ];
-
-        _unitOfWorkMock.Setup(x => x.GenreRepository.GetByIdAsync(genreId))
-            .ReturnsAsync(genre);
-
+        // Arrange
         _unitOfWorkMock
-      .Setup(x => x.GenreRepository.FindAsync(
-          It.IsAny<Expression<Func<GenreEntity, bool>>>()))
-      .ReturnsAsync(subGenres);
+            .Setup(x => x.GenreRepository.GetWithSubGenresAsync(ExistingGenreId))
+            .ReturnsAsync(ExistingGenre1);
 
-        _unitOfWorkMock
-      .Setup(x => x.GenreRepository.DeleteAsync(genre))
-      .Returns(Task.CompletedTask);
+        // Act
+        await _genreService.DeleteGenreAsync(ExistingGenreId);
 
-        _unitOfWorkMock
-            .Setup(x => x.SaveAsync())
-            .Returns(Task.CompletedTask);
-
-        await _genreService.DeleteGenreAsync(genreId);
-
-        Assert.All(subGenres, sg => Assert.Null(sg.ParentGenreId));
-
+        // Assert
         _unitOfWorkMock.Verify(
-            x => x.GenreRepository.DeleteAsync(genre),
+            x => x.GenreRepository.DeleteAsync(ExistingGenre1),
             Times.Once);
 
         _unitOfWorkMock.Verify(
@@ -392,66 +326,80 @@ public class GenreServiceTests
             Times.Once);
     }
 
+    #endregion
+
+    #region GetGamesByGenreIdAsync
+
     [Fact]
-    public async Task GetGamesByGenreIdAsyncWhenGenreDoesNotExistThrowsNotFoundException()
+    public async Task GetGamesByGenreIdAsync_WhenGenreDoesNotExist_ThrowsNotFoundException()
     {
-        Guid genreId = Guid.NewGuid();
-        GenreEntity nullGenreEntity = null;
+        // Arrange
+        _unitOfWorkMock.Setup(x => x.GenreRepository.GetByIdAsync(NonExistingGenreId))
+            .ReturnsAsync((GenreEntity?)null);
 
-        _unitOfWorkMock.Setup(x => x.GenreRepository.GetByIdAsync(genreId))
-            .ReturnsAsync(nullGenreEntity);
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<NotFoundException>(
+            () => _genreService.GetGamesByGenreIdAsync(NonExistingGenreId));
 
-        NotFoundException exception = await Assert.ThrowsAsync<NotFoundException>(
-            () => _genreService.GetGamesByGenreIdAsync(genreId));
-
-        Assert.Equal($"Genre with id '{genreId}' does not exist.", exception.Message);
+        Assert.Equal($"Genre with id '{NonExistingGenreId}' does not exist.", exception.Message);
     }
 
     [Fact]
-    public async Task GetGamesByGenreIdAsyncWhenGenreExistsReturnsMappedGames()
+    public async Task GetGamesByGenreIdAsync_WhenGenreExists_ReturnsMappedGames()
     {
-        Guid genreId = Guid.NewGuid();
+        // Arrange
+        _unitOfWorkMock.Setup(x => x.GenreRepository.GetByIdAsync(ExistingGenreId))
+            .ReturnsAsync(ExistingGenre1);
 
-        GenreEntity genre = new()
-        {
-            Id = genreId,
-        };
+        var gameEntities = new List<GameEntity>
+    {
+        new() { GameId = ExistingGameId, GameName = "Game 1", GameKey = ExistingGameKey },
+        new() { GameId = ExistingGameId2, GameName = "Game 2", GameKey = ExistingGameKey2 },
+    };
 
-        _unitOfWorkMock.Setup(x => x.GenreRepository.GetByIdAsync(genreId))
-            .ReturnsAsync(genre);
-
-        List<GameEntity> gameEntities =
-    [
-        new GameEntity { GameId = Guid.NewGuid(), GameName = "Game 1", GameKey = "game-1" },
-        new GameEntity { GameId = Guid.NewGuid(), GameName = "Game 2", GameKey = "game-2" },
-    ];
-
-        _unitOfWorkMock
-            .Setup(x => x.GameGenreRepository.GetGamesByGenreIdAsync(genreId))
+        _unitOfWorkMock.Setup(x => x.GameGenreRepository.GetGamesByGenreIdAsync(ExistingGenreId))
             .ReturnsAsync(gameEntities);
 
-        List<GameModel> gameModels =
-    [
-        new GameModel { Id = gameEntities[0].GameId, Name = "Game 1", Key = "game-1" },
-        new GameModel { Id = gameEntities[1].GameId, Name = "Game 2", Key = "game-2" },
-    ];
+        List<GameModel> gameModels = gameEntities
+     .Select(g => new GameModel
+     {
+         Id = g.GameId,
+         Name = g.GameName,
+         Key = g.GameKey,
+     })
+     .ToList();
 
-        _mapperMock
-            .Setup(m => m.Map<List<GameModel>>(gameEntities))
+        _mapperMock.Setup(m => m.Map<List<GameModel>>(gameEntities))
             .Returns(gameModels);
 
-        var result = await _genreService.GetGamesByGenreIdAsync(genreId);
+        // Act
+        var result = await _genreService.GetGamesByGenreIdAsync(ExistingGenreId);
 
+        // Assert
         Assert.NotNull(result);
         Assert.Equal(2, result.Count);
-
         Assert.Collection(
             result,
             g => Assert.Equal("Game 1", g.Name),
             g => Assert.Equal("Game 2", g.Name));
 
-        _unitOfWorkMock.Verify(x => x.GenreRepository.GetByIdAsync(genreId), Times.Once);
-        _unitOfWorkMock.Verify(x => x.GameGenreRepository.GetGamesByGenreIdAsync(genreId), Times.Once);
+        _unitOfWorkMock.Verify(x => x.GenreRepository.GetByIdAsync(ExistingGenreId), Times.Once);
+        _unitOfWorkMock.Verify(x => x.GameGenreRepository.GetGamesByGenreIdAsync(ExistingGenreId), Times.Once);
         _mapperMock.Verify(m => m.Map<List<GameModel>>(gameEntities), Times.Once);
+    }
+
+    #endregion
+
+    private static GenreModel CreateGenreModel(
+    Guid? id = null,
+    string name = "",
+    Guid? parentGenreId = null)
+    {
+        return new GenreModel
+        {
+            Id = id ?? Guid.Empty,
+            Name = name,
+            ParentGenreId = parentGenreId,
+        };
     }
 }

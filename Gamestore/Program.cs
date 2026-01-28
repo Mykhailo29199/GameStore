@@ -4,6 +4,7 @@ using DataAccessLayer.Repositories;
 using DataAccessLayer.Repositories.Interfaces;
 using DataAccessLayer.StoreContext;
 using DataAccessLayer.UnitOfWork;
+using GameStore.Shared.FileSystem;
 using Gamestore.WebAPI.Mapper;
 using Gamestore.WebAPI.Middlewares;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +18,8 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddScoped<IFileSystem, FileSystem>();
 
 builder.Services.AddScoped<IUnitOfWork<GameStoreContext>, UnitOfWork>();
 builder.Services.AddScoped<IGameRepository, GameRepository>();

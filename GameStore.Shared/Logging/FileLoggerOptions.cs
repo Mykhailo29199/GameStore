@@ -2,13 +2,13 @@
 
 public static class FileLoggerOptions
 {
-    public static readonly string LogDirectory = "Logs";
+    public const string LogDirectory = "Logs";
 
-    public static readonly string FileLogs = "app";
+    public const string FileLogs = "app";
 
-    public static readonly string FileExceptions = "exceptions";
+    public const string FileExceptions = "exceptions";
 
-    public static readonly string DateFormat = "yyyy-MM-dd";
+    public const string DateFormat = "yyyy-MM-dd";
 
-    public static readonly string FileExtension = ".log";
+    public const string FileExtension = ".log";
 }

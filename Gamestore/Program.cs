@@ -67,9 +67,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseMiddleware<RequestResponseLoggingMiddleware>();
-
 app.UseMiddleware<GlobalExceptionMiddleware>();
+
+app.UseMiddleware<RequestResponseLoggingMiddleware>();
 
 app.UseMiddleware<TotalGamesCountMiddleware>();
 

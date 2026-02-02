@@ -5,6 +5,7 @@ using DataAccessLayer.Repositories.Interfaces;
 using DataAccessLayer.StoreContext;
 using DataAccessLayer.UnitOfWork;
 using GameStore.Shared.FileSystem;
+using GameStore.Shared.Logging;
 using Gamestore.WebAPI.Mapper;
 using Gamestore.WebAPI.Middlewares;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +21,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<IFileSystem, FileSystem>();
+builder.Services.AddScoped<IFileLogWriter, FileLogWriter>();
 
 builder.Services.AddScoped<IUnitOfWork<GameStoreContext>, UnitOfWork>();
 builder.Services.AddScoped<IGameRepository, GameRepository>();
@@ -32,6 +34,10 @@ builder.Services.AddScoped<IGameFileRepository, GameFileRepository>();
 builder.Services.AddScoped<IGameService, GameService>();
 builder.Services.AddScoped<IGenreService, GenreService>();
 builder.Services.AddScoped<IPlatformService, PlatformService>();
+
+builder.Logging.ClearProviders();
+
+builder.Logging.AddProvider(new FileLoggerProvider());
 
 builder.Services.AddDbContext<GameStoreContext>(options =>
   options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -59,9 +65,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseMiddleware<TotalGamesCountMiddleware>();
-
 app.UseHttpsRedirection();
+
+app.UseMiddleware<GlobalExceptionMiddleware>();
+
+app.UseMiddleware<RequestResponseLoggingMiddleware>();
+
+app.UseMiddleware<TotalGamesCountMiddleware>();
 
 app.UseAuthorization();
 

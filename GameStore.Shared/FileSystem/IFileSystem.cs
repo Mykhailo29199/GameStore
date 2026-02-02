@@ -3,4 +3,6 @@
 public interface IFileSystem
 {
     bool FileExists(string path);
+
+    void CreateDirectory(string path);
 }

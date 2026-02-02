@@ -40,7 +40,7 @@ public class GenreServiceTests
             .ReturnsAsync((GenreEntity?)null);
 
         // Act
-        ArgumentException exception = await Assert.ThrowsAsync<ArgumentException>(
+        NotFoundException exception = await Assert.ThrowsAsync<NotFoundException>(
             () => _genreService.CreateGenreAsync(genreModel));
 
         // Assert

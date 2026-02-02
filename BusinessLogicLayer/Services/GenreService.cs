@@ -19,7 +19,7 @@ public class GenreService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapp
         {
             _ = await _unitOfWork.GenreRepository
                 .GetByIdAsync(genreModel.ParentGenreId.Value)
-                ?? throw new ArgumentException($"Parent genre with Id {genreModel.ParentGenreId} does not exist.");
+                ?? throw new NotFoundException($"Parent genre with Id {genreModel.ParentGenreId} does not exist.");
         }
 
         var genreEntity = _mapper.Map<GenreEntity>(genreModel);

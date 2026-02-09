@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿using System.ComponentModel.DataAnnotations;
+using AutoMapper;
 using BusinessLogicLayer.Models;
 using BusinessLogicLayer.Services.Interaces;
 using DataAccessLayer.Entities;
@@ -20,6 +21,17 @@ public class GenreService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapp
             _ = await _unitOfWork.GenreRepository
                 .GetByIdAsync(genreModel.ParentGenreId.Value)
                 ?? throw new NotFoundException($"Parent genre with Id {genreModel.ParentGenreId} does not exist.");
+        }
+
+        if (genreModel.ParentGenreId.HasValue && genreModel.ParentGenreId.Value == genreModel.Id)
+        {
+            throw new ValidationException("A genre cannot be its own parent.");
+        }
+
+        if (genreModel.ParentGenreId.HasValue
+            && await IsCyclicReferenceAsync(genreModel.ParentGenreId.Value, genreModel.Id))
+        {
+            throw new ValidationException("Cyclic genre references are not allowed.");
         }
 
         var genreEntity = _mapper.Map<GenreEntity>(genreModel);
@@ -68,6 +80,17 @@ public class GenreService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapp
                 ?? throw new NotFoundException($"Parent genre with Id {genreModel.ParentGenreId} does not exist.");
         }
 
+        if (genreModel.ParentGenreId == genreModel.Id)
+        {
+            throw new ValidationException("A genre cannot be its own parent.");
+        }
+
+        if (genreModel.ParentGenreId.HasValue
+           && await IsCyclicReferenceAsync(genreModel.ParentGenreId.Value, genreModel.Id))
+        {
+            throw new ValidationException("Cyclic genre references are not allowed.");
+        }
+
         _mapper.Map(genreModel, existingGenreEntity);
         await _unitOfWork.GenreRepository.UpdateAsync(existingGenreEntity);
 
@@ -93,5 +116,33 @@ public class GenreService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapp
         var gameModels = _mapper.Map<List<GameModel>>(gameEntities);
 
         return gameModels;
+    }
+
+    private async Task<bool> IsCyclicReferenceAsync(Guid parentGenreId, Guid genreId)
+    {
+        var currentParentId = parentGenreId;
+
+        while (true)
+        {
+            var parent = await _unitOfWork.GenreRepository.GetByIdAsync(currentParentId);
+            if (parent == null)
+            {
+                break;
+            }
+
+            if (parent.Id == genreId)
+            {
+                return true; // знайдено цикл
+            }
+
+            if (!parent.ParentGenreId.HasValue)
+            {
+                break;
+            }
+
+            currentParentId = parent.ParentGenreId.Value;
+        }
+
+        return false;
     }
 }

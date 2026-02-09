@@ -8,14 +8,14 @@ using Microsoft.AspNetCore.Mvc;
 namespace Gamestore.WebAPI.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/")]
 public class GenreController(IGenreService genreService, IMapper mapper) : ControllerBase
 {
     private readonly IGenreService _genreService = genreService;
     private readonly IMapper _mapper = mapper;
 
-    [HttpPost]
-    public async Task<IActionResult> CreateGenreAsync([FromBody] GenreNameAndParentGenreIdDto genreDTO)
+    [HttpPost("genre")]
+    public async Task<IActionResult> CreateGenreAsync([FromBody] CreateGenreDTO genreDTO)
     {
         var genreModel = _mapper.Map<GenreModel>(genreDTO);
         await _genreService.CreateGenreAsync(genreModel);
@@ -23,35 +23,35 @@ public class GenreController(IGenreService genreService, IMapper mapper) : Contr
         return NoContent();
     }
 
-    [HttpGet("{genreId}")]
+    [HttpGet("genre/{genreId}")]
     public async Task<IActionResult> GetGenreByIdAsync([FromRoute] Guid genreId)
     {
         var genreModel = await _genreService.GetGenreByIdAsync(genreId);
-        var genreDTO = _mapper.Map<FullGenreDto>(genreModel);
+        var genreDTO = _mapper.Map<FullGenreDTO>(genreModel);
 
         return Ok(genreDTO);
     }
 
-    [HttpGet]
+    [HttpGet("genres")]
     public async Task<IActionResult> GetAllGenresAsync()
     {
         var genreModels = await _genreService.GetAllGenresAsync();
-        var genreDTOs = _mapper.Map<List<FullGenreDto>>(genreModels);
+        var genreDTOs = _mapper.Map<List<FullGenreDTO>>(genreModels);
 
         return Ok(genreDTOs);
     }
 
-    [HttpGet("{parentGenreId}/genres")]
+    [HttpGet("genres/{parentGenreId}")]
     public async Task<IActionResult> GetGenresByParentGenreIdAsync([FromRoute] Guid parentGenreId)
     {
         var genreModels = await _genreService.GetGenresByParentGenreIdAsync(parentGenreId);
-        var genreDTOs = _mapper.Map<List<GenreDto>>(genreModels);
+        var genreDTOs = _mapper.Map<List<GenreDTO>>(genreModels);
 
         return Ok(genreDTOs);
     }
 
-    [HttpPut]
-    public async Task<IActionResult> UpdateGenreAsync([FromBody] FullGenreDto genreDTO)
+    [HttpPut("genre")]
+    public async Task<IActionResult> UpdateGenreAsync([FromBody] UpdateGenreDTO genreDTO)
     {
         var genreModel = _mapper.Map<GenreModel>(genreDTO);
         await _genreService.UpdateGenreAsync(genreModel);
@@ -59,7 +59,7 @@ public class GenreController(IGenreService genreService, IMapper mapper) : Contr
         return NoContent();
     }
 
-    [HttpDelete("{id}")]
+    [HttpDelete("genre/{id}")]
     public async Task<IActionResult> DeleteGenreAsync([FromRoute] Guid id)
     {
         await _genreService.DeleteGenreAsync(id);
@@ -67,7 +67,7 @@ public class GenreController(IGenreService genreService, IMapper mapper) : Contr
         return NoContent();
     }
 
-    [HttpGet("{genreId}/games")]
+    [HttpGet("games/genre/{genreId}")]
     public async Task<IActionResult> GetGamesByGenreIdAsync([FromRoute] Guid genreId)
     {
         var gameModels = await _genreService.GetGamesByGenreIdAsync(genreId);

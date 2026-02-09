@@ -67,6 +67,8 @@ dotnet_diagnostic.SA1309.severity = none
 
 dotnet_diagnostic.SA1506.severity = silent
 
+dotnet_diagnostic.SA1512.severity = none
+
 dotnet_diagnostic.SA1600.severity = none
 
 dotnet_diagnostic.SA1601.severity = silent

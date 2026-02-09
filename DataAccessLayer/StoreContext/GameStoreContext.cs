@@ -21,41 +21,79 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<GameEntity>().HasIndex(g => g.GameKey).IsUnique();
+        // ===================== GameEntity =====================
+        modelBuilder.Entity<GameEntity>(entity =>
+        {
+            entity.HasKey(g => g.Id); // Publisher (один Publisher має багато Games)
 
-        modelBuilder.Entity<GenreEntity>()
-            .HasMany(g => g.SubGenres)
-            .WithOne(g => g.ParentGenre)
-            .HasForeignKey(g => g.ParentGenreId)
-            .OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne(g => g.Publisher)
+             .WithMany(p => p.Games)
+             .HasForeignKey(g => g.PublisherId)
+             .OnDelete(DeleteBehavior.Cascade); // Якщо видаляється Publisher → видаляються всі його ігри
 
-        modelBuilder.Entity<PlatformEntity>().HasIndex(p => p.Type).IsUnique();
+            // One-to-One: Game ↔ GameFile
+            entity.HasOne(g => g.GameFile)
+            .WithOne(f => f.Game)
+            .HasForeignKey<GameFileEntity>(f => f.GameId)
+            .OnDelete(DeleteBehavior.Cascade); // Якщо видаляється Game → видаляється її файл
+        });
 
-        modelBuilder.Entity<GameGenreEntity>().HasKey(gg => new { gg.GameId, gg.GenreId });
-        modelBuilder.Entity<GamePlatformEntity>().HasKey(gp => new { gp.GameId, gp.PlatformId });
+        // ===================== GameFileEntity =====================
+        modelBuilder.Entity<GameFileEntity>(entity =>
+        {
+            entity.HasKey(f => f.GameId); // GameId одночасно є PK і FK → класичний one-to-one
+        });
 
-        modelBuilder.Entity<GameGenreEntity>()
-            .HasOne(gg => gg.Game)
+        // ===================== GameGenreEntity =====================
+        modelBuilder.Entity<GameGenreEntity>(entity =>
+        {
+            entity.HasKey(gg => new { gg.GameId, gg.GenreId }); // композитний ключ
+
+            entity.HasOne(gg => gg.Game)
             .WithMany(g => g.GameGenres)
             .HasForeignKey(gg => gg.GameId)
             .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<GameGenreEntity>()
-            .HasOne(gg => gg.Genre)
+            entity.HasOne(gg => gg.Genre)
             .WithMany()
             .HasForeignKey(gg => gg.GenreId)
             .OnDelete(DeleteBehavior.Cascade);
+        });
 
-        modelBuilder.Entity<GamePlatformEntity>()
-            .HasOne(gp => gp.Game)
+        // ===================== GamePlatformEntity =====================
+        modelBuilder.Entity<GamePlatformEntity>(entity =>
+        {
+            entity.HasKey(gp => new { gp.GameId, gp.PlatformId }); // композитний ключ
+
+            entity.HasOne(gp => gp.Game)
             .WithMany(g => g.GamePlatforms)
             .HasForeignKey(gp => gp.GameId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        modelBuilder.Entity<GamePlatformEntity>()
-            .HasOne(gp => gp.Platform)
-            .WithMany()
-            .HasForeignKey(gp => gp.PlatformId)
-            .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(gp => gp.Platform).WithMany().HasForeignKey(gp => gp.PlatformId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ===================== GenreEntity =====================
+        modelBuilder.Entity<GenreEntity>(entity =>
+        {
+            entity.HasKey(g => g.Id);                            // Self-reference: ParentGenre → SubGenres
+
+            entity.HasOne(g => g.ParentGenre)
+            .WithMany(g => g.SubGenres)
+            .HasForeignKey(g => g.ParentGenreId);
+        });
+
+        // ===================== PlatformEntity =====================
+        modelBuilder.Entity<PlatformEntity>().HasIndex(p => p.Type).IsUnique();
+
+        // ===================== PublisherEntity =====================
+        modelBuilder.Entity<PublisherEntity>(entity =>
+        {
+            entity.HasKey(p => p.Id);
+
+            entity.HasMany(p => p.Games)
+            .WithOne(g => g.Publisher)
+            .HasForeignKey(g => g.PublisherId)
+            .OnDelete(DeleteBehavior.Cascade); // Якщо видаляється Publisher → видаляються всі його ігри
+        });
     }
 }

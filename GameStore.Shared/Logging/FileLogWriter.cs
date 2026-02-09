@@ -7,7 +7,7 @@ namespace GameStore.Shared.Logging;
 public class FileLogWriter : IFileLogWriter
 {
     private readonly FileSystem.IFileSystem _fileSystem;
-    private readonly object _lockObject = new();
+    private static readonly object _lockObject = new();
 
     public FileLogWriter(FileSystem.IFileSystem fileSystem)
     {

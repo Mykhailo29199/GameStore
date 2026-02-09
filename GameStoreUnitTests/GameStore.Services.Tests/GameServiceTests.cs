@@ -167,15 +167,15 @@ public class GameServiceTests
             genres: [missingGenreId]);
         gameModel.Game.Id = ExistingGameId;
 
-        var existingGame = new GameEntity { GameId = ExistingGameId };
+        var existingGame = new GameEntity { Id = ExistingGameId };
 
         _unitOfWorkMock.Setup(x => x.GameRepository.GetByIdAsync(ExistingGameId))
             .ReturnsAsync(existingGame);
 
-        _unitOfWorkMock.Setup(x => x.GameGenreRepository.DeleteByGameIdAsync(existingGame.GameId))
+        _unitOfWorkMock.Setup(x => x.GameGenreRepository.DeleteByGameIdAsync(existingGame.Id))
             .Returns(Task.CompletedTask);
 
-        _unitOfWorkMock.Setup(x => x.GamePlatformRepository.DeleteByGameIdAsync(existingGame.GameId))
+        _unitOfWorkMock.Setup(x => x.GamePlatformRepository.DeleteByGameIdAsync(existingGame.Id))
             .Returns(Task.CompletedTask);
 
         _unitOfWorkMock.Setup(x => x.GenreRepository.GetAllAsync())
@@ -205,15 +205,15 @@ public class GameServiceTests
             genres: ExistingGenreIds);
         gameModel.Game.Id = ExistingGameId;
 
-        var existingGame = new GameEntity { GameId = ExistingGameId };
+        var existingGame = new GameEntity { Id = ExistingGameId };
 
         _unitOfWorkMock.Setup(x => x.GameRepository.GetByIdAsync(ExistingGameId))
             .ReturnsAsync(existingGame);
 
-        _unitOfWorkMock.Setup(x => x.GameGenreRepository.DeleteByGameIdAsync(existingGame.GameId))
+        _unitOfWorkMock.Setup(x => x.GameGenreRepository.DeleteByGameIdAsync(existingGame.Id))
             .Returns(Task.CompletedTask);
 
-        _unitOfWorkMock.Setup(x => x.GamePlatformRepository.DeleteByGameIdAsync(existingGame.GameId))
+        _unitOfWorkMock.Setup(x => x.GamePlatformRepository.DeleteByGameIdAsync(existingGame.Id))
             .Returns(Task.CompletedTask);
 
         _unitOfWorkMock.Setup(x => x.GenreRepository.GetAllAsync())
@@ -242,15 +242,15 @@ public class GameServiceTests
             genres: ExistingGenreIds);
         gameModel.Game.Id = ExistingGameId;
 
-        var existingGame = new GameEntity { GameId = ExistingGameId };
+        var existingGame = new GameEntity { Id = ExistingGameId };
 
         _unitOfWorkMock.Setup(x => x.GameRepository.GetByIdAsync(ExistingGameId))
             .ReturnsAsync(existingGame);
 
-        _unitOfWorkMock.Setup(x => x.GameGenreRepository.DeleteByGameIdAsync(existingGame.GameId))
+        _unitOfWorkMock.Setup(x => x.GameGenreRepository.DeleteByGameIdAsync(existingGame.Id))
             .Returns(Task.CompletedTask);
 
-        _unitOfWorkMock.Setup(x => x.GamePlatformRepository.DeleteByGameIdAsync(existingGame.GameId))
+        _unitOfWorkMock.Setup(x => x.GamePlatformRepository.DeleteByGameIdAsync(existingGame.Id))
             .Returns(Task.CompletedTask);
 
         _unitOfWorkMock.Setup(x => x.GenreRepository.GetAllAsync())
@@ -412,8 +412,8 @@ public class GameServiceTests
     {
         List<GameEntity> gameEntities =
         [
-            new GameEntity { GameId = ExistingGameId, GameName = "Game 1", GameKey = ExistingGameKey },
-            new GameEntity { GameId = ExistingGameId2, GameName = "Game 2", GameKey = ExistingGameKey2 },
+            new GameEntity { Id = ExistingGameId, Name = "Game 1", Key = ExistingGameKey },
+            new GameEntity { Id = ExistingGameId2, Name = "Game 2", Key = ExistingGameKey2 },
         ];
 
         _unitOfWorkMock.Setup(x => x.GameRepository.GetAllAsync())
@@ -527,13 +527,13 @@ public class GameServiceTests
         Assert.Equal(mappedPlatforms, result);
     }
 
-    private static FullGameModel CreateGameModel(
+    private static CreateGameModel CreateGameModel(
       string key = "",
       string name = "",
       IEnumerable<Guid>? platforms = null,
       IEnumerable<Guid>? genres = null)
     {
-        return new FullGameModel
+        return new CreateGameModel
         {
             Game = new GameModel
             {

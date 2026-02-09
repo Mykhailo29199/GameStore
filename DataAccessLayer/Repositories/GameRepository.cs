@@ -11,13 +11,13 @@ public class GameRepository(GameStoreContext context) : GenericRepository<GameEn
 
     public async Task<GameEntity?> GetGameByKeyAsync(string gameKey)
     {
-        return await _dbSet.FirstOrDefaultAsync(game => game.GameKey == gameKey);
+        return await _dbSet.FirstOrDefaultAsync(game => game.Key == gameKey);
     }
 
     public async Task<List<GenreEntity>> GetGenresByGameKeyAsync(string gameKey)
     {
         return await _dbSet
-            .Where(g => g.GameKey == gameKey)
+            .Where(g => g.Key == gameKey)
             .SelectMany(g => g.GameGenres!.Select(gg => gg.Genre))
             .ToListAsync();
     }
@@ -25,8 +25,18 @@ public class GameRepository(GameStoreContext context) : GenericRepository<GameEn
     public async Task<List<PlatformEntity>> GetPlatformsByGameKeyAsync(string gameKey)
     {
         return await _dbSet
-            .Where(g => g.GameKey == gameKey)
+            .Where(g => g.Key == gameKey)
             .SelectMany(g => g.GamePlatforms!.Select(gp => gp.Platform))
             .ToListAsync();
+    }
+
+    public async Task<PublisherEntity> GetPublisherByGameKeyAsync(string gameKey)
+    {
+        var publisher = await _dbSet
+        .Where(g => g.Key == gameKey)
+        .Select(g => g.Publisher)
+        .FirstOrDefaultAsync();
+
+        return publisher;
     }
 }

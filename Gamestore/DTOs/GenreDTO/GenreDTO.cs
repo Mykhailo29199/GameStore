@@ -2,7 +2,7 @@
 
 namespace Gamestore.WebAPI.DTOs.GenreDTO;
 
-public class GenreDto
+public class GenreDTO
 {
     [Required(ErrorMessage = "Genre ID is required")]
     public Guid? Id { get; set; }

@@ -2,5 +2,5 @@
 
 public class CreateGenreDTO
 {
-    public GenreNameAndParentGenreIdDto Genre { get; set; }
+    public GenreNameAndParentGenreIdDTO Genre { get; set; }
 }

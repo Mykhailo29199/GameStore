@@ -68,7 +68,7 @@ public class GameAutoMapping : Profile
     .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Genre.Name))
     .ForMember(dest => dest.ParentGenreId, opt => opt.MapFrom(src => src.Genre.Parent)).ReverseMap();
 
-        CreateMap<GenreNameAndParentGenreIdDto, GenreModel>().ReverseMap();
+        CreateMap<GenreNameAndParentGenreIdDTO, GenreModel>().ReverseMap();
 
         CreateMap<GenreModel, GenreEntity>().ReverseMap();
 

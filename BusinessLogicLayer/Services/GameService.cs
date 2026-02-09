@@ -169,18 +169,14 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
     {
         var genres = await _unitOfWork.GameRepository.GetGenresByGameKeyAsync(key);
 
-        return genres.Count == 0
-            ? throw new NotFoundException($"Game with Key '{key}' was not found or has no genres.")
-            : _mapper.Map<IList<GenreModel>>(genres);
+        return _mapper.Map<IList<GenreModel>>(genres);
     }
 
     public async Task<IList<PlatformModel>> GetPlatformsByGameKeyAsync(string key)
     {
         var platforms = await _unitOfWork.GameRepository.GetPlatformsByGameKeyAsync(key);
 
-        return platforms.Count == 0
-            ? throw new NotFoundException($"Game with Key '{key}' was not found or has no platforms.")
-            : _mapper.Map<IList<PlatformModel>>(platforms);
+        return _mapper.Map<IList<PlatformModel>>(platforms);
     }
 
     public async Task<PublisherModel> GetPublisherByGameKeyAsync(string key)

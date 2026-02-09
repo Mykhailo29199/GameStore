@@ -86,4 +86,16 @@ public class PublisherService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper 
 
         return _mapper.Map<List<GameModel>>(games);
     }
+
+    public async Task<List<GameModel>> GetGamesByPublisherIdAsync(Guid publisherId)
+    {
+        _ = await _unitOfWork.PublisherRepository
+        .GetByIdAsync(publisherId)
+        ?? throw new NotFoundException($"Publisher with id '{publisherId}' not found.");
+
+        var games = await _unitOfWork.PublisherRepository
+            .GetGamesByPublisherIdAsync(publisherId);
+
+        return _mapper.Map<List<GameModel>>(games);
+    }
 }

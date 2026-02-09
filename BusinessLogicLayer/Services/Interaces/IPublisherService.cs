@@ -15,4 +15,6 @@ public interface IPublisherService
     Task DeletePublisherAsync(Guid publisherId);
 
     Task<List<GameModel>> GetGamesByPublisherNameAsync(string publisherName);
+
+    Task<List<GameModel>> GetGamesByPublisherIdAsync(Guid publisherId);
 }

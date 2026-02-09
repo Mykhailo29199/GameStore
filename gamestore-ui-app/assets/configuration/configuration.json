@@ -5,7 +5,7 @@
   "gameByIdApiUrl": "/game/{id}",
   "gamesApiUrl": "/games",
   "gamesByGenreApiUrl": "/games/genre/{id}",
-  "gamesByPublisherApiUrl": "/games/publisher/{companyname}",
+  "gamesByPublisherApiUrl": "/games/publisher/{id}",
   "gamesByPlatformApiUrl": "/games/platform/{id}",
   "getGameFile": "/game/{key}/file",
   "updateGameApiUrl": "/game",

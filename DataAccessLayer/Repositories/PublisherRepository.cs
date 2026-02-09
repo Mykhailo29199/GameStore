@@ -16,4 +16,12 @@ public class PublisherRepository(GameStoreContext context) : GenericRepository<P
         .SelectMany(p => p.Games)
         .ToListAsync();
     }
+
+    public async Task<GameEntity> GetGamesByPublisherIdAsync(Guid id)
+    {
+        return await _dbSet
+        .Where(p => p.Id == id)
+        .SelectMany(p => p.Games)
+        .FirstOrDefaultAsync();
+    }
 }

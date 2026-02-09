@@ -63,4 +63,11 @@ public class PublisherController(IPublisherService publisherService, IMapper map
         var games = await _publisherService.GetGamesByPublisherNameAsync(companyname);
         return Ok(games);
     }
+
+    [HttpGet("games/publisher/{id:guid}")]
+    public async Task<IActionResult> GetGamesByPublisherIdAsync([FromRoute] Guid id)
+    {
+        var games = await _publisherService.GetGamesByPublisherIdAsync(id);
+        return Ok(games);
+    }
 }

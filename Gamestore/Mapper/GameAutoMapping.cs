@@ -35,7 +35,7 @@ public class GameAutoMapping : Profile
     .ForMember(dest => dest.Publisher, opt => opt.MapFrom(src => src.PublisherId))
     ;
 
-        CreateMap<GameWithIdDto, GameModel>() // +
+        CreateMap<GameWithIdDto, GameModel>()
             .IncludeBase<GameDTO, GameModel>()
             .ReverseMap();
 
@@ -64,19 +64,17 @@ public class GameAutoMapping : Profile
         CreateMap<GameDTO, GameModel>()
                 .ReverseMap();
 
-        // CreateMap<CreateGameDTO, GameModel>().ReverseMap();   // +
-
         CreateMap<CreateGenreDTO, GenreModel>()
     .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Genre.Name))
     .ForMember(dest => dest.ParentGenreId, opt => opt.MapFrom(src => src.Genre.Parent)).ReverseMap();
 
-        CreateMap<GenreNameAndParentGenreIdDto, GenreModel>().ReverseMap(); // +
+        CreateMap<GenreNameAndParentGenreIdDto, GenreModel>().ReverseMap();
 
-        CreateMap<GenreModel, GenreEntity>().ReverseMap(); // +
+        CreateMap<GenreModel, GenreEntity>().ReverseMap();
 
-        CreateMap<GenreDTO, GenreModel>().ReverseMap(); // +
+        CreateMap<GenreDTO, GenreModel>().ReverseMap();
 
-        CreateMap<FullGenreDTO, GenreModel>() // +
+        CreateMap<FullGenreDTO, GenreModel>()
      .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
      .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
      .ForMember(dest => dest.ParentGenreId, opt => opt.MapFrom(src => src.Parent))
@@ -101,7 +99,6 @@ public class GameAutoMapping : Profile
 
         CreateMap<PlatformModel, PlatformEntity>().ReverseMap();
 
-        // --- Мапінг Publisher ---  ++++++++++++++++
         CreateMap<PublisherModel, PublisherEntity>().ReverseMap();
 
         CreateMap<PublisherDTO, PublisherModel>().ReverseMap();
@@ -111,7 +108,6 @@ public class GameAutoMapping : Profile
             .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Publisher.Description))
             .ReverseMap();
 
-        // Мапінг для PublisherWithIdDTO (вкладений PublisherDTO -> плаский PublisherModel)
         CreateMap<PublisherWithIdDTO, PublisherModel>().ReverseMap();
         CreateMap<UpdatePublisherDTO, PublisherModel>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Publisher.Id))

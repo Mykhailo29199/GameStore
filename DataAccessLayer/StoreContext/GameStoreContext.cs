@@ -24,30 +24,30 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
         // ===================== GameEntity =====================
         modelBuilder.Entity<GameEntity>(entity =>
         {
-            entity.HasKey(g => g.Id); // Publisher (один Publisher має багато Games)
+            entity.HasKey(g => g.Id);
 
             entity.HasOne(g => g.Publisher)
              .WithMany(p => p.Games)
              .HasForeignKey(g => g.PublisherId)
-             .OnDelete(DeleteBehavior.Cascade); // Якщо видаляється Publisher → видаляються всі його ігри
+             .OnDelete(DeleteBehavior.Cascade);
 
             // One-to-One: Game ↔ GameFile
             entity.HasOne(g => g.GameFile)
             .WithOne(f => f.Game)
             .HasForeignKey<GameFileEntity>(f => f.GameId)
-            .OnDelete(DeleteBehavior.Cascade); // Якщо видаляється Game → видаляється її файл
+            .OnDelete(DeleteBehavior.Cascade);
         });
 
         // ===================== GameFileEntity =====================
         modelBuilder.Entity<GameFileEntity>(entity =>
         {
-            entity.HasKey(f => f.GameId); // GameId одночасно є PK і FK → класичний one-to-one
+            entity.HasKey(f => f.GameId);
         });
 
         // ===================== GameGenreEntity =====================
         modelBuilder.Entity<GameGenreEntity>(entity =>
         {
-            entity.HasKey(gg => new { gg.GameId, gg.GenreId }); // композитний ключ
+            entity.HasKey(gg => new { gg.GameId, gg.GenreId });
 
             entity.HasOne(gg => gg.Game)
             .WithMany(g => g.GameGenres)
@@ -62,7 +62,7 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
         // ===================== GamePlatformEntity =====================
         modelBuilder.Entity<GamePlatformEntity>(entity =>
         {
-            entity.HasKey(gp => new { gp.GameId, gp.PlatformId }); // композитний ключ
+            entity.HasKey(gp => new { gp.GameId, gp.PlatformId });
 
             entity.HasOne(gp => gp.Game)
             .WithMany(g => g.GamePlatforms)
@@ -93,7 +93,7 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
             entity.HasMany(p => p.Games)
             .WithOne(g => g.Publisher)
             .HasForeignKey(g => g.PublisherId)
-            .OnDelete(DeleteBehavior.Cascade); // Якщо видаляється Publisher → видаляються всі його ігри
+            .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

@@ -55,7 +55,7 @@ public partial class SyncRemainingChanges : Migration
             table: "Games",
             type: "uniqueidentifier",
             nullable: false,
-            defaultValue: new Guid("00000000-0000-0000-0000-000000000000"));
+            defaultValue: Guid.Empty);
 
         migrationBuilder.AddColumn<string>(
             name: "Description",

@@ -35,7 +35,7 @@ public partial class RefactorGamesAndFiles : Migration
             table: "Files",
             type: "uniqueidentifier",
             nullable: false,
-            defaultValue: new Guid("00000000-0000-0000-0000-000000000000"),
+            defaultValue: Guid.Empty,
             oldClrType: typeof(Guid),
             oldType: "uniqueidentifier",
             oldNullable: true);
@@ -78,7 +78,7 @@ public partial class RefactorGamesAndFiles : Migration
             table: "Files",
             type: "uniqueidentifier",
             nullable: false,
-            defaultValue: new Guid("00000000-0000-0000-0000-000000000000"));
+            defaultValue: Guid.Empty);
 
         migrationBuilder.AddPrimaryKey(
             name: "PK_Files",

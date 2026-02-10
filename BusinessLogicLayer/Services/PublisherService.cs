@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿using System.ComponentModel.DataAnnotations;
+using AutoMapper;
 using BusinessLogicLayer.Models;
 using BusinessLogicLayer.Services.Interaces;
 using DataAccessLayer.Entities;
@@ -58,6 +59,11 @@ public class PublisherService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper 
         var exist = await _unitOfWork.PublisherRepository.FirstOrDefaultAsync(p =>
             p.CompanyName == publisherModel.CompanyName &&
             p.Id != publisherModel.Id);
+
+        if (exist != null)
+        {
+            throw new ValidationException($"Publisher with company name '{publisherModel.CompanyName}' already exists.");
+        }
 
         _mapper.Map(publisherModel, publisherEntity);
 

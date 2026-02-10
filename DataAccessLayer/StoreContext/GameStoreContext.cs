@@ -17,6 +17,8 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
 
     public DbSet<GameFileEntity> Files { get; set; }
 
+    public DbSet<PublisherEntity> Publishers { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

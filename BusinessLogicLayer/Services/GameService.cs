@@ -42,7 +42,7 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
         }
 
         _ = await _unitOfWork.PublisherRepository.GetByIdAsync(gameModel.Publisher)
-            ?? throw new NotFoundException("Publisher", gameModel.Publisher);
+            ?? throw new NotFoundException($"Publisher with ID '{gameModel.Publisher}' was not found.");
 
         GameEntity gameEntity = _mapper.Map<GameEntity>(gameModel);
         await _unitOfWork.GameRepository.AddAsync(gameEntity);
@@ -123,10 +123,9 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
         await _unitOfWork.GamePlatformRepository.AddRangeAsync(gamePlatformEntities);
 
         _ = await _unitOfWork.PublisherRepository.GetByIdAsync(gameModel.Publisher)
-        ?? throw new NotFoundException("Publisher", gameModel.Publisher);
+        ?? throw new NotFoundException($"Publisher with Id `{gameModel.Publisher}` was not found.");
 
-        _mapper.Map(gameModel, existingGame); // <-- оновлює існуючий tracked entity
-
+        _mapper.Map(gameModel, existingGame);
         await _unitOfWork.GameRepository.UpdateAsync(existingGame);
         await _unitOfWork.SaveAsync();
     }

@@ -1,35 +1,48 @@
-﻿using DataAccessLayer.Repositories.Interfaces;
+﻿using DataAccessLayer.Repositories;
+using DataAccessLayer.Repositories.Interfaces;
 using DataAccessLayer.StoreContext;
 
 namespace DataAccessLayer.UnitOfWork;
 
-public class UnitOfWork(
-    GameStoreContext context,
-    IGameRepository gameRepository,
-    IPlatformRepository platformRepository,
-    IGenreRepository genreRepository,
-    IGameGenreRepository gameGenreRepository,
-    IGameFileRepository gameFileRepository,
-    IGamePlatformRepository gamePlatformRepository,
-    IPublisherRepository publisherRepository) : IUnitOfWork<GameStoreContext>
+public class UnitOfWork : IUnitOfWork<GameStoreContext>
 {
     private bool _disposed;
 
-    public GameStoreContext Context { get; } = context;
+    private IGameRepository? _gameRepository;
+    private IPlatformRepository? _platformRepository;
+    private IGenreRepository? _genreRepository;
+    private IGameGenreRepository? _gameGenreRepository;
+    private IGamePlatformRepository? _gamePlatformRepository;
+    private IGameFileRepository? _gameFileRepository;
+    private IPublisherRepository? _publisherRepository;
 
-    public IGameRepository GameRepository { get; } = gameRepository;
+    public UnitOfWork(GameStoreContext context)
+    {
+        Context = context;
+    }
 
-    public IPlatformRepository PlatformRepository { get; } = platformRepository;
+    public GameStoreContext Context { get; }
 
-    public IGenreRepository GenreRepository { get; } = genreRepository;
+    public IGameRepository GameRepository =>
+        _gameRepository ??= new GameRepository(Context);
 
-    public IGameGenreRepository GameGenreRepository { get; } = gameGenreRepository;
+    public IPlatformRepository PlatformRepository =>
+        _platformRepository ??= new PlatformRepository(Context);
 
-    public IGamePlatformRepository GamePlatformRepository { get; } = gamePlatformRepository;
+    public IGenreRepository GenreRepository =>
+        _genreRepository ??= new GenreRepository(Context);
 
-    public IGameFileRepository GameFileRepository { get; } = gameFileRepository;
+    public IGameGenreRepository GameGenreRepository =>
+        _gameGenreRepository ??= new GameGenreRepository(Context);
 
-    public IPublisherRepository PublisherRepository { get; } = publisherRepository;
+    public IGamePlatformRepository GamePlatformRepository =>
+        _gamePlatformRepository ??= new GamePlatformRepository(Context);
+
+    public IGameFileRepository GameFileRepository =>
+        _gameFileRepository ??= new GameFileRepository(Context);
+
+    public IPublisherRepository PublisherRepository =>
+        _publisherRepository ??= new PublisherRepository(Context);
 
     public async Task CreateTransactionAsync() =>
         await Context.Database.BeginTransactionAsync();

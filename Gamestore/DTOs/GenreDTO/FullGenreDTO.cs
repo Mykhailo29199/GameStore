@@ -2,10 +2,8 @@
 
 namespace Gamestore.WebAPI.DTOs.GenreDTO;
 
-public class FullGenreDto
+public class FullGenreDTO : GenreNameAndParentGenreIdDTO
 {
     [Required(ErrorMessage = "Genre ID is required")]
     public Guid? Id { get; set; }
-
-    public GenreNameAndParentGenreIdDto Genre { get; set; }
 }

@@ -20,4 +20,6 @@ public interface IGenericRepository<T>
     Task<bool> CheckIfExistAsync(Guid id);
 
     Task<List<T>> FindAsync(Expression<Func<T, bool>> predicate);
+
+    Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate);
 }

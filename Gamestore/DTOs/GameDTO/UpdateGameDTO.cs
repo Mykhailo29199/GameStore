@@ -1,8 +1,10 @@
 ﻿namespace Gamestore.WebAPI.DTOs.GameDTO;
 
-public class FullGameWithIdDto
+public class UpdateGameDTO
 {
-    public GameWithIdDto GameWithIdDTO { get; set; }
+    public GameWithIdDto Game { get; set; }
+
+    public Guid Publisher { get; set; }
 
     public List<Guid> Genres { get; set; }
 

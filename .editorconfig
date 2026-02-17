@@ -67,6 +67,8 @@ dotnet_diagnostic.SA1309.severity = none
 
 dotnet_diagnostic.SA1506.severity = silent
 
+dotnet_diagnostic.SA1512.severity = none
+
 dotnet_diagnostic.SA1600.severity = none
 
 dotnet_diagnostic.SA1601.severity = silent
@@ -102,6 +104,8 @@ dotnet_diagnostic.IDE0059.severity = error
 dotnet_diagnostic.IDE0052.severity = error
 
 dotnet_diagnostic.IDE0058.severity = none
+
+dotnet_diagnostic.IDE0290.severity = none
 
 dotnet_diagnostic.CA1305.severity = none
 

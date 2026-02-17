@@ -9,6 +9,7 @@ using GameStore.Shared.Logging;
 using Gamestore.WebAPI.Mapper;
 using Gamestore.WebAPI.Middlewares;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,8 +21,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddScoped<IFileSystem, FileSystem>();
-builder.Services.AddScoped<IFileLogWriter, FileLogWriter>();
+builder.Services.AddSingleton<IFileSystem, FileSystem>();
+builder.Services.AddSingleton<IFileLogWriter, FileLogWriter>();
 
 builder.Services.AddScoped<IUnitOfWork<GameStoreContext>, UnitOfWork>();
 builder.Services.AddScoped<IGameRepository, GameRepository>();
@@ -30,10 +31,12 @@ builder.Services.AddScoped<IGenreRepository, GenreRepository>();
 builder.Services.AddScoped<IGameGenreRepository, GameGenreRepository>();
 builder.Services.AddScoped<IGamePlatformRepository, GamePlatformRepository>();
 builder.Services.AddScoped<IGameFileRepository, GameFileRepository>();
+builder.Services.AddScoped<IPublisherRepository, PublisherRepository>();
 
 builder.Services.AddScoped<IGameService, GameService>();
 builder.Services.AddScoped<IGenreService, GenreService>();
 builder.Services.AddScoped<IPlatformService, PlatformService>();
+builder.Services.AddScoped<IPublisherService, PublisherService>();
 
 builder.Logging.ClearProviders();
 
@@ -67,14 +70,40 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseRouting();
+app.UseCors("AllowFrontend"); // Це дозволить Angular взаємодіяти з API без помилок
+
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
 app.UseMiddleware<RequestResponseLoggingMiddleware>();
 
 app.UseMiddleware<TotalGamesCountMiddleware>();
 
+// Path to Angular build (outside solution project)
+var angularPath = Path.Combine(
+    Directory.GetCurrentDirectory(),
+    "..",
+    "gamestore-ui-app");
+
+// Serve default files (index.html)
+app.UseDefaultFiles(new DefaultFilesOptions
+{
+    FileProvider = new PhysicalFileProvider(angularPath),
+});
+
+// Serve static files (js, css, assets)
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(angularPath),
+});
+
 app.UseAuthorization();
 
-app.MapControllers();
+app.MapControllers(); // Спочатку API
+
+app.MapFallbackToFile("index.html", new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(angularPath),
+});
 
 app.Run();

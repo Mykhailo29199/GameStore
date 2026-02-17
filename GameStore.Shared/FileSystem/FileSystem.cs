@@ -9,4 +9,20 @@ public class FileSystem : IFileSystem
     {
         Directory.CreateDirectory(path);
     }
+
+    public async Task WriteFileAsync(string path, byte[] content)
+    {
+        var dir = Path.GetDirectoryName(path);
+        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+        {
+            Directory.CreateDirectory(dir);
+        }
+
+        await File.WriteAllBytesAsync(path, content);
+    }
+
+    public async Task<byte[]> ReadFileAsync(string path)
+    {
+        return await File.ReadAllBytesAsync(path);
+    }
 }

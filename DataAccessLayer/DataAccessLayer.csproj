@@ -24,4 +24,8 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.10" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\GameStore.Shared\GameStore.Shared.csproj" />
+  </ItemGroup>
+
 </Project>

@@ -6,6 +6,7 @@ using DataAccessLayer.StoreContext;
 using DataAccessLayer.UnitOfWork;
 using GameStore.Shared.FileSystem;
 using GameStore.Shared.Logging;
+using GameStore.Shared.Options;
 using Gamestore.WebAPI.Mapper;
 using Gamestore.WebAPI.Middlewares;
 using Microsoft.EntityFrameworkCore;
@@ -21,8 +22,20 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddSingleton<IFileSystem, FileSystem>();
-builder.Services.AddSingleton<IFileLogWriter, FileLogWriter>();
+builder.Services.Configure<PaymentServiceOptions>(
+    builder.Configuration.GetSection("PaymentService"));
+
+// 2. Реєстрація HttpClient з базовою адресою
+builder.Services.AddHttpClient("PaymentService", (sp, client) =>
+{
+    var options = sp.GetRequiredService<
+        Microsoft.Extensions.Options.IOptions<PaymentServiceOptions>>().Value;
+
+    client.BaseAddress = new Uri(options.BaseUrl);
+});
+
+builder.Services.AddScoped<IFileSystem, FileSystem>();
+builder.Services.AddScoped<IFileLogWriter, FileLogWriter>();
 
 builder.Services.AddScoped<IUnitOfWork<GameStoreContext>, UnitOfWork>();
 builder.Services.AddScoped<IGameRepository, GameRepository>();
@@ -37,6 +50,7 @@ builder.Services.AddScoped<IGameService, GameService>();
 builder.Services.AddScoped<IGenreService, GenreService>();
 builder.Services.AddScoped<IPlatformService, PlatformService>();
 builder.Services.AddScoped<IPublisherService, PublisherService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 
 builder.Logging.ClearProviders();
 
@@ -77,7 +91,7 @@ app.UseMiddleware<GlobalExceptionMiddleware>();
 
 app.UseMiddleware<RequestResponseLoggingMiddleware>();
 
-app.UseMiddleware<TotalGamesCountMiddleware>();
+//app.UseMiddleware<TotalGamesCountMiddleware>();
 
 // Path to Angular build (outside solution project)
 var angularPath = Path.Combine(

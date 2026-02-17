@@ -1,8 +1,10 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Models;
+using BusinessLogicLayer.Models.Payment;
 using DataAccessLayer.Entities;
 using Gamestore.WebAPI.DTOs.GameDTO;
 using Gamestore.WebAPI.DTOs.GenreDTO;
+using Gamestore.WebAPI.DTOs.PaymentDTO;
 using Gamestore.WebAPI.DTOs.PlatformDTO;
 using Gamestore.WebAPI.DTOs.PublisherDTO;
 
@@ -115,5 +117,23 @@ public class GameAutoMapping : Profile
             .ForMember(dest => dest.HomePage, opt => opt.MapFrom(src => src.Publisher.HomePage))
             .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Publisher.Description))
             .ReverseMap();
+
+        // Request DTO → Request VisaModel
+        CreateMap<PaymentRequestDTO, PaymentRequestModel>();
+
+        // Visa
+        CreateMap<VisaPaymentDTO, VisaPaymentModel>()
+            .ForMember(dest => dest.TransactionAmount, opt => opt.MapFrom(src => (decimal)src.TransactionAmount));
+
+        // IBox
+        CreateMap<IBoxPaymentDTO, IBoxPaymentModel>()
+            .ForMember(dest => dest.TransactionAmount, opt => opt.MapFrom(src => (decimal)src.TransactionAmount))
+            .ForMember(dest => dest.InvoiceNumber, opt => opt.MapFrom(src => src.InvoiceNumber));
+
+        // Bank
+        CreateMap<BankPaymentDTO, BankPaymentModel>();
+
+        // Response VisaModel → Response DTO
+        CreateMap<PaymentResponseModel, ResponseDTO>();
     }
 }

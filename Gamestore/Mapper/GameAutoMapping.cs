@@ -22,9 +22,9 @@ public class GameAutoMapping : Profile
                    .ForMember(dest => dest.Discount, opt => opt.MapFrom(src => src.Discount))
                    .ForMember(dest => dest.PublisherId, opt => opt.MapFrom(src => src.Publisher))
                    .ForMember(dest => dest.GameGenres, opt => opt.MapFrom(src =>
-               src.Genres.Select(gid => new GameGenreEntity { GenreId = gid })))
+               src.Genres.Select(gid => new GameGenreEntity { GameId = src.Id, GenreId = gid })))
                .ForMember(dest => dest.GamePlatforms, opt => opt.MapFrom(src =>
-               src.Platforms.Select(pid => new GamePlatformEntity { PlatformId = pid })))
+               src.Platforms.Select(pid => new GamePlatformEntity { GameId = src.Id, PlatformId = pid })))
                .ForMember(dest => dest.Publisher, opt => opt.Ignore());
 
         CreateMap<GameEntity, GameModel>()

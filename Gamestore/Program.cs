@@ -45,12 +45,15 @@ builder.Services.AddScoped<IGameGenreRepository, GameGenreRepository>();
 builder.Services.AddScoped<IGamePlatformRepository, GamePlatformRepository>();
 builder.Services.AddScoped<IGameFileRepository, GameFileRepository>();
 builder.Services.AddScoped<IPublisherRepository, PublisherRepository>();
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+builder.Services.AddScoped<IOrderGameRepository, OrderGameRepository>();
 
 builder.Services.AddScoped<IGameService, GameService>();
 builder.Services.AddScoped<IGenreService, GenreService>();
 builder.Services.AddScoped<IPlatformService, PlatformService>();
 builder.Services.AddScoped<IPublisherService, PublisherService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
 
 builder.Logging.ClearProviders();
 

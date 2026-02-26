@@ -19,6 +19,10 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
 
     public DbSet<PublisherEntity> Publishers { get; set; }
 
+    public DbSet<OrderEntity> Orders { get; set; }
+
+    public DbSet<OrderGameEntity> OrderGames { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -97,5 +101,9 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
             .HasForeignKey(g => g.PublisherId)
             .OnDelete(DeleteBehavior.Cascade);
         });
+
+        // ===================== OrderGame =====================
+        modelBuilder.Entity<OrderGameEntity>()
+    .HasKey(og => new { og.OrderId, og.ProductId });
     }
 }

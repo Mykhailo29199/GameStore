@@ -114,6 +114,24 @@ app.UseStaticFiles(new StaticFileOptions
     FileProvider = new PhysicalFileProvider(angularPath),
 });
 
+// Path to Angular build (outside solution project)
+var angularPath = Path.Combine(
+    Directory.GetCurrentDirectory(),
+    "..",
+    "gamestore-ui-app");
+
+// Serve default files (index.html)
+app.UseDefaultFiles(new DefaultFilesOptions
+{
+    FileProvider = new PhysicalFileProvider(angularPath),
+});
+
+// Serve static files (js, css, assets)
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(angularPath),
+});
+
 app.UseAuthorization();
 
 app.MapControllers(); // Спочатку API

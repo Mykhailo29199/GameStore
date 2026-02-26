@@ -76,9 +76,30 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
             .HasForeignKey(gp => gp.GameId)
             .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(gp => gp.Platform)
-            .WithMany()
-            .HasForeignKey(gp => gp.PlatformId)
+            entity.HasOne(gp => gp.Platform).WithMany().HasForeignKey(gp => gp.PlatformId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ===================== GenreEntity =====================
+        modelBuilder.Entity<GenreEntity>(entity =>
+        {
+            entity.HasKey(g => g.Id);                            // Self-reference: ParentGenre → SubGenres
+
+            entity.HasOne(g => g.ParentGenre)
+            .WithMany(g => g.SubGenres)
+            .HasForeignKey(g => g.ParentGenreId);
+        });
+
+        // ===================== PlatformEntity =====================
+        modelBuilder.Entity<PlatformEntity>().HasIndex(p => p.Type).IsUnique();
+
+        // ===================== PublisherEntity =====================
+        modelBuilder.Entity<PublisherEntity>(entity =>
+        {
+            entity.HasKey(p => p.Id);
+
+            entity.HasMany(p => p.Games)
+            .WithOne(g => g.Publisher)
+            .HasForeignKey(g => g.PublisherId)
             .OnDelete(DeleteBehavior.Cascade);
         });
 

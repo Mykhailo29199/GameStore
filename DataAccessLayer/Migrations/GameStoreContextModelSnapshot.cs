@@ -56,6 +56,14 @@ namespace DataAccessLayer.Migrations
 
                     b.HasKey("Id");
 
+                    b.Property<Guid>("PublisherId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("UnitInStock")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
                     b.HasIndex("PublisherId");
 
                     b.ToTable("Games");

@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BusinessLogicLayer\BusinessLogicLayer.csproj" />
+    <ProjectReference Include="..\GameStore.Shared\GameStore.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>

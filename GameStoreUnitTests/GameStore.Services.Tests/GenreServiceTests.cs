@@ -353,8 +353,8 @@ public class GenreServiceTests
 
         var gameEntities = new List<GameEntity>
     {
-        new() { GameId = ExistingGameId, GameName = "Game 1", GameKey = ExistingGameKey },
-        new() { GameId = ExistingGameId2, GameName = "Game 2", GameKey = ExistingGameKey2 },
+        new() { Id = ExistingGameId, Name = "Game 1", Key = ExistingGameKey },
+        new() { Id = ExistingGameId2, Name = "Game 2", Key = ExistingGameKey2 },
     };
 
         _unitOfWorkMock.Setup(x => x.GameGenreRepository.GetGamesByGenreIdAsync(ExistingGenreId))
@@ -363,9 +363,9 @@ public class GenreServiceTests
         List<GameModel> gameModels = gameEntities
      .Select(g => new GameModel
      {
-         Id = g.GameId,
-         Name = g.GameName,
-         Key = g.GameKey,
+         Id = g.Id,
+         Name = g.Name,
+         Key = g.Key,
      })
      .ToList();
 

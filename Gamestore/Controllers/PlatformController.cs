@@ -8,40 +8,40 @@ using Microsoft.AspNetCore.Mvc;
 namespace Gamestore.WebAPI.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/")]
 public class PlatformController(IPlatformService platformService, IMapper mapper) : ControllerBase
 {
     private readonly IPlatformService _platformService = platformService;
     private readonly IMapper _mapper = mapper;
 
-    [HttpPost]
-    public async Task<IActionResult> CreatePlatformAsync([FromBody] PlatformDto platformType)
+    [HttpPost("platform")]
+    public async Task<IActionResult> CreatePlatformAsync([FromBody] CreatePlatformDTO platformType)
     {
-        await _platformService.CreatePlatformAsync(platformType.Type);
+        await _platformService.CreatePlatformAsync(platformType.Platform.Type);
 
         return NoContent();
     }
 
-    [HttpGet("{platformId}")]
+    [HttpGet("platform/{platformId}")]
     public async Task<IActionResult> GetPlatformByIdAsync([FromRoute] Guid platformId)
     {
         var platformModel = await _platformService.GetPlatformByIdAsync(platformId);
-        var platformDTO = _mapper.Map<PlatformDto>(platformModel);
+        var platformDTO = _mapper.Map<FullPlatformDTO>(platformModel);
 
         return Ok(platformDTO);
     }
 
-    [HttpGet]
+    [HttpGet("platforms")]
     public async Task<IActionResult> GetAllPlatformsAsync()
     {
         var platformModels = await _platformService.GetAllPlatformsAsync();
-        var platformDTOs = _mapper.Map<List<PlatformDto>>(platformModels);
+        var platformDTOs = _mapper.Map<List<FullPlatformDTO>>(platformModels);
 
         return Ok(platformDTOs);
     }
 
-    [HttpPut]
-    public async Task<IActionResult> UpdatePlatformAsync([FromBody] PlatformDto platformDTO)
+    [HttpPut("platform")]
+    public async Task<IActionResult> UpdatePlatformAsync([FromBody] UpdatePlatformDTO platformDTO)
     {
         var model = _mapper.Map<PlatformModel>(platformDTO);
 
@@ -49,15 +49,15 @@ public class PlatformController(IPlatformService platformService, IMapper mapper
         return NoContent();
     }
 
-    [HttpDelete("{platformId}")]
-    public async Task<IActionResult> DeletePlatformAsync([FromRoute] Guid platformId)
+    [HttpDelete("platform/{id}")]
+    public async Task<IActionResult> DeletePlatformAsync([FromRoute] Guid id)
     {
-        await _platformService.DeletePlatformAsync(platformId);
+        await _platformService.DeletePlatformAsync(id);
 
         return NoContent();
     }
 
-    [HttpGet("{platformId}/games")]
+    [HttpGet("games/platform/{platformId}")]
     public async Task<IActionResult> GetGamesByPlatformIdAsync([FromRoute] Guid platformId)
     {
         var gameModels = await _platformService.GetGamesByPlatformIdAsync(platformId);

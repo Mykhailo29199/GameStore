@@ -6,7 +6,7 @@ public class GameFileEntity
 {
     [Key]
     [Required]
-    public Guid FileId { get; set; }
+    public Guid GameId { get; set; }
 
     [Required]
     public string FilePath { get; set; }

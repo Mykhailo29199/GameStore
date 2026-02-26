@@ -60,8 +60,6 @@ public static class TestConstants
 
     #endregion
 
-    #region Platforms
-
     // --------------------
     // Platform Entities
     // --------------------
@@ -95,5 +93,13 @@ public static class TestConstants
     public static readonly List<Guid> NonExistingPlatformIds =
         [NonExistingPlatformId];
 
-    #endregion
+    // --------------------
+    // Publisher Ids
+    // --------------------
+
+    public static readonly Guid ExistingPublisherId =
+        Guid.Parse("10000000-0000-0000-0000-000000000001");
+
+    public static readonly Guid NonExistingPublisherId =
+        Guid.Parse("44444444-4444-4444-4444-444444444444");
 }

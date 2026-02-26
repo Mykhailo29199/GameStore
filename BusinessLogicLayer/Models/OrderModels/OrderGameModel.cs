@@ -12,6 +12,5 @@ public class OrderGameModel
 
     public int? Discount { get; set; }
 
-    // Додатково для сервісного шару
     public string GameName { get; set; }
 }

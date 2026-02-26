@@ -1,151 +1,129 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Models.Payment;
 using BusinessLogicLayer.Services.Interaces;
+using GameStore.Shared.Stubs;
+using Gamestore.WebAPI.DTOs.OrderDTO;
 using Gamestore.WebAPI.DTOs.PaymentDTO;
+using Gamestore.WebAPI.DTOs.PaymentDTO.PaymentResponseDTOs;
 using Microsoft.AspNetCore.Mvc;
-using PaymentMethodDTO = BusinessLogicLayer.Models.Payment.PaymentMethodDTO;
 
 namespace GameStore.WebAPI.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
-public class OrderController(IPaymentService paymentService, IMapper mapper) : ControllerBase
+[Route("api/")]
+public class OrderController(IPaymentService paymentService, IOrderService orderService, IMapper mapper) : ControllerBase
 {
     private readonly IPaymentService _paymentService = paymentService;
+    private readonly IOrderService _orderService = orderService;
     private readonly IMapper _mapper = mapper;
 
-    [HttpPost("payment")]
+    [HttpPost("orders/payment")]
     public async Task<IActionResult> ProcessPayment([FromBody] PaymentRequestDTO request)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
-
         var requestModel = _mapper.Map<PaymentRequestModel>(request);
         var responseModel = await _paymentService.ProcessPayment(requestModel);
 
+        // Мапінг назад: Model → DTO
+        var responseDto = _mapper.Map<PaymentResponseDTO>(responseModel);
+
         if (responseModel.Status != "Success")
         {
-            return BadRequest(responseModel.Message);
+            return Ok(responseDto);
         }
 
-        if (responseModel.Method == "Bank" && responseModel.BankResponseModel.FileBytes != null)
+        if (responseDto.Method == "Bank" && responseDto.BankResponseDTO.FileBytes != null)
         {
-            return File(responseModel.BankResponseModel.FileBytes, "application/pdf", $"invoice.pdf");
+            return new FileContentResult(responseDto.BankResponseDTO.FileBytes, "application/pdf");
         }
 
-        if (responseModel.Method == "IBox terminal" && responseModel.IBoxResponseModel != null)
+        if (responseDto.Method == "IBox terminal" && responseDto.IBoxResponseDTO != null)
         {
-            return Ok(responseModel.IBoxResponseModel);
+            return Ok(responseDto.IBoxResponseDTO);
         }
 
         return Ok();
     }
 
-    [HttpGet("payment-methods")]
+    [HttpGet("orders/payment-methods")]
     public IActionResult GetPaymentMethods()
     {
-        var paymentMethods = new List<PaymentMethodDTO>
+        var paymentMethods = new List<PaymentMethodResponseDTO>
     {
-        new PaymentMethodDTO
+        new PaymentMethodResponseDTO
         {
             ImageUrl = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png", // Open-source bank icon
             Title = "Bank",
-            Description = "Оплата через банківський рахунок. Ви отримаєте PDF-рахунок для оплати.",
+            Description = "Payment via bank account. You will receive a PDF invoice for payment.",
         },
-        new PaymentMethodDTO
+        new PaymentMethodResponseDTO
         {
             ImageUrl = "https://green-api.volia.com/media/6407a7b23eb69_ibox.jpg", // Open-source terminal icon
             Title = "IBox terminal",
-            Description = "Оплата через термінал самообслуговування IBox.",
+            Description = "Payment via the IBox self-service terminal.",
         },
-        new PaymentMethodDTO
+        new PaymentMethodResponseDTO
         {
             ImageUrl = "https://cdn-icons-png.flaticon.com/512/349/349221.png", // Open-source Visa icon
             Title = "Visa",
-            Description = "Оплата банківською картою Visa.",
+            Description = "Payment by Visa bank card.",
         },
     };
 
         return Ok(new { paymentMethods });
     }
 
-    // if (!ModelState.IsValid)
-    // {
-    //    return BadRequest(ModelState);
-    // }
+    [HttpPost("games/{key}/buy")]
+    public async Task<IActionResult> AddGameToCart(string key)
+    {
+        await _orderService.AddGameAsync(CustomerStub.StubCustomerId, key);
+        return Ok();
+    }
 
-    // PaymentResponseDTO response;
+    // US1: Remove game from cart
+    [HttpDelete("orders/cart/{key}")]
+    public async Task<IActionResult> RemoveGameFromCart(string key)
+    {
+        await _orderService.RemoveGameAsync(CustomerStub.StubCustomerId, key);
+        return Ok();
+    }
 
-    // switch (request.Method)
-    // {
-    //    case "Visa":
-    //        var visaModel = _mapper.Map<VisaPaymentModel>(request.VisaModel);
-    //        var visaResponse = await _paymentService.PayWithVisa(visaModel);
-    //        response = _mapper.Map<PaymentResponseDTO>(visaResponse);
-    //        break;
+    // US2: Get paid and cancelled orders
+    [HttpGet("orders")]
+    public async Task<ActionResult<IEnumerable<OrderDTO>>> GetClosedOrders()
+    {
+        var orders = await _orderService.GetClosedOrdersAsync();
+        var orderDtos = _mapper.Map<IEnumerable<OrderDTO>>(orders);
 
-    // case "IBox terminal":
-    //        var iboxModel = _mapper.Map<IBoxPaymentModel>(request.IBoxModel);
-    //        var iboxResponse = await _paymentService.PayWithIBox(iboxModel);
-    //        response = _mapper.Map<PaymentResponseDTO>(iboxResponse);
-    //        break;
+        return Ok(orderDtos);
+    }
 
-    // case "Bank":
-    //    var bankModel = _mapper.Map<BankPaymentModel>(request.BankModel);
-    //    var bankResponse = await _paymentService.PayWithBank(bankModel);
-    //    response = _mapper.Map<PaymentResponseDTO>(bankResponse);
-    //    break;
-    //        default:
-    //                return BadRequest(new { message = "Unsupported payment method." });
-    //    }
+    // US2: Get order by id
+    [HttpGet("orders/{id}")]
+    public async Task<ActionResult<OrderDTO>> GetOrderById(Guid id)
+    {
+        var order = await _orderService.GetOrderByIdAsync(id);
+        var orderDto = _mapper.Map<OrderDTO>(order);
 
-    // if (response.Status == "Success")
-    //        {
-    //            await _paymentService.MarkOrderPaid(request.OrderId);
-    //            return Ok(response);
-    // }
-    //        else
-    //        {
-    //            await _paymentService.MarkOrderCancelled(request.OrderId);
-    //            return BadRequest(response);
-    //        }
-    //    }
+        return Ok(orderDto);
+    }
 
-    //[HttpPost("visa")]
-    //public async Task<IActionResult> PayWithVisa([FromBody] VisaPaymentDTO request)
-    //{
-    //    var payment = _mapper.Map<VisaPaymentModel>(request);
-    //    var response = await _paymentService.PayWithVisa(payment);
-    //    var dto = _mapper.Map<PaymentResponseDTO>(response);
+    // US3: Get order details
+    [HttpGet("orders/{id}/details")]
+    public async Task<ActionResult<IEnumerable<OrderGameDTO>>> GetOrderDetails(Guid id)
+    {
+        var models = await _orderService.GetOrderDetailsAsync(id);
+        var dtos = _mapper.Map<IEnumerable<OrderGameDTO>>(models);
 
-    //    return dto.Status == "Success"
-    //      ? Ok(new { message = "Оплата Visa успішна", data = dto })
-    //      : StatusCode(402, new { message = "Недостатньо коштів для оплати Visa", data = dto });
-    //}
+        return Ok(dtos);
+    }
 
-    //[HttpPost("ibox")]
-    //public async Task<IActionResult> PayWithIBox([FromBody] IBoxPaymentDTO request)
-    //{
-    //    var payment = _mapper.Map<IBoxPaymentModel>(request);
-    //    var response = await _paymentService.PayWithIBox(payment);
-    //    var dto = _mapper.Map<PaymentResponseDTO>(response);
+    // US4: Get cart
+    [HttpGet("orders/cart")]
+    public async Task<ActionResult<IEnumerable<OrderGameDTO>>> GetCart()
+    {
+        var cart = await _orderService.GetCartAsync(CustomerStub.StubCustomerId);
+        var cartDtos = _mapper.Map<IEnumerable<OrderGameDTO>>(cart);
 
-    //    return dto.Status == "Success"
-    //        ? Ok(new { message = "Оплата iBox успішна", data = dto })
-    //        : BadRequest(new { message = "Помилка при оплаті через iBox", data = dto });
-    //}
-
-    //[HttpPost("bank")]
-    //public async Task<IActionResult> PayWithBank([FromBody] BankPaymentDTO request)
-    //{
-    //    var payment = _mapper.Map<BankPaymentModel>(request);
-    //    var response = await _paymentService.PayWithBank(payment);
-    //    var dto = _mapper.Map<PaymentResponseDTO>(response);
-
-    //    return dto.Status == "Success"
-    //        ? Ok(new { message = "Оплата через банк успішна", data = dto })
-    //        : StatusCode(402, new { message = "Інвойс недійсний або оплата не пройшла", data = dto });
-    //}
+        return Ok(cartDtos);
+    }
 }

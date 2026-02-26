@@ -59,6 +59,7 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
             .WithMany(g => g.GameGenres)
             .HasForeignKey(gg => gg.GameId)
             .OnDelete(DeleteBehavior.Cascade);
+
             entity.HasOne(gg => gg.Genre)
             .WithMany()
             .HasForeignKey(gg => gg.GenreId)
@@ -75,7 +76,10 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
             .HasForeignKey(gp => gp.GameId)
             .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(gp => gp.Platform).WithMany().HasForeignKey(gp => gp.PlatformId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(gp => gp.Platform)
+            .WithMany()
+            .HasForeignKey(gp => gp.PlatformId)
+            .OnDelete(DeleteBehavior.Cascade);
         });
 
         // ===================== GenreEntity =====================
@@ -102,8 +106,31 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
             .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // ===================== OrderGame =====================
-        modelBuilder.Entity<OrderGameEntity>()
-    .HasKey(og => new { og.OrderId, og.ProductId });
+        // ===================== OrderEntity =====================
+        modelBuilder.Entity<OrderEntity>(entity =>
+        {
+            entity.HasKey(o => o.Id);
+
+            entity.HasMany(o => o.OrderGames)
+                .WithOne(og => og.Order)
+                .HasForeignKey(og => og.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ===================== OrderGameEntity =====================
+        modelBuilder.Entity<OrderGameEntity>(entity =>
+        {
+            entity.HasKey(og => new { og.OrderId, og.ProductId });
+
+            entity.HasOne(og => og.Order)
+                .WithMany(o => o.OrderGames)
+                .HasForeignKey(og => og.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(og => og.Game)
+                .WithMany()
+                .HasForeignKey(og => og.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
     }
 }

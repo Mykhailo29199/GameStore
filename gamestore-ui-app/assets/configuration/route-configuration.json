@@ -21,7 +21,8 @@
   "Publisher": "Publisher",
   "UpdatePublisher": "Update Publisher",
   "DeletePublisher": "Delete Publisher",
-  "AddPublisher": "Add Publisher"
+  "AddPublisher": "Add Publisher",
+  
   "Order": "/order",
   "Orders": "/orders",
   "Basket": "/basket",

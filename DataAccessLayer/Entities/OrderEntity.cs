@@ -3,7 +3,7 @@ using GameStore.Shared.Enums;
 
 namespace DataAccessLayer.Entities;
 
-public class Order
+public class OrderEntity
 {
     [Required]
     public Guid Id { get; set; }
@@ -16,5 +16,5 @@ public class Order
     [Required]
     public OrderStatus Status { get; set; }
 
-    public ICollection<OrderGame> OrderGames { get; set; } = new List<OrderGame>();
+    public ICollection<OrderGameEntity> OrderGames { get; set; } = new List<OrderGameEntity>();
 }

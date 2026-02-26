@@ -2,13 +2,13 @@
 
 namespace DataAccessLayer.Entities;
 
-public class OrderGame
+public class OrderGameEntity
 {
     [Required]
     public Guid OrderId { get; set; }
 
     [Required]
-    public Guid GameId { get; set; }
+    public Guid ProductId { get; set; } // gameId
 
     [Required]
     public double Price { get; set; }
@@ -18,7 +18,7 @@ public class OrderGame
 
     public int? Discount { get; set; }
 
-    public Order Order { get; set; }
+    public OrderEntity Order { get; set; }
 
     public GameEntity Game { get; set; }
 }

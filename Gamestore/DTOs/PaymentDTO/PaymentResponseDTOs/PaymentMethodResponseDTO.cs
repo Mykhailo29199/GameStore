@@ -1,6 +1,6 @@
-﻿namespace Gamestore.WebAPI.DTOs.PaymentDTO;
+﻿namespace Gamestore.WebAPI.DTOs.PaymentDTO.PaymentResponseDTOs;
 
-public class PaymentMethodDTO
+public class PaymentMethodResponseDTO
 {
     public string ImageUrl { get; set; }
 

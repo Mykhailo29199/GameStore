@@ -10,9 +10,5 @@ public class PaymentRequestDTO
 
     public Guid OrderId { get; set; }
 
-    public VisaPaymentDTO? VisaModel { get; set; }
-
-    public IBoxPaymentDTO? IBoxModel { get; set; }
-
-    public BankPaymentDTO? BankModel { get; set; }
+    public VisaPaymentDTO? Model { get; set; }
 }

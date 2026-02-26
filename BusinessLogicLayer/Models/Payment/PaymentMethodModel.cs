@@ -1,6 +1,6 @@
 ﻿namespace BusinessLogicLayer.Models.Payment;
 
-public class PaymentMethodDTO
+public class PaymentMethodModel
 {
     public string ImageUrl { get; set; }
 

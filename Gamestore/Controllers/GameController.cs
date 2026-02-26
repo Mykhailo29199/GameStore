@@ -4,27 +4,28 @@ using BusinessLogicLayer.Services.Interaces;
 using Gamestore.WebAPI.DTOs.GameDTO;
 using Gamestore.WebAPI.DTOs.GenreDTO;
 using Gamestore.WebAPI.DTOs.PlatformDTO;
+using Gamestore.WebAPI.DTOs.PublisherDTO;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Gamestore.WebAPI.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/")]
 public class GameController(IGameService gameService, IMapper mapper) : ControllerBase
 {
     private readonly IGameService _gameService = gameService;
     private readonly IMapper _mapper = mapper;
 
-    [HttpPost]
-    public async Task<IActionResult> CreateGame([FromBody] FullGameDto requestPostDTO)
+    [HttpPost("game")]
+    public async Task<IActionResult> CreateGame([FromBody] CreateGameDTO requestPostDTO)
     {
-        var gameModel = _mapper.Map<FullGameModel>(requestPostDTO);
+        var gameModel = _mapper.Map<GameModel>(requestPostDTO);
         await _gameService.CreateGameAsync(gameModel);
 
         return NoContent();
     }
 
-    [HttpGet("{key}")]
+    [HttpGet("game/{key}")]
     public async Task<IActionResult> GetGameByKey([FromRoute] string key)
     {
         var gameModel = await _gameService.GetGameByKeyAsync(key);
@@ -33,25 +34,25 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
         return Ok(gameDTO);
     }
 
-    [HttpGet("find/{gameId}")]
-    public async Task<IActionResult> GetGameById([FromRoute] Guid gameId)
+    [HttpGet("game/{id:guid}")]
+    public async Task<IActionResult> GetGameById([FromRoute] Guid id)
     {
-        var gameModel = await _gameService.GetGameByIdAsync(gameId);
+        var gameModel = await _gameService.GetGameByIdAsync(id);
         var gameDTO = _mapper.Map<GameWithIdDto>(gameModel);
 
         return Ok(gameDTO);
     }
 
-    [HttpPut]
-    public async Task<IActionResult> UpdateGame([FromBody] FullGameWithIdDto requestPutDTO)
+    [HttpPut("game")]
+    public async Task<IActionResult> UpdateGame([FromBody] UpdateGameDTO requestPutDTO)
     {
-        var gameModel = _mapper.Map<FullGameModel>(requestPutDTO);
+        var gameModel = _mapper.Map<GameModel>(requestPutDTO);
         await _gameService.UpdateGameAsync(gameModel);
 
         return NoContent();
     }
 
-    [HttpDelete("{key}")]
+    [HttpDelete("game/{key}")]
     public async Task<IActionResult> DeleteGame([FromRoute] string key)
     {
         await _gameService.DeleteGameAsync(key);
@@ -59,10 +60,10 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
         return NoContent();
     }
 
-    [HttpGet("{gameKey}/file")]
-    public async Task<IActionResult> DownloadGameFile([FromRoute] string gameKey)
+    [HttpGet("game/{key}/file")]
+    public async Task<IActionResult> DownloadGameFile([FromRoute] string key)
     {
-        var filePath = await _gameService.GetGameFilePathAsync(gameKey);
+        var filePath = await _gameService.GetGameFilePathAsync(key);
 
         var fileName = Path.GetFileName(filePath);
         var contentType = "application/octet-stream";
@@ -71,7 +72,7 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
         return File(fileStream, contentType, fileName);
     }
 
-    [HttpGet]
+    [HttpGet("games")]
     public async Task<IActionResult> GetAllGames()
     {
         var gameModels = await _gameService.GetAllGamesAsync();
@@ -80,21 +81,30 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
         return Ok(gameDTOs);
     }
 
-    [HttpGet("{key}/genres")]
+    [HttpGet("genres/game/{key}")]
     public async Task<IActionResult> GetGenresByGameKey([FromRoute] string key)
     {
         var genreModels = await _gameService.GetGenresByGameKeyAsync(key);
-        var genreDTOs = _mapper.Map<IEnumerable<GenreDto>>(genreModels);
+        var genreDTOs = _mapper.Map<IEnumerable<GenreDTO>>(genreModels);
 
         return Ok(genreDTOs);
     }
 
-    [HttpGet("{key}/platforms")]
+    [HttpGet("platforms/game/{key}")]
     public async Task<IActionResult> GetPlatformsByGameKey([FromRoute] string key)
     {
         var platformModels = await _gameService.GetPlatformsByGameKeyAsync(key);
-        var platformDTOs = _mapper.Map<IEnumerable<PlatformDto>>(platformModels);
+        var platformDTOs = _mapper.Map<IEnumerable<FullPlatformDTO>>(platformModels);
 
         return Ok(platformDTOs);
+    }
+
+    [HttpGet("publisher/game/{key}")]
+    public async Task<IActionResult> GetPublisherByGameKey([FromRoute] string key)
+    {
+        var publisherModel = await _gameService.GetPublisherByGameKeyAsync(key);
+        var publisherDTO = _mapper.Map<PublisherWithIdDTO>(publisherModel);
+
+        return Ok(publisherDTO);
     }
 }

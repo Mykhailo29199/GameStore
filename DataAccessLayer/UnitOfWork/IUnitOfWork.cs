@@ -18,6 +18,8 @@ public interface IUnitOfWork<out TGameStoreContext> : IDisposable
 
     IGameFileRepository GameFileRepository { get; }
 
+    IPublisherRepository PublisherRepository { get; }
+
     TGameStoreContext Context { get; }
 
     Task CreateTransactionAsync();

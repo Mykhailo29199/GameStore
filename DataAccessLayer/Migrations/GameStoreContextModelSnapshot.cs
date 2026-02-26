@@ -24,50 +24,55 @@ namespace DataAccessLayer.Migrations
 
             modelBuilder.Entity("DataAccessLayer.Entities.GameEntity", b =>
                 {
-                    b.Property<Guid>("GameId")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("GameDescription")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
+                    b.Property<string>("Description")
+                        .HasMaxLength(3000)
+                        .HasColumnType("nvarchar(3000)");
 
-                    b.Property<string>("GameKey")
+                    b.Property<int>("Discount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Key")
                         .IsRequired()
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
 
-                    b.Property<string>("GameName")
+                    b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.HasKey("GameId");
+                    b.Property<double>("Price")
+                        .HasColumnType("float");
 
-                    b.HasIndex("GameKey")
-                        .IsUnique();
+                    b.Property<Guid>("PublisherId")
+                        .HasColumnType("uniqueidentifier");
 
-                    b.ToTable("Games", (string)null);
+                    b.Property<int>("UnitInStock")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PublisherId");
+
+                    b.ToTable("Games");
                 });
 
             modelBuilder.Entity("DataAccessLayer.Entities.GameFileEntity", b =>
                 {
-                    b.Property<Guid>("FileId")
-                        .ValueGeneratedOnAdd()
+                    b.Property<Guid>("GameId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("FilePath")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid?>("GameId")
-                        .HasColumnType("uniqueidentifier");
+                    b.HasKey("GameId");
 
-                    b.HasKey("FileId");
-
-                    b.HasIndex("GameId");
-
-                    b.ToTable("Files", (string)null);
+                    b.ToTable("Files");
                 });
 
             modelBuilder.Entity("DataAccessLayer.Entities.GameGenreEntity", b =>
@@ -82,7 +87,7 @@ namespace DataAccessLayer.Migrations
 
                     b.HasIndex("GenreId");
 
-                    b.ToTable("GameGenres", (string)null);
+                    b.ToTable("GameGenres");
                 });
 
             modelBuilder.Entity("DataAccessLayer.Entities.GamePlatformEntity", b =>
@@ -97,7 +102,7 @@ namespace DataAccessLayer.Migrations
 
                     b.HasIndex("PlatformId");
 
-                    b.ToTable("GamePlatforms", (string)null);
+                    b.ToTable("GamePlatforms");
                 });
 
             modelBuilder.Entity("DataAccessLayer.Entities.GenreEntity", b =>
@@ -118,7 +123,7 @@ namespace DataAccessLayer.Migrations
 
                     b.HasIndex("ParentGenreId");
 
-                    b.ToTable("Genres", (string)null);
+                    b.ToTable("Genres");
                 });
 
             modelBuilder.Entity("DataAccessLayer.Entities.PlatformEntity", b =>
@@ -137,14 +142,49 @@ namespace DataAccessLayer.Migrations
                     b.HasIndex("Type")
                         .IsUnique();
 
-                    b.ToTable("Platforms", (string)null);
+                    b.ToTable("Platforms");
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Entities.PublisherEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CompanyName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("HomePage")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PublisherEntity");
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Entities.GameEntity", b =>
+                {
+                    b.HasOne("DataAccessLayer.Entities.PublisherEntity", "Publisher")
+                        .WithMany("Games")
+                        .HasForeignKey("PublisherId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Publisher");
                 });
 
             modelBuilder.Entity("DataAccessLayer.Entities.GameFileEntity", b =>
                 {
                     b.HasOne("DataAccessLayer.Entities.GameEntity", "Game")
-                        .WithMany()
-                        .HasForeignKey("GameId");
+                        .WithOne("GameFile")
+                        .HasForeignKey("DataAccessLayer.Entities.GameFileEntity", "GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Game");
                 });
@@ -198,6 +238,9 @@ namespace DataAccessLayer.Migrations
 
             modelBuilder.Entity("DataAccessLayer.Entities.GameEntity", b =>
                 {
+                    b.Navigation("GameFile")
+                        .IsRequired();
+
                     b.Navigation("GameGenres");
 
                     b.Navigation("GamePlatforms");
@@ -206,6 +249,11 @@ namespace DataAccessLayer.Migrations
             modelBuilder.Entity("DataAccessLayer.Entities.GenreEntity", b =>
                 {
                     b.Navigation("SubGenres");
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Entities.PublisherEntity", b =>
+                {
+                    b.Navigation("Games");
                 });
 #pragma warning restore 612, 618
         }

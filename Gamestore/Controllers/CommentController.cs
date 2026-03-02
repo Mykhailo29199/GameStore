@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Gamestore.WebAPI.Controllers;
 
 [ApiController]
-[Route("api")]
+[Route("api/")]
 public class CommentController(ICommentService commentService, IMapper mapper) : ControllerBase
 {
     // =============================
@@ -54,7 +54,8 @@ public class CommentController(ICommentService commentService, IMapper mapper) :
     [HttpGet("comments/ban/durations")]
     public IActionResult GetBanDurations()
     {
-        return Ok(commentService.GetBanDurations());
+        IList<string> durations = commentService.GetBanDurations().Select(x => x.Duration).ToList();
+        return Ok();
     }
 
     // =============================

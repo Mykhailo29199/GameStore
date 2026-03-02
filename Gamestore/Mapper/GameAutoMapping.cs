@@ -4,6 +4,7 @@ using BusinessLogicLayer.Models.CommentModels;
 using BusinessLogicLayer.Models.OrderModels;
 using BusinessLogicLayer.Models.Payment;
 using DataAccessLayer.Entities;
+using Gamestore.WebAPI.DTOs.CommentDTOs;
 using Gamestore.WebAPI.DTOs.GameDTO;
 using Gamestore.WebAPI.DTOs.GenreDTO;
 using Gamestore.WebAPI.DTOs.OrderDTO;
@@ -11,6 +12,7 @@ using Gamestore.WebAPI.DTOs.PaymentDTO;
 using Gamestore.WebAPI.DTOs.PaymentDTO.PaymentResponseDTOs;
 using Gamestore.WebAPI.DTOs.PlatformDTO;
 using Gamestore.WebAPI.DTOs.PublisherDTO;
+using Gamestore.WebAPI.DTOs.Users;
 
 namespace Gamestore.WebAPI.Mapper;
 
@@ -196,7 +198,6 @@ public class GameAutoMapping : Profile
 
         // =============================
         // CommentModel → CommentEntity
-        // (якщо десь потрібно)
         // =============================
         CreateMap<CommentModel, CommentEntity>();
 
@@ -204,9 +205,12 @@ public class GameAutoMapping : Profile
         // AddCommentModel → CommentEntity
         // =============================
         CreateMap<AddCommentModel, CommentEntity>()
-            .ForMember(dest => dest.Id, opt => opt.Ignore()) // генерується в сервісі
-            .ForMember(dest => dest.GameId, opt => opt.Ignore()) // встановлюється в сервісі
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.GameId, opt => opt.Ignore())
             .ForMember(dest => dest.Game, opt => opt.Ignore());
+
+        // DTO → Model
+        CreateMap<BanRequestDTO, BanModel>();
 
         // =============================
         // BanModel ↔ BanEntity
@@ -214,9 +218,32 @@ public class GameAutoMapping : Profile
         CreateMap<BanModel, BanEntity>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.User))
-            .ForMember(dest => dest.ExpireAt, opt => opt.Ignore()); // рахується в сервісі
+            .ForMember(dest => dest.ExpireAt, opt => opt.Ignore());
 
         CreateMap<BanEntity, BanModel>()
             .ForMember(dest => dest.User, opt => opt.MapFrom(src => src.UserName));
+
+        //CreateMap<AddCommentRequestDTO, AddCommentModel>()
+        //    .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Comment.Name))
+        //    .ForMember(dest => dest.Body, opt => opt.MapFrom(src => src.Comment.Body));
+
+        CreateMap<AddCommentRequestDTO, AddCommentModel>()
+    .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Comment.Name))
+    .ForMember(dest => dest.Body, opt => opt.MapFrom(src => src.Comment.Body))
+
+    // Вирішуємо проблему з Action (перетворюємо порожній рядок на null)
+    .ForMember(dest => dest.Action, opt => opt.MapFrom(src =>
+        string.IsNullOrWhiteSpace(src.Action) ? null : src.Action))
+
+    // Вирішуємо проблему з ParentId через Custom Mapping
+    .ForMember(dest => dest.ParentId, opt => opt.MapFrom((src, dest) =>
+    {
+        if (string.IsNullOrWhiteSpace(src.ParentId))
+        {
+            return null;
+        }
+
+        return Guid.TryParse(src.ParentId, out var guid) ? guid : (Guid?)null;
+    }));
     }
 }

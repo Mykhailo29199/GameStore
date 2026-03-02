@@ -42,17 +42,20 @@ public class CommentService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper ma
                 .GetByIdAsync(model.ParentId.Value)
                 ?? throw new NotFoundException("Parent comment not found");
 
-            if (model.Action == "reply")
+            if (model.Action == "Reply")
             {
                 body = $"[{parent.Name}], {body}";
             }
-            else if (model.Action == "quote")
+            else if (model.Action == "Quote")
             {
-                var quotedText = parent.Body == _deletedMessage
-                    ? _deletedMessage
-                    : parent.Body;
+                // Додаємо цитату у markdown-стилі
+                var quotedText = parent.Body;
+                if (string.IsNullOrWhiteSpace(quotedText))
+                {
+                    quotedText = "[Comment deleted]";
+                }
 
-                body = $"[{quotedText}], {body}";
+                body = $"> {quotedText}\n\n{body}";
             }
         }
 
@@ -120,7 +123,6 @@ public class CommentService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper ma
         new() { Duration = "1 day", Value = "1d" },
         new() { Duration = "1 week", Value = "1w" },
         new() { Duration = "1 month", Value = "1m" },
-        new() { Duration = "permanent", Value = "0" }, //  "perm"
         };
     }
 
@@ -129,6 +131,19 @@ public class CommentService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper ma
     // ============================
     public async Task BanUserAsync(BanModel model)
     {
+        var comment = await _unitOfWork.CommentRepository
+            .FirstOrDefaultAsync(c => c.Name == model.User) ?? throw new NotFoundException("User with this name has no comments");
+
+        var activeBan = await _unitOfWork.BanRepository
+            .FirstOrDefaultAsync(b =>
+                b.UserName == model.User &&
+                (b.ExpireAt == null || b.ExpireAt > DateTime.UtcNow));
+
+        if (activeBan != null)
+        {
+            throw new Exception("User already banned");
+        }
+
         DateTime? expireAt = model.Duration switch
         {
             "1 hour" => DateTime.UtcNow.AddHours(1),
@@ -139,14 +154,14 @@ public class CommentService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper ma
             _ => throw new Exception("Invalid duration"),
         };
 
-        var entity = new BanEntity
+        var banEntity = new BanEntity
         {
             Id = Guid.NewGuid(),
             UserName = model.User,
             ExpireAt = expireAt,
         };
 
-        await _unitOfWork.BanRepository.AddAsync(entity);
+        await _unitOfWork.BanRepository.AddAsync(banEntity);
         await _unitOfWork.SaveAsync();
     }
 

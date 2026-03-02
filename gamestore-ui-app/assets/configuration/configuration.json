@@ -43,9 +43,9 @@
   "makeOrderInfoApiUrl": "/orders/payment-methods",
   "payApiUrl": "/orders/payment",
   
-  "addCommentApiUrl": "games/{key}/comments",
-  "commentsByGameApiUrl": "games/{key}/comments",
-  "deleteCommentApiUrl": "games/{key}/comments/{id}",
-  "getBanDurationsApiUrl": "comments/ban/durations",
-  "banUserApiUrl": "comments/ban"
+  "addCommentApiUrl": "/games/{key}/comments",
+  "commentsByGameApiUrl": "/games/{key}/comments",
+  "deleteCommentApiUrl": "/games/{key}/comments/{id}",
+  "getBanDurationsApiUrl": "/comments/ban/durations",
+  "banUserApiUrl": "/comments/ban"
 }

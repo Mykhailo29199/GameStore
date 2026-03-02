@@ -41,4 +41,6 @@ public class GameEntity
     public ICollection<GamePlatformEntity> GamePlatforms { get; set; }
 
     public GameFileEntity GameFile { get; set; }
+
+    public ICollection<CommentEntity> Comments { get; set; }
 }

@@ -153,5 +153,47 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
                 .HasForeignKey(og => og.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
+
+        // Comment Configuration
+        // =============================
+        modelBuilder.Entity<CommentEntity>(entity =>
+        {
+            entity.HasKey(c => c.Id);
+
+            entity.Property(c => c.Name)
+                .IsRequired();
+
+            entity.Property(c => c.Body)
+                .IsRequired();
+
+            entity.Property(c => c.GameId)
+                .IsRequired();
+
+            // Comment → Game (Many-to-One)
+            entity.HasOne(c => c.Game)
+                .WithMany(g => g.Comments)
+                .HasForeignKey(c => c.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Self reference (Parent Comment)
+            entity.HasOne<CommentEntity>()
+                .WithMany()
+                .HasForeignKey(c => c.ParentCommentId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // =============================
+        // Ban Configuration
+        // =============================
+        modelBuilder.Entity<BanEntity>(entity =>
+        {
+            entity.HasKey(b => b.Id);
+
+            entity.Property(b => b.UserName)
+                .IsRequired();
+
+            entity.Property(b => b.ExpireAt)
+                .IsRequired(false);
+        });
     }
 }

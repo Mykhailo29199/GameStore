@@ -22,6 +22,53 @@ namespace DataAccessLayer.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("DataAccessLayer.Entities.BanEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ExpireAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("BanEntity");
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Entities.CommentEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("GameId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("ParentCommentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GameId");
+
+                    b.HasIndex("ParentCommentId");
+
+                    b.ToTable("CommentEntity");
+                });
+
             modelBuilder.Entity("DataAccessLayer.Entities.GameEntity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -47,14 +94,6 @@ namespace DataAccessLayer.Migrations
 
                     b.Property<double>("Price")
                         .HasColumnType("float");
-
-                    b.Property<Guid>("PublisherId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("UnitInStock")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
 
                     b.Property<Guid>("PublisherId")
                         .HasColumnType("uniqueidentifier");
@@ -219,6 +258,22 @@ namespace DataAccessLayer.Migrations
                     b.ToTable("PublisherEntity");
                 });
 
+            modelBuilder.Entity("DataAccessLayer.Entities.CommentEntity", b =>
+                {
+                    b.HasOne("DataAccessLayer.Entities.GameEntity", "Game")
+                        .WithMany("Comments")
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DataAccessLayer.Entities.CommentEntity", null)
+                        .WithMany()
+                        .HasForeignKey("ParentCommentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Game");
+                });
+
             modelBuilder.Entity("DataAccessLayer.Entities.GameEntity", b =>
                 {
                     b.HasOne("DataAccessLayer.Entities.PublisherEntity", "Publisher")
@@ -309,6 +364,8 @@ namespace DataAccessLayer.Migrations
 
             modelBuilder.Entity("DataAccessLayer.Entities.GameEntity", b =>
                 {
+                    b.Navigation("Comments");
+
                     b.Navigation("GameFile")
                         .IsRequired();
 

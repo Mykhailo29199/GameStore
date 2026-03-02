@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Models;
+using BusinessLogicLayer.Models.CommentModels;
 using BusinessLogicLayer.Models.OrderModels;
 using BusinessLogicLayer.Models.Payment;
 using DataAccessLayer.Entities;
@@ -188,5 +189,34 @@ public class GameAutoMapping : Profile
         // Nested responses
         CreateMap<BankResponseModel, BankResponseDTO>();
         CreateMap<IBoxResponseModel, IBoxResponseDTO>();
+
+        // CommentEntity → CommentModel
+        // =============================
+        CreateMap<CommentEntity, CommentModel>();
+
+        // =============================
+        // CommentModel → CommentEntity
+        // (якщо десь потрібно)
+        // =============================
+        CreateMap<CommentModel, CommentEntity>();
+
+        // =============================
+        // AddCommentModel → CommentEntity
+        // =============================
+        CreateMap<AddCommentModel, CommentEntity>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore()) // генерується в сервісі
+            .ForMember(dest => dest.GameId, opt => opt.Ignore()) // встановлюється в сервісі
+            .ForMember(dest => dest.Game, opt => opt.Ignore());
+
+        // =============================
+        // BanModel ↔ BanEntity
+        // =============================
+        CreateMap<BanModel, BanEntity>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.User))
+            .ForMember(dest => dest.ExpireAt, opt => opt.Ignore()); // рахується в сервісі
+
+        CreateMap<BanEntity, BanModel>()
+            .ForMember(dest => dest.User, opt => opt.MapFrom(src => src.UserName));
     }
 }

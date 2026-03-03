@@ -47,7 +47,11 @@ public class OrderService : IOrderService
     public async Task<IEnumerable<OrderGameModel>> GetCartAsync(Guid userId)
     {
         var order = await _unitOfWork.OrderRepository.GetActiveCartAsync(userId);
-        return order == null ? Enumerable.Empty<OrderGameModel>() : _mapper.Map<IEnumerable<OrderGameModel>>(order.OrderGames);
+        IEnumerable<OrderGameModel> cartGames = order == null
+            ? []
+            : _mapper.Map<IEnumerable<OrderGameModel>>(order.OrderGames);
+
+        return cartGames;
     }
 
     // Add game to cart

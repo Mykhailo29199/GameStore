@@ -70,7 +70,7 @@ public class OrderService : IOrderService
                 CustomerId = userId,
                 Status = OrderStatus.Open,
                 Date = DateTime.UtcNow,
-                OrderGames = new List<OrderGameEntity>(),
+                OrderGames = [],
             };
             await _unitOfWork.OrderRepository.AddAsync(order);
         }

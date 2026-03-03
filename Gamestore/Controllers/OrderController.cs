@@ -35,12 +35,7 @@ public class OrderController(IPaymentService paymentService, IOrderService order
             return new FileContentResult(responseDto.BankResponseDTO.FileBytes, "application/pdf");
         }
 
-        if (responseDto.Method == "IBox terminal" && responseDto.IBoxResponseDTO != null)
-        {
-            return Ok(responseDto.IBoxResponseDTO);
-        }
-
-        return Ok();
+        return responseDto.Method == "IBox terminal" && responseDto.IBoxResponseDTO != null ? Ok(responseDto.IBoxResponseDTO) : Ok();
     }
 
     [HttpGet("orders/payment-methods")]

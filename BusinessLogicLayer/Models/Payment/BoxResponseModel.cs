@@ -1,6 +1,6 @@
 ﻿namespace BusinessLogicLayer.Models.Payment;
 
-public class IBoxResponseModel
+public class BoxResponseModel
 {
     public Guid OrderId { get; set; }
 

@@ -10,5 +10,5 @@ public class PaymentResponseModel
 
     public BankResponseModel BankResponseModel { get; set; }
 
-    public IBoxResponseModel IBoxResponseModel { get; set; }
+    public BoxResponseModel IBoxResponseModel { get; set; }
 }

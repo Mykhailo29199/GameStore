@@ -132,15 +132,10 @@ public class GameAutoMapping : Profile
         // Visa
         CreateMap<VisaPaymentDTO, VisaPaymentModel>()
             .ForMember(dest => dest.CardHolderName, opt => opt.MapFrom(src => src.Holder))
-
             .ForMember(dest => dest.ExpirationMonth, opt => opt.MapFrom(src => src.MonthExpire))
-
             .ForMember(dest => dest.ExpirationYear, opt => opt.MapFrom(src => src.YearExpire))
-
             .ForMember(dest => dest.Cvv, opt => opt.MapFrom(src => src.Cvv2))
-
-            // if TransactionAmount is not filled in from DTO
-            .ForMember(dest => dest.TransactionAmount, opt => opt.Ignore());
+            .ForMember(dest => dest.TransactionAmount, opt => opt.Ignore());   // if TransactionAmount is not filled in from DTO
 
         // OrderEntity->OrderModel
         CreateMap<OrderEntity, OrderModel>()
@@ -187,6 +182,6 @@ public class GameAutoMapping : Profile
 
         // Nested responses
         CreateMap<BankResponseModel, BankResponseDTO>();
-        CreateMap<IBoxResponseModel, IBoxResponseDTO>();
+        CreateMap<BoxResponseModel, IBoxResponseDTO>();
     }
 }

@@ -1,6 +1,6 @@
 ﻿namespace BusinessLogicLayer.Models.Payment;
 
-public class IBoxPaymentModel
+public class BoxPaymentModel
 {
     public decimal TransactionAmount { get; set; }
 

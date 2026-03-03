@@ -23,9 +23,9 @@ public class VisaPaymentDTO
     [RegularExpression(@"^[0-9]{3}$", ErrorMessage = "CVV must be exactly 3 digits.")]
     public int Cvv2 { get; set; }
 
-    public IEnumerable<ValidationResult> Validate(
-      ValidationContext validationContext)
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
+        _ = validationContext;
         var now = DateTime.UtcNow;
 
         if (YearExpire < now.Year)

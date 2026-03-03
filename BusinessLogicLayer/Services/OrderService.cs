@@ -57,11 +57,11 @@ public class OrderService : IOrderService
     // Add game to cart
     public async Task AddGameAsync(Guid userId, string gameKey)
     {
-        var game = await _unitOfWork.GameRepository.GetGameByKeyAsync(gameKey) ?? throw new Exception("Game not found");
+        var game = await _unitOfWork.GameRepository.GetGameByKeyAsync(gameKey) ?? throw new ArgumentException("Game not found");
 
         if (game.UnitInStock <= 0)
         {
-            throw new Exception("Game is out of stock");
+            throw new ArgumentException("Game is out of stock");
         }
 
         var order = await _unitOfWork.OrderRepository.GetActiveCartAsync(userId);
@@ -111,30 +111,14 @@ public class OrderService : IOrderService
     {
         if (userId == null || userId == Guid.Empty)
         {
-            throw new Exception("Guest cart not supported in this implementation");
+            throw new ArgumentException("Guest cart not supported in this implementation");
         }
 
         var game = await _unitOfWork.GameRepository.GetGameByKeyAsync(gameKey) ?? throw new NotFoundException("Game not found");
         var order = await _unitOfWork.OrderRepository.GetActiveCartAsync(userId.Value) ?? throw new NotFoundException("Active cart not found");
         var orderGame = await _unitOfWork.OrderGameRepository.GetOrderGameAsync(order.Id, game.Id) ?? throw new NotFoundException("Game not found in order");
 
-        if (orderGame.Quantity > 1)
-        {
-            orderGame.Quantity--;
-        }
-        else
-        {
-            await _unitOfWork.OrderGameRepository.DeleteAsync(orderGame);
-
-            // Get the balance of games in the cart
-            var remainingGames = await _unitOfWork.OrderGameRepository.GetOrderGamesAsync(order.Id);
-            if (remainingGames.Count == 0)
-            {
-                await _unitOfWork.OrderRepository.DeleteAsync(order);
-            }
-        }
-
-        await _unitOfWork.SaveAsync();
+        await UpdateGameQuantityAsync(orderGame, order);
     }
 
     public async Task CheckoutAsync(Guid orderId)
@@ -143,7 +127,7 @@ public class OrderService : IOrderService
 
         if (order.OrderGames.Count == 0)
         {
-            throw new Exception("Cannot checkout empty order");
+            throw new ArgumentException("Cannot checkout empty order");
         }
 
         order.Status = OrderStatus.Checkout;
@@ -172,6 +156,27 @@ public class OrderService : IOrderService
     {
         var order = await _unitOfWork.OrderRepository.GetOrderWithGamesAsync(orderId) ?? throw new NotFoundException("Order not found");
         order.Status = OrderStatus.Cancelled;
+
+        await _unitOfWork.SaveAsync();
+    }
+
+    private async Task UpdateGameQuantityAsync(OrderGameEntity orderGame, OrderEntity order)
+    {
+        if (orderGame.Quantity > 1)
+        {
+            orderGame.Quantity--;
+        }
+        else
+        {
+            await _unitOfWork.OrderGameRepository.DeleteAsync(orderGame);
+
+            // Get the balance of games in the cart
+            var remainingGames = await _unitOfWork.OrderGameRepository.GetOrderGamesAsync(order.Id);
+            if (remainingGames.Count == 0)
+            {
+                await _unitOfWork.OrderRepository.DeleteAsync(order);
+            }
+        }
 
         await _unitOfWork.SaveAsync();
     }

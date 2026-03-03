@@ -16,11 +16,6 @@ public class PaymentController(IPaymentService paymentService, IMapper mapper) :
     [HttpPost("payment")]
     public async Task<IActionResult> ProcessPayment([FromBody] PaymentRequestDTO request)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
-
         var requestModel = _mapper.Map<PaymentRequestModel>(request);
         var responseModel = await _paymentService.ProcessPayment(requestModel);
 
@@ -34,11 +29,8 @@ public class PaymentController(IPaymentService paymentService, IMapper mapper) :
             return File(responseModel.BankResponseModel.FileBytes, "application/pdf", $"invoice.pdf");
         }
 
-        if (responseModel.Method == "IBox terminal" && responseModel.IBoxResponseModel != null)
-        {
-            return Ok(responseModel.IBoxResponseModel);
-        }
-
-        return Ok();
+        return responseModel.Method == "IBox terminal" && responseModel.IBoxResponseModel != null
+            ? Ok(responseModel.IBoxResponseModel)
+            : Ok();
     }
 }

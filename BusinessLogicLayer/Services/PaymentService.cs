@@ -82,7 +82,7 @@ public class PaymentService : IPaymentService
         OrderEntity order,
         decimal total)
     {
-        var model = new IBoxPaymentModel
+        var model = new BoxPaymentModel
         {
             AccountNumber = CustomerStub.StubCustomerId,
             TransactionAmount = total,
@@ -101,7 +101,7 @@ public class PaymentService : IPaymentService
 
         if (response.IsSuccessStatusCode)
         {
-            result.IBoxResponseModel = new IBoxResponseModel
+            result.IBoxResponseModel = new BoxResponseModel
             {
                 OrderId = order.Id,
                 UserId = Guid.NewGuid(),
@@ -149,10 +149,10 @@ public class PaymentService : IPaymentService
     }
 
     private async Task<PaymentResponseModel> BuildPaymentResponseAsync(
-     HttpResponseMessage response,
-     OrderEntity order,
-     string method,
-     string insufficientFundsMessage)
+    HttpResponseMessage response,
+    OrderEntity order,
+    string method,
+    string insufficientFundsMessage)
     {
         var newStatus = response.IsSuccessStatusCode
             ? OrderStatus.Paid
@@ -160,21 +160,21 @@ public class PaymentService : IPaymentService
 
         await SetOrderStatusAsync(order, newStatus);
 
-        if (response.StatusCode == HttpStatusCode.PaymentRequired)
-        {
-            return new PaymentResponseModel
+        var status = response.IsSuccessStatusCode ? "Success" : "Failed";
+
+        PaymentResponseModel result = response.StatusCode == HttpStatusCode.PaymentRequired
+            ? new PaymentResponseModel
             {
                 Status = "Failed",
                 Method = method,
                 Message = insufficientFundsMessage,
+            }
+            : new PaymentResponseModel
+            {
+                Status = status,
+                Method = method,
             };
-        }
-
-        return new PaymentResponseModel
-        {
-            Status = response.IsSuccessStatusCode ? "Success" : "Failed",
-            Method = method,
-        };
+        return result;
     }
 
     private async Task SetOrderStatusAsync(OrderEntity order, OrderStatus status)

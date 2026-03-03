@@ -11,10 +11,7 @@ namespace Gamestore.WebAPI.Controllers;
 [Route("api/")]
 public class CommentController(ICommentService commentService, IMapper mapper) : ControllerBase
 {
-    // =============================
-    // US1 Add Comment
-    // POST /games/{key}/comments
-    // =============================
+    // Add Comment
     [HttpPost("games/{key}/comments")]
     public async Task<IActionResult> AddComment(string key, [FromBody] AddCommentRequestDTO dto)
     {
@@ -23,10 +20,6 @@ public class CommentController(ICommentService commentService, IMapper mapper) :
         return Ok();
     }
 
-    // =============================
-    // US2 Get Comments
-    // GET /games/{key}/comments
-    // =============================
     [HttpGet("games/{key}/comments")]
     public async Task<IActionResult> GetComments(string key)
     {
@@ -35,10 +28,6 @@ public class CommentController(ICommentService commentService, IMapper mapper) :
         return Ok(result);
     }
 
-    // =============================
-    // US3 Delete Comment
-    // DELETE /games/{key}/comments/{id}
-    // =============================
     [HttpDelete("games/{key}/comments/{id}")]
     public async Task<IActionResult> DeleteComment(string key, Guid id)
     {
@@ -47,21 +36,17 @@ public class CommentController(ICommentService commentService, IMapper mapper) :
         return NoContent();
     }
 
-    // =============================
-    // US4 Ban durations
-    // GET /comments/ban/durations
-    // =============================
     [HttpGet("comments/ban/durations")]
     public IActionResult GetBanDurations()
     {
-        IList<string> durations = commentService.GetBanDurations().Select(x => x.Duration).ToList();
-        return Ok();
+        var result = commentService
+        .GetBanDurations()
+        .Select(x => x.Duration)
+        .ToList();
+
+        return Ok(result);
     }
 
-    // =============================
-    // US5 Ban user
-    // POST /comments/ban
-    // =============================
     [HttpPost("comments/ban")]
     public async Task<IActionResult> BanUser([FromBody] BanRequestDTO dto)
     {

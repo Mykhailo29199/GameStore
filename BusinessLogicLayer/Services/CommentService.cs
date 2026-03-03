@@ -15,9 +15,6 @@ public class CommentService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper ma
 
     private readonly string _deletedMessage = "A comment/quote was deleted";
 
-    // ============================
-    // US1 – Add Comment
-    // ============================
     public async Task AddCommentAsync(string gameKey, AddCommentModel model)
     {
         var game = await _unitOfWork.GameRepository
@@ -48,7 +45,6 @@ public class CommentService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper ma
             }
             else if (model.Action == "Quote")
             {
-                // Додаємо цитату у markdown-стилі
                 var quotedText = parent.Body;
                 if (string.IsNullOrWhiteSpace(quotedText))
                 {
@@ -72,9 +68,6 @@ public class CommentService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper ma
         await _unitOfWork.SaveAsync();
     }
 
-    // ============================
-    // US2 – Get Comments
-    // ============================
     public async Task<List<CommentModel>> GetGameCommentsAsync(string gameKey)
     {
         var game = await _unitOfWork.GameRepository
@@ -89,9 +82,6 @@ public class CommentService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper ma
         return BuildTree(models);
     }
 
-    // ============================
-    // US3 – Delete (Soft)
-    // ============================
     public async Task DeleteCommentAsync(string gameKey, Guid id)
     {
         var game = await _unitOfWork.GameRepository
@@ -112,23 +102,17 @@ public class CommentService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper ma
         await _unitOfWork.SaveAsync();
     }
 
-    // ============================
-    // US4 – Durations
-    // ============================
     public List<BanDurationOption> GetBanDurations()
     {
         return new List<BanDurationOption>
-        {
-        new() { Duration = "1 hour", Value = "1h" },
-        new() { Duration = "1 day", Value = "1d" },
-        new() { Duration = "1 week", Value = "1w" },
-        new() { Duration = "1 month", Value = "1m" },
-        };
+    {
+        new() { Duration = "1 hour" },
+        new() { Duration = "1 day" },
+        new() { Duration = "1 week" },
+        new() { Duration = "1 month" },
+    };
     }
 
-    // ============================
-    // US5 – Ban user
-    // ============================
     public async Task BanUserAsync(BanModel model)
     {
         var comment = await _unitOfWork.CommentRepository
@@ -141,7 +125,7 @@ public class CommentService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper ma
 
         if (activeBan != null)
         {
-            throw new Exception("User already banned");
+            throw new ArgumentException("User already banned");
         }
 
         DateTime? expireAt = model.Duration switch

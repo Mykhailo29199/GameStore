@@ -132,7 +132,7 @@ public class GenreService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapp
 
             if (parent.Id == genreId)
             {
-                return true; // знайдено цикл
+                return true;
             }
 
             if (!parent.ParentGenreId.HasValue)

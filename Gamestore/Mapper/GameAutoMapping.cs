@@ -223,19 +223,12 @@ public class GameAutoMapping : Profile
         CreateMap<BanEntity, BanModel>()
             .ForMember(dest => dest.User, opt => opt.MapFrom(src => src.UserName));
 
-        //CreateMap<AddCommentRequestDTO, AddCommentModel>()
-        //    .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Comment.Name))
-        //    .ForMember(dest => dest.Body, opt => opt.MapFrom(src => src.Comment.Body));
-
         CreateMap<AddCommentRequestDTO, AddCommentModel>()
     .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Comment.Name))
     .ForMember(dest => dest.Body, opt => opt.MapFrom(src => src.Comment.Body))
 
-    // Вирішуємо проблему з Action (перетворюємо порожній рядок на null)
     .ForMember(dest => dest.Action, opt => opt.MapFrom(src =>
         string.IsNullOrWhiteSpace(src.Action) ? null : src.Action))
-
-    // Вирішуємо проблему з ParentId через Custom Mapping
     .ForMember(dest => dest.ParentId, opt => opt.MapFrom((src, dest) =>
     {
         if (string.IsNullOrWhiteSpace(src.ParentId))

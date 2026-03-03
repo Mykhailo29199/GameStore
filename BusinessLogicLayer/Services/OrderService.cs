@@ -20,7 +20,7 @@ public class OrderService : IOrderService
         _mapper = mapper;
     }
 
-    // US2: Get paid and cancelled orders
+    //  Get paid and cancelled orders
     public async Task<IEnumerable<OrderModel>> GetClosedOrdersAsync()
     {
         var orders = await _unitOfWork.OrderRepository.FindAsync(o =>
@@ -29,7 +29,6 @@ public class OrderService : IOrderService
         return _mapper.Map<IEnumerable<OrderModel>>(orders);
     }
 
-    // US2: Get order by id
     public async Task<OrderModel?> GetOrderByIdAsync(Guid orderId)
     {
         var order = await _unitOfWork.OrderRepository.GetOrderWithGamesAsync(orderId)
@@ -38,7 +37,6 @@ public class OrderService : IOrderService
         return _mapper.Map<OrderModel?>(order);
     }
 
-    // US3: Get order details
     public async Task<IEnumerable<OrderGameModel>> GetOrderDetailsAsync(Guid orderId)
     {
         var order = await _unitOfWork.OrderRepository.GetOrderWithGamesAsync(orderId) ?? throw new NotFoundException("Order not found");
@@ -46,14 +44,13 @@ public class OrderService : IOrderService
         return _mapper.Map<IEnumerable<OrderGameModel>>(orderGames);
     }
 
-    // US4: Get cart
     public async Task<IEnumerable<OrderGameModel>> GetCartAsync(Guid userId)
     {
         var order = await _unitOfWork.OrderRepository.GetActiveCartAsync(userId);
         return order == null ? Enumerable.Empty<OrderGameModel>() : _mapper.Map<IEnumerable<OrderGameModel>>(order.OrderGames);
     }
 
-    // US1: Add game to cart
+    // Add game to cart
     public async Task AddGameAsync(Guid userId, string gameKey)
     {
         var game = await _unitOfWork.GameRepository.GetGameByKeyAsync(gameKey) ?? throw new Exception("Game not found");
@@ -105,7 +102,7 @@ public class OrderService : IOrderService
         await _unitOfWork.SaveAsync();
     }
 
-    // US1: Remove game from cart
+    // Remove game from cart
     public async Task RemoveGameAsync(Guid? userId, string gameKey)
     {
         if (userId == null || userId == Guid.Empty)
@@ -136,7 +133,6 @@ public class OrderService : IOrderService
         await _unitOfWork.SaveAsync();
     }
 
-    // Checkout
     public async Task CheckoutAsync(Guid orderId)
     {
         var order = await _unitOfWork.OrderRepository.GetOrderWithGamesAsync(orderId) ?? throw new NotFoundException("Order not found");
@@ -150,7 +146,6 @@ public class OrderService : IOrderService
         await _unitOfWork.SaveAsync();
     }
 
-    // Complete payment
     public async Task CompletePaymentAsync(Guid orderId)
     {
         var order = await _unitOfWork.OrderRepository.GetOrderWithGamesAsync(orderId) ?? throw new NotFoundException("Order not found");
@@ -169,7 +164,6 @@ public class OrderService : IOrderService
         await _unitOfWork.SaveAsync();
     }
 
-    // Cancel order
     public async Task CancelOrderAsync(Guid orderId)
     {
         var order = await _unitOfWork.OrderRepository.GetOrderWithGamesAsync(orderId) ?? throw new NotFoundException("Order not found");

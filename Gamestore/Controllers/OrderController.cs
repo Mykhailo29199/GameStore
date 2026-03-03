@@ -23,7 +23,6 @@ public class OrderController(IPaymentService paymentService, IOrderService order
         var requestModel = _mapper.Map<PaymentRequestModel>(request);
         var responseModel = await _paymentService.ProcessPayment(requestModel);
 
-        // Мапінг назад: Model → DTO
         var responseDto = _mapper.Map<PaymentResponseDTO>(responseModel);
 
         if (responseModel.Status != "Success")
@@ -51,19 +50,19 @@ public class OrderController(IPaymentService paymentService, IOrderService order
     {
         new PaymentMethodResponseDTO
         {
-            ImageUrl = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png", // Open-source bank icon
+            ImageUrl = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
             Title = "Bank",
             Description = "Payment via bank account. You will receive a PDF invoice for payment.",
         },
         new PaymentMethodResponseDTO
         {
-            ImageUrl = "https://green-api.volia.com/media/6407a7b23eb69_ibox.jpg", // Open-source terminal icon
+            ImageUrl = "https://green-api.volia.com/media/6407a7b23eb69_ibox.jpg",
             Title = "IBox terminal",
             Description = "Payment via the IBox self-service terminal.",
         },
         new PaymentMethodResponseDTO
         {
-            ImageUrl = "https://cdn-icons-png.flaticon.com/512/349/349221.png", // Open-source Visa icon
+            ImageUrl = "https://cdn-icons-png.flaticon.com/512/349/349221.png",
             Title = "Visa",
             Description = "Payment by Visa bank card.",
         },
@@ -79,7 +78,6 @@ public class OrderController(IPaymentService paymentService, IOrderService order
         return Ok();
     }
 
-    // US1: Remove game from cart
     [HttpDelete("orders/cart/{key}")]
     public async Task<IActionResult> RemoveGameFromCart(string key)
     {
@@ -87,7 +85,7 @@ public class OrderController(IPaymentService paymentService, IOrderService order
         return Ok();
     }
 
-    // US2: Get paid and cancelled orders
+    // Get paid and cancelled orders
     [HttpGet("orders")]
     public async Task<ActionResult<IEnumerable<OrderDTO>>> GetClosedOrders()
     {
@@ -97,7 +95,6 @@ public class OrderController(IPaymentService paymentService, IOrderService order
         return Ok(orderDtos);
     }
 
-    // US2: Get order by id
     [HttpGet("orders/{id}")]
     public async Task<ActionResult<OrderDTO>> GetOrderById(Guid id)
     {
@@ -107,7 +104,6 @@ public class OrderController(IPaymentService paymentService, IOrderService order
         return Ok(orderDto);
     }
 
-    // US3: Get order details
     [HttpGet("orders/{id}/details")]
     public async Task<ActionResult<IEnumerable<OrderGameDTO>>> GetOrderDetails(Guid id)
     {
@@ -117,7 +113,6 @@ public class OrderController(IPaymentService paymentService, IOrderService order
         return Ok(dtos);
     }
 
-    // US4: Get cart
     [HttpGet("orders/cart")]
     public async Task<ActionResult<IEnumerable<OrderGameDTO>>> GetCart()
     {

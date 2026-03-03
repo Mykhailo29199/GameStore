@@ -4,10 +4,6 @@ namespace Gamestore.WebAPI.DTOs.PaymentDTO;
 
 public class VisaPaymentDTO
 {
-    //[Required]
-    //[Range(0.01, 1_000_000, ErrorMessage = "Transaction amount must be greater than 0.")]
-    //public double TransactionAmount { get; set; }
-
     [Required]
     [StringLength(100, MinimumLength = 2, ErrorMessage = "Card holder name must be between 2 and 100 characters.")]
     [RegularExpression(@"^[a-zA-Z\s'-]+$", ErrorMessage = "Card holder name contains invalid characters.")]

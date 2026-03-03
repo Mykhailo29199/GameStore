@@ -34,10 +34,6 @@ public class PaymentService : IPaymentService
         _fileSystem = fileSystem;
     }
 
-    // ============================
-    // PUBLIC API
-    // ============================
-
     public async Task<PaymentResponseModel> ProcessPayment(PaymentRequestModel request)
     {
         ValidateRequest(request);
@@ -79,7 +75,7 @@ public class PaymentService : IPaymentService
             response,
             order,
             VisaMethod,
-            "Недостатньо коштів для оплати Visa");
+            "Insufficient funds for Visa payment.");
     }
 
     private async Task<PaymentResponseModel> ProcessIBoxPayment(
@@ -101,7 +97,7 @@ public class PaymentService : IPaymentService
             response,
             order,
             IBoxMethod,
-            "Недостатньо коштів для оплати через IBox");
+            "Not enough funds to complete the payment via IBox.");
 
         if (response.IsSuccessStatusCode)
         {

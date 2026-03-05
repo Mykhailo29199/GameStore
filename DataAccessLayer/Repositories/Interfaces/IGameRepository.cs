@@ -13,4 +13,6 @@ public interface IGameRepository : IGenericRepository<GameEntity>
     Task<List<PlatformEntity>> GetPlatformsByGameKeyAsync(string gameKey);
 
     Task<PublisherEntity> GetPublisherByGameKeyAsync(string gameKey);
+
+    IQueryable<GameEntity> GetQueryable();
 }

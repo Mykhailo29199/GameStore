@@ -1,0 +1,28 @@
+﻿namespace Gamestore.WebAPI.DTOs.GameDTO;
+
+public class GameFilterDTO
+{
+    private string? _pageCount;
+
+    public List<Guid>? Genres { get; set; }
+
+    public List<Guid>? Platforms { get; set; }
+
+    public List<Guid>? Publishers { get; set; }
+
+    public double? MinPrice { get; set; }
+
+    public double? MaxPrice { get; set; }
+
+    public string? DatePublishing { get; set; }
+
+    public string? Name { get; set; }
+
+    public string? Sort { get; set; }
+
+    public int Page { get; set; } = 1;
+
+    public string? PageCount { get => _pageCount ?? "10"; set => _pageCount = value; }
+
+    public string Trigger { get; set; }
+}

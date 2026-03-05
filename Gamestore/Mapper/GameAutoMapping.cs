@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Models;
 using BusinessLogicLayer.Models.CommentModels;
+using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Models.OrderModels;
 using BusinessLogicLayer.Models.Payment;
 using DataAccessLayer.Entities;
@@ -43,7 +44,7 @@ public class GameAutoMapping : Profile
     .ForMember(dest => dest.Publisher, opt => opt.MapFrom(src => src.PublisherId))
     ;
 
-        CreateMap<GameWithIdDto, GameModel>()
+        CreateMap<GameWithIdDTO, GameModel>()
             .IncludeBase<GameDTO, GameModel>()
             .ReverseMap();
 
@@ -238,5 +239,15 @@ public class GameAutoMapping : Profile
 
         return Guid.TryParse(src.ParentId, out var guid) ? guid : (Guid?)null;
     }));
+
+        // FilterDTO -> FilterModel
+        // ================================
+        CreateMap<GameFilterDTO, GameFilterModel>();
+
+        // ================================
+        // ResultModel -> ResultDto
+        // ================================
+        CreateMap<FilteredGamesResultModel, FilteredGamesResultDTO>()
+            .ForMember(dest => dest.Games, opt => opt.MapFrom(src => src.Games));
     }
 }

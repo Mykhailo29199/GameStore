@@ -32,6 +32,14 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
         {
             entity.HasKey(g => g.Id);
 
+            entity.Property(g => g.Views)
+              .IsRequired()
+              .HasDefaultValue(0);
+
+            entity.Property(g => g.CreatedAt)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+
             entity.HasOne(g => g.Publisher)
              .WithMany(p => p.Games)
              .HasForeignKey(g => g.PublisherId)
@@ -77,30 +85,6 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
             .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(gp => gp.Platform).WithMany().HasForeignKey(gp => gp.PlatformId).OnDelete(DeleteBehavior.Cascade);
-        });
-
-        // ===================== GenreEntity =====================
-        modelBuilder.Entity<GenreEntity>(entity =>
-        {
-            entity.HasKey(g => g.Id);                            // Self-reference: ParentGenre → SubGenres
-
-            entity.HasOne(g => g.ParentGenre)
-            .WithMany(g => g.SubGenres)
-            .HasForeignKey(g => g.ParentGenreId);
-        });
-
-        // ===================== PlatformEntity =====================
-        modelBuilder.Entity<PlatformEntity>().HasIndex(p => p.Type).IsUnique();
-
-        // ===================== PublisherEntity =====================
-        modelBuilder.Entity<PublisherEntity>(entity =>
-        {
-            entity.HasKey(p => p.Id);
-
-            entity.HasMany(p => p.Games)
-            .WithOne(g => g.Publisher)
-            .HasForeignKey(g => g.PublisherId)
-            .OnDelete(DeleteBehavior.Cascade);
         });
 
         // ===================== GenreEntity =====================
@@ -188,6 +172,8 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
         modelBuilder.Entity<BanEntity>(entity =>
         {
             entity.HasKey(b => b.Id);
+
+            entity.HasIndex(b => b.UserName);
 
             entity.Property(b => b.UserName)
                 .IsRequired();

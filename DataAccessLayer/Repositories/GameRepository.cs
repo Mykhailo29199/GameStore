@@ -50,4 +50,15 @@ public class GameRepository(GameStoreContext context) : GenericRepository<GameEn
 
         return publisher;
     }
+
+    public IQueryable<GameEntity> GetQueryable()
+    {
+        return _dbSet
+            .Include(g => g.Publisher)
+            .Include(g => g.GameGenres)
+                .ThenInclude(gg => gg.Genre)
+            .Include(g => g.GamePlatforms)
+                .ThenInclude(gp => gp.Platform)
+            .Include(g => g.Comments);
+    }
 }

@@ -2,7 +2,7 @@
 
 public class UpdateGameDTO
 {
-    public GameWithIdDto Game { get; set; }
+    public GameWithIdDTO Game { get; set; }
 
     public Guid Publisher { get; set; }
 

@@ -1,13 +1,16 @@
 {
   "baseApiUrl": "/api",
 
+  "getPublishedDateOptionsApiUrl": "/games/publish-date-options",
+  "getSortingOptionsApiUrl": "/games/sorting-options",
+  "getPaggingOptionsApiUrl": "/games/pagination-options",
   "gameApiUrl": "/game/{key}",
   "gameByIdApiUrl": "/game/{id}",
   "gamesApiUrl": "/games",
   "gamesByGenreApiUrl": "/games/genre/{id}",
   "gamesByPublisherApiUrl": "/games/publisher/{id}",
   "gamesByPlatformApiUrl": "/games/platform/{id}",
-  "getGameFile": "/game/{key}/file",
+  "getGameFileApiUrl": "/game/{key}/file",
   "updateGameApiUrl": "/game",
   "addGameApiUrl": "/game",
   "deleteGameApiUrl": "/game/{key}",

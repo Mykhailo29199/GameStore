@@ -309,7 +309,6 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-
 function CheckboxesInputComponent_div_1_Template(rf, ctx) { if (rf & 1) {
     _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵelementStart"](0, "div");
     _angular_core__WEBPACK_IMPORTED_MODULE_1__["ɵɵtext"](1);
@@ -346,7 +345,6 @@ function CheckboxesInputComponent_div_2_Template(rf, ctx) { if (rf & 1) {
 class CheckboxesInputComponent extends _base_component__WEBPACK_IMPORTED_MODULE_0__.BaseComponent {
     constructor() {
         super(...arguments);
-        this.id = guid_typescript__WEBPACK_IMPORTED_MODULE_0__.Guid.create().toString();
         this.name = '';
     }
     getItem(index) {
@@ -2325,7 +2323,7 @@ class BasketPageComponent extends src_app_componetns_base_component__WEBPACK_IMP
     }
     ngOnInit() {
         this.refreshBasketItems();
-}
+    }
     refreshBasketItems() {
         this.orderService
             .getBasket()

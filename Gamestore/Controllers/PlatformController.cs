@@ -61,7 +61,7 @@ public class PlatformController(IPlatformService platformService, IMapper mapper
     public async Task<IActionResult> GetGamesByPlatformIdAsync([FromRoute] Guid platformId)
     {
         var gameModels = await _platformService.GetGamesByPlatformIdAsync(platformId);
-        var gameDTOs = _mapper.Map<List<GameWithIdDto>>(gameModels);
+        var gameDTOs = _mapper.Map<List<GameWithIdDTO>>(gameModels);
 
         return Ok(gameDTOs);
     }

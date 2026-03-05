@@ -1,4 +1,4 @@
-﻿namespace BusinessLogicLayer.Models;
+﻿namespace BusinessLogicLayer.Models.GameModels;
 
 public class GameModel
 {

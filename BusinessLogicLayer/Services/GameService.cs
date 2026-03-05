@@ -1,12 +1,15 @@
 ﻿using System.Text.RegularExpressions;
 using AutoMapper;
 using BusinessLogicLayer.Models;
+using BusinessLogicLayer.Models.FilterOptions;
+using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Services.Interaces;
 using DataAccessLayer.Entities;
 using DataAccessLayer.StoreContext;
 using DataAccessLayer.UnitOfWork;
 using GameStore.Shared.Exceptions;
 using GameStore.Shared.FileSystem;
+using Microsoft.EntityFrameworkCore;
 using CultureInfo = System.Globalization.CultureInfo;
 
 namespace BusinessLogicLayer.Services;
@@ -51,11 +54,17 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
 
     public async Task<GameModel> GetGameByKeyAsync(string key)
     {
-        var gameEntity = await _unitOfWork.GameRepository.GetGameByKeyAsync(key);
+        var gameEntity = await _unitOfWork.GameRepository.GetGameByKeyAsync(key)
+            ?? throw new NotFoundException($"Game with Key '{key}' was not found.");
 
-        return gameEntity != null
-            ? _mapper.Map<GameModel>(gameEntity)
-            : throw new NotFoundException($"Game with Key '{key}' was not found.");
+        gameEntity.Views++;
+
+        await _unitOfWork.GameRepository.UpdateAsync(gameEntity);
+        await _unitOfWork.SaveAsync();
+
+        var resultGameEntity = _mapper.Map<GameModel>(gameEntity);
+
+        return resultGameEntity;
     }
 
     public async Task<GameModel> GetGameByIdAsync(Guid gameId)
@@ -157,6 +166,131 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
         var games = await _unitOfWork.GameRepository.GetAllAsync();
 
         return games.Count();
+    }
+
+    public List<PaginationOptions> GetPaginationOptions()
+    {
+        return new List<PaginationOptions>()
+        {
+            new PaginationOptions { Pagination = "10" },
+            new PaginationOptions { Pagination = "20" },
+            new PaginationOptions { Pagination = "50" },
+            new PaginationOptions { Pagination = "100" },
+            new PaginationOptions { Pagination = "All" },
+        };
+    }
+
+    public List<SortingOptions> GetSortingOptions()
+    {
+        return new List<SortingOptions>()
+        {
+            new SortingOptions { Sorting = "Most popular" },
+            new SortingOptions { Sorting = "Most commented" },
+            new SortingOptions { Sorting = "Price ASC" },
+            new SortingOptions { Sorting = "Price DESC" },
+            new SortingOptions { Sorting = "New" },
+        };
+    }
+
+    public List<PublichDateOptions> GetPublichDateOptions()
+    {
+        return new List<PublichDateOptions>()
+        {
+            new PublichDateOptions { PublishDate = "Last 24 hours" },
+            new PublichDateOptions { PublishDate = "Last week" },
+            new PublichDateOptions { PublishDate = "Last month" },
+            new PublichDateOptions { PublishDate = "Last year" },
+            new PublichDateOptions { PublishDate = "All time" },
+        };
+    }
+
+    public async Task<FilteredGamesResultModel> GetFilteredGamesAsync(GameFilterModel filter)
+    {
+        var query = _unitOfWork.GameRepository.GetQueryable();
+
+        // 🔹 GENRES
+        if (filter.Genres?.Count > 0)
+        {
+            query = query.Where(g =>
+                g.GameGenres.Any(gg => filter.Genres.Contains(gg.GenreId)));
+        }
+
+        // 🔹 PLATFORMS
+        if (filter.Platforms.Count > 0)
+        {
+            query = query.Where(g =>
+                g.GamePlatforms.Any(gp => filter.Platforms.Contains(gp.PlatformId)));
+        }
+
+        // 🔹 PUBLISHERS
+        if (filter.Publishers?.Count > 0)
+        {
+            query = query.Where(g => filter.Publishers.Contains(g.PublisherId));
+        }
+
+        // 🔹 PRICE
+        if (filter.MinPrice.HasValue)
+        {
+            query = query.Where(g => g.Price >= filter.MinPrice);
+        }
+
+        if (filter.MaxPrice.HasValue)
+        {
+            query = query.Where(g => g.Price <= filter.MaxPrice);
+        }
+
+        // 🔹 NAME (min 3 chars)
+        if (!string.IsNullOrWhiteSpace(filter.Name) && filter.Name.Length >= 3)
+        {
+            query = query.Where(g => g.Name.Contains(filter.Name));
+        }
+
+        // 🔹 DATE
+        if (!string.IsNullOrWhiteSpace(filter.DatePublishing))
+        {
+            var now = DateTime.UtcNow;
+            DateTime fromDate = filter.DatePublishing switch
+            {
+                "Last week" => now.AddDays(-7),
+                "Last month" => now.AddMonths(-1),
+                "Last year" => now.AddYears(-1),
+                "2 years" => now.AddYears(-2),
+                "3 years" => now.AddYears(-3),
+                _ => DateTime.MinValue,
+            };
+
+            query = query.Where(g => g.CreatedAt >= fromDate);
+        }
+
+        // 🔹 SORTING
+        query = filter.Sort switch
+        {
+            "Most popular" => query.OrderByDescending(g => g.Views),
+            "Most commented" => query.OrderByDescending(g => g.Comments.Count),
+            "Price ASC" => query.OrderBy(g => g.Price),
+            "Price DESC" => query.OrderByDescending(g => g.Price),
+            "New" => query.OrderByDescending(g => g.CreatedAt),
+            _ => query.OrderBy(g => g.Name),
+        };
+
+        int totalCount = await query.CountAsync();
+
+        if (filter.PageCount != "All")
+        {
+            int pageSize = int.Parse(filter.PageCount);
+            query = query.Skip((filter.Page - 1) * pageSize).Take(pageSize);
+        }
+
+        // var games = await query.ToListAsync();
+
+        return new FilteredGamesResultModel
+        {
+            Games = _mapper.Map<List<GameModel>>(query),
+            CurrentPage = filter.Page,
+            TotalPages = filter.PageCount == "All"
+                ? 1
+                : (int)Math.Ceiling(totalCount / (double)int.Parse(filter.PageCount)),
+        };
     }
 
     private async Task<string> GenerateUniqueGameKeyAsync(string gameKey, string gameName)

@@ -34,6 +34,10 @@ public class GameEntity
     [Required]
     public Guid PublisherId { get; set; }
 
+    public int Views { get; set; }
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
     public PublisherEntity Publisher { get; set; }
 
     public ICollection<GameGenreEntity> GameGenres { get; set; }

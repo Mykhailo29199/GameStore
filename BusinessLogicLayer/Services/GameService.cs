@@ -3,6 +3,7 @@ using AutoMapper;
 using BusinessLogicLayer.Models;
 using BusinessLogicLayer.Models.FilterOptions;
 using BusinessLogicLayer.Models.GameModels;
+using BusinessLogicLayer.Pipelines;
 using BusinessLogicLayer.Services.Interaces;
 using DataAccessLayer.Entities;
 using DataAccessLayer.StoreContext;
@@ -14,11 +15,12 @@ using CultureInfo = System.Globalization.CultureInfo;
 
 namespace BusinessLogicLayer.Services;
 
-public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapper, IFileSystem fileSystem) : IGameService
+public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapper, IFileSystem fileSystem, GameFilterPipeline pipeline) : IGameService
 {
     private readonly IUnitOfWork<GameStoreContext> _unitOfWork = unitOfWork;
     private readonly IMapper _mapper = mapper;
     private readonly IFileSystem _fileSystem = fileSystem;
+    private readonly GameFilterPipeline _pipeline = pipeline;
 
     public async Task CreateGameAsync(GameModel gameModel)
     {
@@ -208,84 +210,15 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
     {
         var query = _unitOfWork.GameRepository.GetQueryable();
 
-        // 🔹 GENRES
-        if (filter.Genres?.Count > 0)
-        {
-            query = query.Where(g =>
-                g.GameGenres.Any(gg => filter.Genres.Contains(gg.GenreId)));
-        }
-
-        // 🔹 PLATFORMS
-        if (filter.Platforms.Count > 0)
-        {
-            query = query.Where(g =>
-                g.GamePlatforms.Any(gp => filter.Platforms.Contains(gp.PlatformId)));
-        }
-
-        // 🔹 PUBLISHERS
-        if (filter.Publishers?.Count > 0)
-        {
-            query = query.Where(g => filter.Publishers.Contains(g.PublisherId));
-        }
-
-        // 🔹 PRICE
-        if (filter.MinPrice.HasValue)
-        {
-            query = query.Where(g => g.Price >= filter.MinPrice);
-        }
-
-        if (filter.MaxPrice.HasValue)
-        {
-            query = query.Where(g => g.Price <= filter.MaxPrice);
-        }
-
-        // 🔹 NAME (min 3 chars)
-        if (!string.IsNullOrWhiteSpace(filter.Name) && filter.Name.Length >= 3)
-        {
-            query = query.Where(g => g.Name.Contains(filter.Name));
-        }
-
-        // 🔹 DATE
-        if (!string.IsNullOrWhiteSpace(filter.DatePublishing))
-        {
-            var now = DateTime.UtcNow;
-            DateTime fromDate = filter.DatePublishing switch
-            {
-                "Last week" => now.AddDays(-7),
-                "Last month" => now.AddMonths(-1),
-                "Last year" => now.AddYears(-1),
-                "2 years" => now.AddYears(-2),
-                "3 years" => now.AddYears(-3),
-                _ => DateTime.MinValue,
-            };
-
-            query = query.Where(g => g.CreatedAt >= fromDate);
-        }
-
-        // 🔹 SORTING
-        query = filter.Sort switch
-        {
-            "Most popular" => query.OrderByDescending(g => g.Views),
-            "Most commented" => query.OrderByDescending(g => g.Comments.Count),
-            "Price ASC" => query.OrderBy(g => g.Price),
-            "Price DESC" => query.OrderByDescending(g => g.Price),
-            "New" => query.OrderByDescending(g => g.CreatedAt),
-            _ => query.OrderBy(g => g.Name),
-        };
-
         int totalCount = await query.CountAsync();
 
-        if (filter.PageCount != "All")
-        {
-            int pageSize = int.Parse(filter.PageCount);
-            query = query.Skip((filter.Page - 1) * pageSize).Take(pageSize);
-        }
+        query = _pipeline.Execute(query, filter);
 
-        // var games = await query.ToListAsync();
+        var games = await query.ToListAsync();
 
         return new FilteredGamesResultModel
         {
-            Games = _mapper.Map<List<GameModel>>(query),
+            Games = _mapper.Map<List<GameModel>>(games),
             CurrentPage = filter.Page,
             TotalPages = filter.PageCount == "All"
                 ? 1

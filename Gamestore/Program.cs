@@ -1,3 +1,6 @@
+using BusinessLogicLayer.Pipelines;
+using BusinessLogicLayer.Pipelines.Interfaces;
+using BusinessLogicLayer.Pipelines.Steps;
 using BusinessLogicLayer.Services;
 using BusinessLogicLayer.Services.Interaces;
 using DataAccessLayer.Repositories;
@@ -58,6 +61,17 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<ICommentService, CommentService>();
 
+builder.Services.AddScoped<IGamePipelineStep, GenreFilterStep>();
+builder.Services.AddScoped<IGamePipelineStep, PlatformFilterStep>();
+builder.Services.AddScoped<IGamePipelineStep, PublisherFilterStep>();
+builder.Services.AddScoped<IGamePipelineStep, PriceFilterStep>();
+builder.Services.AddScoped<IGamePipelineStep, NameFilterStep>();
+builder.Services.AddScoped<IGamePipelineStep, DateFilterStep>();
+builder.Services.AddScoped<IGamePipelineStep, SortingStep>();
+builder.Services.AddScoped<IGamePipelineStep, PaginationStep>();
+
+builder.Services.AddScoped<GameFilterPipeline>();
+
 builder.Logging.ClearProviders();
 
 builder.Logging.AddProvider(new FileLoggerProvider());
@@ -91,7 +105,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseRouting();
-app.UseCors("AllowFrontend"); // Це дозволить Angular взаємодіяти з API без помилок
+app.UseCors("AllowFrontend"); //  This will allow Angular to interact with the API without errors.
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
@@ -119,7 +133,7 @@ app.UseStaticFiles(new StaticFileOptions
 
 app.UseAuthorization();
 
-app.MapControllers(); // Спочатку API
+app.MapControllers();
 
 app.MapFallbackToFile("index.html", new StaticFileOptions
 {

@@ -139,7 +139,7 @@ public class PaymentService : IPaymentService
 
         if (fileBytes == null || fileBytes.Length == 0)
         {
-            throw new Exception("Failed to generate PDF invoice.");
+            throw new InvoiceGenerationException("Failed to generate PDF invoice.");
         }
 
         var path = Path.Combine("Invoices", $"invoice_{order.Id}.pdf");
@@ -184,7 +184,7 @@ public class PaymentService : IPaymentService
     string method)
     {
         PaymentResponseModel result = response.StatusCode == HttpStatusCode.PaymentRequired
-            ? throw new Exception("Not enough funds to complete the payment.")
+            ? throw new NotEnoughException("Not enough funds to complete the payment.")
             : new PaymentResponseModel
             {
                 Method = method,

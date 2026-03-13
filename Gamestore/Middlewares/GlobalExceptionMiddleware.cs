@@ -22,6 +22,18 @@ public class GlobalExceptionMiddleware(
         {
             await ProcessException(ex, (int)HttpStatusCode.NotFound, context);
         }
+        catch (BadRequestException ex)
+        {
+            await ProcessException(ex, (int)HttpStatusCode.BadRequest, context);
+        }
+        catch (InvoiceGenerationException ex)
+        {
+            await ProcessException(ex, (int)HttpStatusCode.InternalServerError, context);
+        }
+        catch (NotEnoughException ex)
+        {
+            await ProcessException(ex, (int)HttpStatusCode.BadRequest, context);
+        }
         catch (Exception ex)
         {
             await ProcessException(ex, (int)HttpStatusCode.InternalServerError, context);

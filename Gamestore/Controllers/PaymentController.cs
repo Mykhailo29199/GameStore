@@ -2,6 +2,7 @@
 using BusinessLogicLayer.Models.Payment;
 using BusinessLogicLayer.Services.Interaces;
 using Gamestore.WebAPI.DTOs.PaymentDTO;
+using Gamestore.WebAPI.DTOs.PaymentDTO.PaymentResponseDTOs;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GameStore.WebAPI.Controllers;
@@ -13,49 +14,29 @@ public class PaymentController(IPaymentService paymentService, IMapper mapper) :
     private readonly IPaymentService _paymentService = paymentService;
     private readonly IMapper _mapper = mapper;
 
-    //[HttpPost("payment")]
-    //public async Task<IActionResult> ProcessPayment([FromBody] PaymentRequestDTO request)
-    //{
-    //    var model = _mapper.Map<PaymentRequestModel>(request);
-
-    //    var result = await _paymentService.ProcessPayment(model);
-
-    //    if (!result.IsSuccess)
-    //    {
-    //        return BadRequest(result.Message);
-    //    }
-
-    //    if (result.FileBytes != null)
-    //    {
-    //        return File(result.FileBytes, result.ContentType!, result.FileName);
-    //    }
-
-    //    if (result.Data != null)
-    //    {
-    //        return Ok(result.Data);
-    //    }
-
-    //    return Ok();
-    //}
-
     [HttpPost("payment")]
     public async Task<IActionResult> ProcessPayment([FromBody] PaymentRequestDTO request)
     {
         var requestModel = _mapper.Map<PaymentRequestModel>(request);
         var responseModel = await _paymentService.ProcessPayment(requestModel);
 
-        if (responseModel.Status != "Success")
+        return responseModel.Method switch
         {
-            return BadRequest(responseModel.Message);
-        }
+            "Bank" when responseModel.BankResponseModel.FileBytes != null =>
+                File(responseModel.BankResponseModel.FileBytes, "application/pdf", $"invoice.pdf"),
+            "IBox terminal" when responseModel.IBoxResponseModel != null =>
+                Ok(responseModel.IBoxResponseModel),
+            _ => Ok(),
+        };
+    }
 
-        if (responseModel.Method == "Bank" && responseModel.BankResponseModel.FileBytes != null)
-        {
-            return File(responseModel.BankResponseModel.FileBytes, "application/pdf", $"invoice.pdf");
-        }
+    [HttpGet("orders/payment-methods")]
+    public IActionResult GetPaymentMethods()
+    {
+        var paymentMethods = _paymentService.GetPaymentMethods();
 
-        return responseModel.Method == "IBox terminal" && responseModel.IBoxResponseModel != null
-            ? Ok(responseModel.IBoxResponseModel)
-            : Ok();
+        var result = _mapper.Map<IEnumerable<PaymentMethodResponseDTO>>(paymentMethods);
+
+        return Ok(result);
     }
 }

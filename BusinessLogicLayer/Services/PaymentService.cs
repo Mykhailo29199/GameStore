@@ -33,6 +33,33 @@ public class PaymentService : IPaymentService
         _fileSystem = fileSystem;
     }
 
+    public IEnumerable<PaymentMethodResponseModel> GetPaymentMethods()
+    {
+        var paymentMethods = new List<PaymentMethodResponseModel>
+    {
+        new PaymentMethodResponseModel
+        {
+            ImageUrl = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
+            Title = "Bank",
+            Description = "Payment via bank account. You will receive a PDF invoice for payment.",
+        },
+        new PaymentMethodResponseModel
+        {
+            ImageUrl = "https://green-api.volia.com/media/6407a7b23eb69_ibox.jpg",
+            Title = "IBox terminal",
+            Description = "Payment via the IBox self-service terminal.",
+        },
+        new PaymentMethodResponseModel
+        {
+            ImageUrl = "https://cdn-icons-png.flaticon.com/512/349/349221.png",
+            Title = "Visa",
+            Description = "Payment by Visa bank card.",
+        },
+    };
+
+        return paymentMethods;
+    }
+
     public async Task<PaymentResponseModel> ProcessPayment(PaymentRequestModel request)
     {
         ValidateRequest(request);
@@ -66,8 +93,7 @@ public class PaymentService : IPaymentService
 
         return BuildPaymentResponseAsync(
             response,
-            PaymentOptions.Visa.GetDescription(),
-            "Insufficient funds for Visa payment.");
+            PaymentOptions.Visa.GetDescription());
     }
 
     private async Task<PaymentResponseModel> ProcessIBoxPayment(
@@ -87,8 +113,7 @@ public class PaymentService : IPaymentService
 
         var result = BuildPaymentResponseAsync(
             response,
-            PaymentOptions.IBoxTerminal.GetDescription(),
-            "Not enough funds to complete the payment via IBox.");
+            PaymentOptions.IBoxTerminal.GetDescription());
 
         if (response.IsSuccessStatusCode)
         {
@@ -112,6 +137,11 @@ public class PaymentService : IPaymentService
 
         var fileBytes = PdfProcessor.GeneratePdfInvoice(order.Id, total);
 
+        if (fileBytes == null || fileBytes.Length == 0)
+        {
+            throw new Exception("Failed to generate PDF invoice.");
+        }
+
         var path = Path.Combine("Invoices", $"invoice_{order.Id}.pdf");
         await _fileSystem.WriteFileAsync(path, fileBytes);
 
@@ -119,7 +149,6 @@ public class PaymentService : IPaymentService
 
         return new PaymentResponseModel
         {
-            Status = "Success",
             Method = PaymentOptions.Bank.GetDescription(),
             BankResponseModel = new BankResponseModel
             {
@@ -152,21 +181,12 @@ public class PaymentService : IPaymentService
 
     private static PaymentResponseModel BuildPaymentResponseAsync(
     HttpResponseMessage response,
-    string method,
-    string insufficientFundsMessage)
+    string method)
     {
-        var status = response.IsSuccessStatusCode ? "Success" : "Failed";
-
         PaymentResponseModel result = response.StatusCode == HttpStatusCode.PaymentRequired
-            ? new PaymentResponseModel
-            {
-                Status = "Failed",
-                Method = method,
-                Message = insufficientFundsMessage,
-            }
+            ? throw new Exception("Not enough funds to complete the payment.")
             : new PaymentResponseModel
             {
-                Status = status,
                 Method = method,
             };
         return result;

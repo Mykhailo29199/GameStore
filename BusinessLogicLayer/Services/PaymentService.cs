@@ -5,12 +5,12 @@ using BusinessLogicLayer.Services.Interaces;
 using DataAccessLayer.Entities;
 using DataAccessLayer.StoreContext;
 using DataAccessLayer.UnitOfWork;
-using GameStore.Shared.Enums;
 using GameStore.Shared.Exceptions;
+using GameStore.Shared.Extensions;
 using GameStore.Shared.FileSystem;
 using GameStore.Shared.Stubs;
-using MigraDocCore.DocumentObjectModel;
-using MigraDocCore.Rendering;
+using OrderStatus = GameStore.Shared.Enums.OrderStatus;
+using PaymentOptions = GameStore.Shared.Enums.PaymentOptions;
 
 namespace BusinessLogicLayer.Services;
 
@@ -19,7 +19,6 @@ public class PaymentService : IPaymentService
     private const string VisaMethod = "Visa";
     private const string IBoxMethod = "IBox terminal";
     private const string BankMethod = "Bank";
-
     private readonly HttpClient _client;
     private readonly IFileSystem _fileSystem;
     private readonly IUnitOfWork<GameStoreContext> _unitOfWork;
@@ -50,12 +49,6 @@ public class PaymentService : IPaymentService
         };
     }
 
-    public Task MarkOrderPaid(Guid orderId) =>
-        _client.PostAsync($"/api/orders/{orderId}/mark-paid", null);
-
-    public Task MarkOrderCancelled(Guid orderId) =>
-        _client.PostAsync($"/api/orders/{orderId}/mark-cancelled", null);
-
     // ============================
     // PAYMENT METHODS
     // ============================
@@ -71,10 +64,9 @@ public class PaymentService : IPaymentService
             order,
             () => _client.PostAsJsonAsync("/api/payments/visa", model));
 
-        return await BuildPaymentResponseAsync(
+        return BuildPaymentResponseAsync(
             response,
-            order,
-            VisaMethod,
+            PaymentOptions.Visa.GetDescription(),
             "Insufficient funds for Visa payment.");
     }
 
@@ -93,10 +85,9 @@ public class PaymentService : IPaymentService
             order,
             () => _client.PostAsJsonAsync("/api/payments/ibox", model));
 
-        var result = await BuildPaymentResponseAsync(
+        var result = BuildPaymentResponseAsync(
             response,
-            order,
-            IBoxMethod,
+            PaymentOptions.IBoxTerminal.GetDescription(),
             "Not enough funds to complete the payment via IBox.");
 
         if (response.IsSuccessStatusCode)
@@ -119,15 +110,17 @@ public class PaymentService : IPaymentService
     {
         await SetOrderStatusAsync(order, OrderStatus.Checkout);
 
-        var fileBytes = GeneratePdfInvoice(order.Id, total);
+        var fileBytes = PdfProcessor.GeneratePdfInvoice(order.Id, total);
 
         var path = Path.Combine("Invoices", $"invoice_{order.Id}.pdf");
         await _fileSystem.WriteFileAsync(path, fileBytes);
 
+        await SetOrderStatusAsync(order, OrderStatus.Paid);
+
         return new PaymentResponseModel
         {
             Status = "Success",
-            Method = BankMethod,
+            Method = PaymentOptions.Bank.GetDescription(),
             BankResponseModel = new BankResponseModel
             {
                 FileBytes = fileBytes,
@@ -144,22 +137,24 @@ public class PaymentService : IPaymentService
      Func<Task<HttpResponseMessage>> httpCall)
     {
         await SetOrderStatusAsync(order, OrderStatus.Checkout);
+        var result = await httpCall();
+        if (result.IsSuccessStatusCode)
+        {
+            await SetOrderStatusAsync(order, OrderStatus.Paid);
+        }
+        else
+        {
+            await SetOrderStatusAsync(order, OrderStatus.Cancelled);
+        }
 
-        return await httpCall();
+        return result;
     }
 
-    private async Task<PaymentResponseModel> BuildPaymentResponseAsync(
+    private static PaymentResponseModel BuildPaymentResponseAsync(
     HttpResponseMessage response,
-    OrderEntity order,
     string method,
     string insufficientFundsMessage)
     {
-        var newStatus = response.IsSuccessStatusCode
-            ? OrderStatus.Paid
-            : OrderStatus.Cancelled;
-
-        await SetOrderStatusAsync(order, newStatus);
-
         var status = response.IsSuccessStatusCode ? "Success" : "Failed";
 
         PaymentResponseModel result = response.StatusCode == HttpStatusCode.PaymentRequired
@@ -191,7 +186,7 @@ public class PaymentService : IPaymentService
     {
         if (string.IsNullOrWhiteSpace(request.Method))
         {
-            throw new ArgumentException("Payment method is required.");
+            throw new BadRequestException("Payment method is required.");
         }
     }
 
@@ -211,34 +206,5 @@ public class PaymentService : IPaymentService
             var discounted = price * (1 - (discount / 100m));
             return discounted * og.Quantity;
         });
-    }
-
-    private static byte[] GeneratePdfInvoice(Guid orderId, decimal total)
-    {
-        var document = new Document();
-        var section = document.AddSection();
-
-        var header = section.AddParagraph($"Invoice #{orderId}");
-        header.Format.Font.Size = 16;
-        header.Format.Font.Bold = true;
-        header.Format.SpaceAfter = "1cm";
-
-        section.AddParagraph($"User ID: {CustomerStub.StubCustomerId}");
-        section.AddParagraph($"Order ID: {orderId}");
-        section.AddParagraph($"Creation Date: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}");
-        section.AddParagraph($"Valid Until: {DateTime.UtcNow.AddDays(7):yyyy-MM-dd HH:mm:ss}");
-        section.AddParagraph($"Sum: {total}");
-
-        var renderer = new PdfDocumentRenderer(unicode: true)
-        {
-            Document = document,
-        };
-
-        renderer.RenderDocument();
-
-        using var stream = new MemoryStream();
-        renderer.PdfDocument.Save(stream, false);
-
-        return stream.ToArray();
     }
 }

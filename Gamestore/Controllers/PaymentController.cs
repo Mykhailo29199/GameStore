@@ -13,6 +13,31 @@ public class PaymentController(IPaymentService paymentService, IMapper mapper) :
     private readonly IPaymentService _paymentService = paymentService;
     private readonly IMapper _mapper = mapper;
 
+    //[HttpPost("payment")]
+    //public async Task<IActionResult> ProcessPayment([FromBody] PaymentRequestDTO request)
+    //{
+    //    var model = _mapper.Map<PaymentRequestModel>(request);
+
+    //    var result = await _paymentService.ProcessPayment(model);
+
+    //    if (!result.IsSuccess)
+    //    {
+    //        return BadRequest(result.Message);
+    //    }
+
+    //    if (result.FileBytes != null)
+    //    {
+    //        return File(result.FileBytes, result.ContentType!, result.FileName);
+    //    }
+
+    //    if (result.Data != null)
+    //    {
+    //        return Ok(result.Data);
+    //    }
+
+    //    return Ok();
+    //}
+
     [HttpPost("payment")]
     public async Task<IActionResult> ProcessPayment([FromBody] PaymentRequestDTO request)
     {

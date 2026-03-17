@@ -15,6 +15,8 @@ public class UnitOfWork : IUnitOfWork<GameStoreContext>
     private IGamePlatformRepository? _gamePlatformRepository;
     private IGameFileRepository? _gameFileRepository;
     private IPublisherRepository? _publisherRepository;
+    private IOrderRepository? _orderRepository;
+    private IOrderGameRepository? _orderGameRepository;
 
     public UnitOfWork(GameStoreContext context)
     {
@@ -43,6 +45,12 @@ public class UnitOfWork : IUnitOfWork<GameStoreContext>
 
     public IPublisherRepository PublisherRepository =>
         _publisherRepository ??= new PublisherRepository(Context);
+
+    public IOrderRepository OrderRepository =>
+        _orderRepository ??= new OrderRepository(Context);
+
+    public IOrderGameRepository OrderGameRepository =>
+        _orderGameRepository ??= new OrderGameRepository(Context);
 
     public async Task CreateTransactionAsync() =>
         await Context.Database.BeginTransactionAsync();

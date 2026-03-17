@@ -22,4 +22,15 @@ public class GameGenreRepository(GameStoreContext context) : GenericRepository<G
             .Select(gg => gg.Game!)
             .ToListAsync();
     }
+
+    public async Task<List<GameGenreEntity>> GetByGameIdAsync(Guid gameId)
+    {
+        return await _dbSet.Where(x => x.GameId == gameId).ToListAsync();
+    }
+
+    public async Task DeleteRangeAsync(IEnumerable<GameGenreEntity> entities)
+    {
+        _dbSet.RemoveRange(entities);
+        await Task.CompletedTask;
+    }
 }

@@ -1,8 +1,13 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Models;
+using BusinessLogicLayer.Models.OrderModels;
+using BusinessLogicLayer.Models.Payment;
 using DataAccessLayer.Entities;
 using Gamestore.WebAPI.DTOs.GameDTO;
 using Gamestore.WebAPI.DTOs.GenreDTO;
+using Gamestore.WebAPI.DTOs.OrderDTO;
+using Gamestore.WebAPI.DTOs.PaymentDTO;
+using Gamestore.WebAPI.DTOs.PaymentDTO.PaymentResponseDTOs;
 using Gamestore.WebAPI.DTOs.PlatformDTO;
 using Gamestore.WebAPI.DTOs.PublisherDTO;
 
@@ -22,9 +27,9 @@ public class GameAutoMapping : Profile
                    .ForMember(dest => dest.Discount, opt => opt.MapFrom(src => src.Discount))
                    .ForMember(dest => dest.PublisherId, opt => opt.MapFrom(src => src.Publisher))
                    .ForMember(dest => dest.GameGenres, opt => opt.MapFrom(src =>
-               src.Genres.Select(gid => new GameGenreEntity { GameId = src.Id, GenreId = gid })))
+               src.Genres.Select(gid => new GameGenreEntity { GenreId = gid })))
                .ForMember(dest => dest.GamePlatforms, opt => opt.MapFrom(src =>
-               src.Platforms.Select(pid => new GamePlatformEntity { GameId = src.Id, PlatformId = pid })))
+               src.Platforms.Select(pid => new GamePlatformEntity { PlatformId = pid })))
                .ForMember(dest => dest.Publisher, opt => opt.Ignore());
 
         CreateMap<GameEntity, GameModel>()
@@ -115,5 +120,70 @@ public class GameAutoMapping : Profile
             .ForMember(dest => dest.HomePage, opt => opt.MapFrom(src => src.Publisher.HomePage))
             .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Publisher.Description))
             .ReverseMap();
+
+        // Request DTO → Request Model
+        CreateMap<PaymentRequestDTO, PaymentRequestModel>();
+
+        //.ForMember(dest => dest.TransactionAmount, opt => opt.MapFrom(src => (decimal)src.TransactionAmount));
+
+        // Request DTO → Request Model
+        CreateMap<PaymentRequestDTO, PaymentRequestModel>();
+
+        // Visa
+        CreateMap<VisaPaymentDTO, VisaPaymentModel>()
+            .ForMember(dest => dest.CardHolderName, opt => opt.MapFrom(src => src.Holder))
+            .ForMember(dest => dest.ExpirationMonth, opt => opt.MapFrom(src => src.MonthExpire))
+            .ForMember(dest => dest.ExpirationYear, opt => opt.MapFrom(src => src.YearExpire))
+            .ForMember(dest => dest.Cvv, opt => opt.MapFrom(src => src.Cvv2))
+            .ForMember(dest => dest.TransactionAmount, opt => opt.Ignore());   // if TransactionAmount is not filled in from DTO
+
+        // OrderEntity->OrderModel
+        CreateMap<OrderEntity, OrderModel>()
+            .ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.OrderGames));
+
+        // OrderGameEntity -> OrderGameModel
+        CreateMap<OrderGameEntity, OrderGameModel>()
+            .ForMember(dest => dest.OrderId, opt => opt.MapFrom(src => src.OrderId))
+            .ForMember(dest => dest.ProductId, opt => opt.MapFrom(src => src.ProductId))
+            .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.Price))
+            .ForMember(dest => dest.Quantity, opt => opt.MapFrom(src => src.Quantity))
+            .ForMember(dest => dest.Discount, opt => opt.MapFrom(src => src.Discount))
+            .ForMember(dest => dest.GameName, opt => opt.MapFrom(src => src.Game != null ? src.Game.Name : string.Empty));
+
+        CreateMap<OrderModel, OrderEntity>()
+            .ForMember(dest => dest.OrderGames, opt => opt.MapFrom(src => src.Items));
+
+        CreateMap<OrderGameModel, OrderGameEntity>()
+            .ForMember(dest => dest.OrderId, opt => opt.MapFrom(src => src.OrderId))
+            .ForMember(dest => dest.ProductId, opt => opt.MapFrom(src => src.ProductId))
+            .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.Price))
+            .ForMember(dest => dest.Quantity, opt => opt.MapFrom(src => src.Quantity))
+            .ForMember(dest => dest.Discount, opt => opt.MapFrom(src => src.Discount));
+
+        // OrderModel <-> OrderDTO
+        CreateMap<OrderModel, OrderDTO>();
+        CreateMap<OrderDTO, OrderModel>();
+
+        CreateMap<OrderGameModel, OrderGameDTO>()
+    .ForMember(
+        dest => dest.Price,
+        opt => opt.MapFrom(src =>
+            src.Quantity *
+            src.Price *
+            (1 - ((src.Discount ?? 0) / 100.0))));
+
+        // Request
+        CreateMap<PaymentRequestDTO, PaymentRequestModel>();
+
+        // Response
+        CreateMap<PaymentResponseModel, PaymentResponseDTO>()
+            .ForMember(dest => dest.BankResponseDTO, opt => opt.MapFrom(src => src.BankResponseModel))
+            .ForMember(dest => dest.IBoxResponseDTO, opt => opt.MapFrom(src => src.IBoxResponseModel));
+
+        // Nested responses
+        CreateMap<BankResponseModel, BankResponseDTO>();
+        CreateMap<BoxResponseModel, IBoxResponseDTO>();
+
+        CreateMap<PaymentMethodResponseDTO, PaymentMethodResponseModel>().ReverseMap();
     }
 }

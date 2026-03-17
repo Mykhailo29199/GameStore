@@ -6,7 +6,6 @@ using DataAccessLayer.Entities;
 using DataAccessLayer.StoreContext;
 using DataAccessLayer.UnitOfWork;
 using GameStore.Shared.Exceptions;
-using GameStore.Shared.Extensions;
 using GameStore.Shared.FileSystem;
 using GameStore.Shared.Stubs;
 using OrderStatus = GameStore.Shared.Enums.OrderStatus;
@@ -93,7 +92,7 @@ public class PaymentService : IPaymentService
 
         return BuildPaymentResponseAsync(
             response,
-            PaymentOptions.Visa.GetDescription());
+            PaymentOptions.Visa);
     }
 
     private async Task<PaymentResponseModel> ProcessIBoxPayment(
@@ -113,7 +112,7 @@ public class PaymentService : IPaymentService
 
         var result = BuildPaymentResponseAsync(
             response,
-            PaymentOptions.IBoxTerminal.GetDescription());
+            PaymentOptions.IBoxTerminal);
 
         if (response.IsSuccessStatusCode)
         {
@@ -149,7 +148,7 @@ public class PaymentService : IPaymentService
 
         return new PaymentResponseModel
         {
-            Method = PaymentOptions.Bank.GetDescription(),
+            Method = PaymentOptions.Bank,
             BankResponseModel = new BankResponseModel
             {
                 FileBytes = fileBytes,
@@ -181,7 +180,7 @@ public class PaymentService : IPaymentService
 
     private static PaymentResponseModel BuildPaymentResponseAsync(
     HttpResponseMessage response,
-    string method)
+    PaymentOptions method)
     {
         PaymentResponseModel result = response.StatusCode == HttpStatusCode.PaymentRequired
             ? throw new NotEnoughException("Not enough funds to complete the payment.")
@@ -227,4 +226,33 @@ public class PaymentService : IPaymentService
             return discounted * og.Quantity;
         });
     }
+
+    //private static byte[] GeneratePdfInvoice(Guid orderId, decimal total)
+    //{
+    //    var document = new Document();
+    //    var section = document.AddSection();
+
+    //    var header = section.AddParagraph($"Invoice #{orderId}");
+    //    header.Format.Font.Size = 16;
+    //    header.Format.Font.Bold = true;
+    //    header.Format.SpaceAfter = "1cm";
+
+    //    section.AddParagraph($"User ID: {CustomerStub.StubCustomerId}");
+    //    section.AddParagraph($"Order ID: {orderId}");
+    //    section.AddParagraph($"Creation Date: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}");
+    //    section.AddParagraph($"Valid Until: {DateTime.UtcNow.AddDays(7):yyyy-MM-dd HH:mm:ss}");
+    //    section.AddParagraph($"Sum: {total}");
+
+    //    var renderer = new PdfDocumentRenderer(unicode: true)
+    //    {
+    //        Document = document,
+    //    };
+
+    //    renderer.RenderDocument();
+
+    //    using var stream = new MemoryStream();
+    //    renderer.PdfDocument.Save(stream, false);
+
+    //    return stream.ToArray();
+    //}
 }

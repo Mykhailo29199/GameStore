@@ -1,8 +1,10 @@
-﻿namespace BusinessLogicLayer.Models.Payment;
+﻿using GameStore.Shared.Enums;
+
+namespace BusinessLogicLayer.Models.Payment;
 
 public class PaymentResponseModel
 {
-    public string Method { get; set; }
+    public PaymentOptions Method { get; set; }
 
     public BankResponseModel BankResponseModel { get; set; }
 

@@ -116,7 +116,7 @@ app.UseStaticFiles(new StaticFileOptions
 
 app.UseAuthorization();
 
-app.MapControllers(); // Спочатку API
+app.MapControllers();
 
 app.MapFallbackToFile("index.html", new StaticFileOptions
 {

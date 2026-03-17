@@ -33,7 +33,7 @@
   "addPublisherApiUrl": "/publisher",
   "deletePublisherApiUrl": "/publisher/{id}",
   "updatePublisherApiUrl": "/publisher",
-  
+
   "orderApiUrl": "/orders/{id}",
   "ordersApiUrl": "/orders",
   "orderDetailsApiUrl": "/orders/{id}/details",

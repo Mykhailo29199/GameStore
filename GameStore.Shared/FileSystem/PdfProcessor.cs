@@ -1,6 +1,6 @@
 ﻿using GameStore.Shared.Stubs;
-using MigraDoc.DocumentObjectModel;
-using MigraDoc.Rendering;
+using MigraDocCore.DocumentObjectModel;
+using MigraDocCore.Rendering;
 
 namespace GameStore.Shared.FileSystem;
 

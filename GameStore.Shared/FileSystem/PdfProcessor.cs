@@ -4,7 +4,7 @@ using MigraDocCore.Rendering;
 
 namespace GameStore.Shared.FileSystem;
 
-public class PdfProcessor
+public static class PdfProcessor
 {
     public static byte[] GeneratePdfInvoice(Guid orderId, decimal total)
     {

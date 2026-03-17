@@ -56,6 +56,14 @@ namespace DataAccessLayer.Migrations
 
                     b.HasKey("Id");
 
+                    b.Property<Guid>("PublisherId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("UnitInStock")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
                     b.HasIndex("PublisherId");
 
                     b.ToTable("Games");
@@ -124,6 +132,50 @@ namespace DataAccessLayer.Migrations
                     b.HasIndex("ParentGenreId");
 
                     b.ToTable("Genres");
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Entities.OrderEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Orders");
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Entities.OrderGameEntity", b =>
+                {
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("Discount")
+                        .HasColumnType("int");
+
+                    b.Property<double>("Price")
+                        .HasColumnType("float");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.HasKey("OrderId", "ProductId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("OrderGames");
                 });
 
             modelBuilder.Entity("DataAccessLayer.Entities.PlatformEntity", b =>
@@ -236,6 +288,25 @@ namespace DataAccessLayer.Migrations
                     b.Navigation("ParentGenre");
                 });
 
+            modelBuilder.Entity("DataAccessLayer.Entities.OrderGameEntity", b =>
+                {
+                    b.HasOne("DataAccessLayer.Entities.OrderEntity", "Order")
+                        .WithMany("OrderGames")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DataAccessLayer.Entities.GameEntity", "Game")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Game");
+
+                    b.Navigation("Order");
+                });
+
             modelBuilder.Entity("DataAccessLayer.Entities.GameEntity", b =>
                 {
                     b.Navigation("GameFile")
@@ -249,6 +320,11 @@ namespace DataAccessLayer.Migrations
             modelBuilder.Entity("DataAccessLayer.Entities.GenreEntity", b =>
                 {
                     b.Navigation("SubGenres");
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Entities.OrderEntity", b =>
+                {
+                    b.Navigation("OrderGames");
                 });
 
             modelBuilder.Entity("DataAccessLayer.Entities.PublisherEntity", b =>

@@ -9,6 +9,17 @@ public class GameRepository(GameStoreContext context) : GenericRepository<GameEn
 {
     private readonly DbSet<GameEntity> _dbSet = context.Set<GameEntity>();
 
+    public async Task<GameEntity> GetFullGame(Guid id)
+    {
+        return await _dbSet
+            .Include(g => g.Publisher)
+            .Include(g => g.GameGenres)
+                .ThenInclude(gg => gg.Genre)
+            .Include(g => g.GamePlatforms)
+                .ThenInclude(gp => gp.Platform)
+            .FirstOrDefaultAsync(g => g.Id == id);
+    }
+
     public async Task<GameEntity?> GetGameByKeyAsync(string gameKey)
     {
         return await _dbSet.FirstOrDefaultAsync(game => game.Key == gameKey);

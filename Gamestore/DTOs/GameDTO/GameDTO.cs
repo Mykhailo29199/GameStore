@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization;
 
 namespace Gamestore.WebAPI.DTOs.GameDTO;
 
@@ -17,6 +16,5 @@ public class GameDTO
 
     public int UnitInStock { get; set; }
 
-    [JsonPropertyName("Discontinued")]
     public int Discount { get; set; }
 }

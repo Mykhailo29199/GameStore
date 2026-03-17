@@ -32,5 +32,14 @@
   "publisherByGameApiUrl": "/publisher/game/{key}",
   "addPublisherApiUrl": "/publisher",
   "deletePublisherApiUrl": "/publisher/{id}",
-  "updatePublisherApiUrl": "/publisher"
+  "updatePublisherApiUrl": "/publisher",
+
+  "orderApiUrl": "/orders/{id}",
+  "ordersApiUrl": "/orders",
+  "orderDetailsApiUrl": "/orders/{id}/details",
+  "buyGameApiUrl": "/games/{key}/buy",
+  "cancelGameBuyApiUrl": "/orders/cart/{key}",
+  "basketApiUrl": "/orders/cart",
+  "makeOrderInfoApiUrl": "/orders/payment-methods",
+  "payApiUrl": "/orders/payment"
 }

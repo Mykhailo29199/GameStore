@@ -21,14 +21,13 @@ public class CommentService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper ma
             .FirstOrDefaultAsync(g => g.Key == gameKey)
             ?? throw new NotFoundException("Game not found");
 
-        // BAN CHECK
         var ban = await _unitOfWork.BanRepository.FirstOrDefaultAsync(b =>
             b.UserName == model.Name &&
             (b.ExpireAt == null || b.ExpireAt > DateTime.UtcNow));
 
         if (ban != null)
         {
-            throw new ArgumentException("User is banned");
+            throw new ForbiddenException("User is banned");
         }
 
         string body = model.Body;
@@ -55,14 +54,10 @@ public class CommentService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper ma
             }
         }
 
-        var entity = new CommentEntity
-        {
-            Id = Guid.NewGuid(),
-            Name = model.Name,
-            Body = body,
-            GameId = game.Id,
-            ParentCommentId = model.ParentId,
-        };
+        var entity = _mapper.Map<CommentEntity>(model);
+        entity.Id = Guid.NewGuid();
+        entity.GameId = game.Id;
+        entity.Body = body;
 
         await _unitOfWork.CommentRepository.AddAsync(entity);
         await _unitOfWork.SaveAsync();
@@ -72,7 +67,7 @@ public class CommentService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper ma
     {
         var game = await _unitOfWork.GameRepository
             .FirstOrDefaultAsync(g => g.Key == gameKey)
-            ?? throw new Exception("Game not found");
+            ?? throw new NotFoundException("Game not found");
 
         var entities = await _unitOfWork.CommentRepository
             .FindAsync(c => c.GameId == game.Id);
@@ -94,58 +89,11 @@ public class CommentService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper ma
 
         if (comment.GameId != game.Id)
         {
-            throw new ArgumentException("Comment does not belong to this game");
+            throw new BadRequestException("Comment does not belong to this game");
         }
 
         comment.Body = _deletedMessage;
 
-        await _unitOfWork.SaveAsync();
-    }
-
-    public List<BanDurationOption> GetBanDurations()
-    {
-        return new List<BanDurationOption>
-    {
-        new() { Duration = "1 hour" },
-        new() { Duration = "1 day" },
-        new() { Duration = "1 week" },
-        new() { Duration = "1 month" },
-    };
-    }
-
-    public async Task BanUserAsync(BanModel model)
-    {
-        var comment = await _unitOfWork.CommentRepository
-            .FirstOrDefaultAsync(c => c.Name == model.User) ?? throw new NotFoundException("User with this name has no comments");
-
-        var activeBan = await _unitOfWork.BanRepository
-            .FirstOrDefaultAsync(b =>
-                b.UserName == model.User &&
-                (b.ExpireAt == null || b.ExpireAt > DateTime.UtcNow));
-
-        if (activeBan != null)
-        {
-            throw new ArgumentException("User already banned");
-        }
-
-        DateTime? expireAt = model.Duration switch
-        {
-            "1 hour" => DateTime.UtcNow.AddHours(1),
-            "1 day" => DateTime.UtcNow.AddDays(1),
-            "1 week" => DateTime.UtcNow.AddDays(7),
-            "1 month" => DateTime.UtcNow.AddMonths(1),
-            "permanent" => null,
-            _ => throw new Exception("Invalid duration"),
-        };
-
-        var banEntity = new BanEntity
-        {
-            Id = Guid.NewGuid(),
-            UserName = model.User,
-            ExpireAt = expireAt,
-        };
-
-        await _unitOfWork.BanRepository.AddAsync(banEntity);
         await _unitOfWork.SaveAsync();
     }
 

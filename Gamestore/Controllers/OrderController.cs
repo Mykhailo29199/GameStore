@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using BusinessLogicLayer.Models.Payment;
 using BusinessLogicLayer.Services.Interaces;
 using GameStore.Shared.Stubs;
 using Gamestore.WebAPI.DTOs.OrderDTO;

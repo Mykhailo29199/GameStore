@@ -15,10 +15,6 @@ namespace BusinessLogicLayer.Services;
 
 public class PaymentService : IPaymentService
 {
-    private const string VisaMethod = "Visa";
-    private const string IBoxMethod = "IBox terminal";
-    private const string BankMethod = "Bank";
-
     private readonly HttpClient _client;
     private readonly IFileSystem _fileSystem;
     private readonly IUnitOfWork<GameStoreContext> _unitOfWork;
@@ -69,9 +65,9 @@ public class PaymentService : IPaymentService
 
         return request.Method switch
         {
-            VisaMethod => await ProcessVisaPayment(request.Model!, order, total),
-            IBoxMethod => await ProcessIBoxPayment(order, total),
-            BankMethod => await ProcessBankPayment(order, total),
+            PaymentOptions.Visa => await ProcessVisaPayment(request.Model!, order, total),
+            PaymentOptions.IBoxTerminal => await ProcessIBoxPayment(order, total),
+            PaymentOptions.Bank => await ProcessBankPayment(order, total),
             _ => throw new NotSupportedException($"Unsupported payment method: {request.Method}"),
         };
     }
@@ -196,7 +192,7 @@ public class PaymentService : IPaymentService
 
     private static void ValidateRequest(PaymentRequestModel request)
     {
-        if (string.IsNullOrWhiteSpace(request.Method))
+        if (!Enum.IsDefined(typeof(PaymentOptions), request.Method))
         {
             throw new BadRequestException("Payment method is required.");
         }

@@ -1,6 +1,11 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Models;
+using BusinessLogicLayer.Models.CommentModels;
+using BusinessLogicLayer.Models.OrderModels;
+using BusinessLogicLayer.Models.Payment;
 using DataAccessLayer.Entities;
+using GameStore.Shared.Enums;
+using GameStore.Shared.Extensions;
 using Gamestore.WebAPI.DTOs.CommentDTOs;
 using Gamestore.WebAPI.DTOs.GameDTO;
 using Gamestore.WebAPI.DTOs.GenreDTO;
@@ -121,14 +126,6 @@ public class GameAutoMapping : Profile
             .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Publisher.Description))
             .ReverseMap();
 
-        // Request DTO → Request Model
-        CreateMap<PaymentRequestDTO, PaymentRequestModel>();
-
-        //.ForMember(dest => dest.TransactionAmount, opt => opt.MapFrom(src => (decimal)src.TransactionAmount));
-
-        // Request DTO → Request Model
-        CreateMap<PaymentRequestDTO, PaymentRequestModel>();
-
         // Visa
         CreateMap<VisaPaymentDTO, VisaPaymentModel>()
             .ForMember(dest => dest.CardHolderName, opt => opt.MapFrom(src => src.Holder))
@@ -178,7 +175,10 @@ public class GameAutoMapping : Profile
             (1 - ((src.Discount ?? 0) / 100.0))));
 
         // Request
-        CreateMap<PaymentRequestDTO, PaymentRequestModel>();
+        CreateMap<PaymentRequestDTO, PaymentRequestModel>()
+     .ForMember(
+         dest => dest.Method,
+         opt => opt.MapFrom(src => src.Method.ToEnumFromDescription<PaymentOptions>()));
 
         // Response
         CreateMap<PaymentResponseModel, PaymentResponseDTO>()
@@ -206,7 +206,8 @@ public class GameAutoMapping : Profile
         CreateMap<AddCommentModel, CommentEntity>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.GameId, opt => opt.Ignore())
-            .ForMember(dest => dest.Game, opt => opt.Ignore());
+            .ForMember(dest => dest.Game, opt => opt.Ignore())
+             .ForMember(dest => dest.ParentCommentId, opt => opt.MapFrom(src => src.ParentId));
 
         // DTO → Model
         CreateMap<BanRequestDTO, BanModel>();
@@ -230,12 +231,7 @@ public class GameAutoMapping : Profile
         string.IsNullOrWhiteSpace(src.Action) ? null : src.Action))
     .ForMember(dest => dest.ParentId, opt => opt.MapFrom((src, dest) =>
     {
-        if (string.IsNullOrWhiteSpace(src.ParentId))
-        {
-            return null;
-        }
-
-        return Guid.TryParse(src.ParentId, out var guid) ? guid : (Guid?)null;
+        return string.IsNullOrWhiteSpace(src.ParentId) ? null : Guid.TryParse(src.ParentId, out var guid) ? guid : (Guid?)null;
     }));
     }
 }

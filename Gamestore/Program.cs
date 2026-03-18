@@ -57,6 +57,7 @@ builder.Services.AddScoped<IPublisherService, PublisherService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<ICommentService, CommentService>();
+builder.Services.AddScoped<IBanService, BanService>();
 
 builder.Logging.ClearProviders();
 

@@ -4,7 +4,7 @@ namespace DataAccessLayer.Repositories.Interfaces;
 
 public interface IGameRepository : IGenericRepository<GameEntity>
 {
-    Task<GameEntity> GetFull(Guid id);
+    Task<GameEntity> GetFullGame(Guid id);
 
     Task<GameEntity?> GetGameByKeyAsync(string gameKey);
 

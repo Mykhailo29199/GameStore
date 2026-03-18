@@ -9,7 +9,7 @@ public class GameRepository(GameStoreContext context) : GenericRepository<GameEn
 {
     private readonly DbSet<GameEntity> _dbSet = context.Set<GameEntity>();
 
-    public async Task<GameEntity> GetFull(Guid id)
+    public async Task<GameEntity> GetFullGame(Guid id)
     {
         return await _dbSet
             .Include(g => g.Publisher)

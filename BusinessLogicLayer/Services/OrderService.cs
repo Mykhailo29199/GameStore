@@ -46,17 +46,20 @@ public class OrderService : IOrderService
     public async Task<IEnumerable<OrderGameModel>> GetCartAsync(Guid userId)
     {
         var order = await _unitOfWork.OrderRepository.GetActiveCartAsync(userId);
-        return order == null ? Enumerable.Empty<OrderGameModel>() : _mapper.Map<IEnumerable<OrderGameModel>>(order.OrderGames);
+        IEnumerable<OrderGameModel> cartGames = order == null
+            ? []
+            : _mapper.Map<IEnumerable<OrderGameModel>>(order.OrderGames);
+
+        return cartGames;
     }
 
-    // US1: Add game to cart
-    public async Task AddGameAsync(Guid userId, string gameKey)
+    public async Task AddGameToCartAsync(Guid userId, string gameKey)
     {
-        var game = await _unitOfWork.GameRepository.GetGameByKeyAsync(gameKey) ?? throw new Exception("Game not found");
+        var game = await _unitOfWork.GameRepository.GetGameByKeyAsync(gameKey) ?? throw new NotFoundException("Game not found");
 
         if (game.UnitInStock <= 0)
         {
-            throw new ArgumentException("Game is out of stock");
+            throw new BadRequestException("Game is out of stock");
         }
 
         var order = await _unitOfWork.OrderRepository.GetActiveCartAsync(userId);
@@ -69,18 +72,78 @@ public class OrderService : IOrderService
                 CustomerId = userId,
                 Status = OrderStatus.Open,
                 Date = DateTime.UtcNow,
-                OrderGames = new List<OrderGameEntity>(),
+                OrderGames = [],
             };
             await _unitOfWork.OrderRepository.AddAsync(order);
         }
 
+        await IncreaseGameQuantityAsync(order, game);
+
+        await _unitOfWork.SaveAsync();
+    }
+
+    public async Task RemoveGameFromCartAsync(Guid userId, string gameKey)
+    {
+        if (userId == Guid.Empty)
+        {
+            throw new BadRequestException("Guest cart not supported in this implementation");
+        }
+
+        var game = await _unitOfWork.GameRepository.GetGameByKeyAsync(gameKey) ?? throw new NotFoundException("Game not found");
+        var order = await _unitOfWork.OrderRepository.GetActiveCartAsync(userId) ?? throw new NotFoundException("Active cart not found");
+        var orderGame = await _unitOfWork.OrderGameRepository.GetOrderGameAsync(order.Id, game.Id) ?? throw new NotFoundException("Game not found in order");
+
+        await DecreaseGameQuantityAsync(orderGame, order);
+    }
+
+    public async Task CheckoutAsync(Guid orderId)
+    {
+        var order = await _unitOfWork.OrderRepository.GetOrderWithGamesAsync(orderId) ?? throw new NotFoundException("Order not found");
+
+        if (order.OrderGames.Count == 0)
+        {
+            throw new BadRequestException("Cannot checkout empty order");
+        }
+
+        order.Status = OrderStatus.Checkout;
+        await _unitOfWork.SaveAsync();
+    }
+
+    public async Task CompletePaymentAsync(Guid orderId)
+    {
+        var order = await _unitOfWork.OrderRepository.GetOrderWithGamesAsync(orderId) ?? throw new NotFoundException("Order not found");
+        order.Status = OrderStatus.Paid;
+
+        foreach (var og in order.OrderGames)
+        {
+            if (og.Game.UnitInStock < og.Quantity)
+            {
+                throw new BadRequestException("Not enough stock for game: " + og.Game.Name);
+            }
+
+            og.Game.UnitInStock -= og.Quantity;
+        }
+
+        await _unitOfWork.SaveAsync();
+    }
+
+    public async Task CancelOrderAsync(Guid orderId)
+    {
+        var order = await _unitOfWork.OrderRepository.GetOrderWithGamesAsync(orderId) ?? throw new NotFoundException("Order not found");
+        order.Status = OrderStatus.Cancelled;
+
+        await _unitOfWork.SaveAsync();
+    }
+
+    private async Task IncreaseGameQuantityAsync(OrderEntity order, GameEntity game)
+    {
         var orderGame = await _unitOfWork.OrderGameRepository.GetOrderGameAsync(order.Id, game.Id);
 
         if (orderGame != null)
         {
             if (orderGame.Quantity + 1 > game.UnitInStock)
             {
-                throw new NotFoundException("Not enough stock available");
+                throw new BadRequestException("Not enough stock available");
             }
 
             orderGame.Quantity++;
@@ -97,21 +160,10 @@ public class OrderService : IOrderService
             };
             await _unitOfWork.OrderGameRepository.AddAsync(orderGame);
         }
-
-        await _unitOfWork.SaveAsync();
     }
 
-    public async Task RemoveGameAsync(Guid? userId, string gameKey)
+    private async Task DecreaseGameQuantityAsync(OrderGameEntity orderGame, OrderEntity order)
     {
-        if (userId == null || userId == Guid.Empty)
-        {
-            throw new Exception("Guest cart not supported in this implementation");
-        }
-
-        var game = await _unitOfWork.GameRepository.GetGameByKeyAsync(gameKey) ?? throw new NotFoundException("Game not found");
-        var order = await _unitOfWork.OrderRepository.GetActiveCartAsync(userId.Value) ?? throw new NotFoundException("Active cart not found");
-        var orderGame = await _unitOfWork.OrderGameRepository.GetOrderGameAsync(order.Id, game.Id) ?? throw new NotFoundException("Game not found in order");
-
         if (orderGame.Quantity > 1)
         {
             orderGame.Quantity--;
@@ -120,52 +172,12 @@ public class OrderService : IOrderService
         {
             await _unitOfWork.OrderGameRepository.DeleteAsync(orderGame);
 
-            // Get the balance of games in the cart
             var remainingGames = await _unitOfWork.OrderGameRepository.GetOrderGamesAsync(order.Id);
             if (remainingGames.Count == 0)
             {
                 await _unitOfWork.OrderRepository.DeleteAsync(order);
             }
         }
-
-        await _unitOfWork.SaveAsync();
-    }
-
-    public async Task CheckoutAsync(Guid orderId)
-    {
-        var order = await _unitOfWork.OrderRepository.GetOrderWithGamesAsync(orderId) ?? throw new NotFoundException("Order not found");
-
-        if (order.OrderGames.Count == 0)
-        {
-            throw new Exception("Cannot checkout empty order");
-        }
-
-        order.Status = OrderStatus.Checkout;
-        await _unitOfWork.SaveAsync();
-    }
-
-    public async Task CompletePaymentAsync(Guid orderId)
-    {
-        var order = await _unitOfWork.OrderRepository.GetOrderWithGamesAsync(orderId) ?? throw new NotFoundException("Order not found");
-        order.Status = OrderStatus.Paid;
-
-        foreach (var og in order.OrderGames)
-        {
-            if (og.Game.UnitInStock < og.Quantity)
-            {
-                throw new ArgumentException("Not enough stock for game: " + og.Game.Name);
-            }
-
-            og.Game.UnitInStock -= og.Quantity;
-        }
-
-        await _unitOfWork.SaveAsync();
-    }
-
-    public async Task CancelOrderAsync(Guid orderId)
-    {
-        var order = await _unitOfWork.OrderRepository.GetOrderWithGamesAsync(orderId) ?? throw new NotFoundException("Order not found");
-        order.Status = OrderStatus.Cancelled;
 
         await _unitOfWork.SaveAsync();
     }

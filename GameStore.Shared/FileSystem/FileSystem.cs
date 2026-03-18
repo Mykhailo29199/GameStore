@@ -12,6 +12,13 @@ public class FileSystem : IFileSystem
 
     public async Task WriteFileAsync(string path, byte[] content)
     {
+        if (string.IsNullOrEmpty(path))
+        {
+            throw new ArgumentException("Path cannot be null or empty.", nameof(path));
+        }
+
+        ArgumentNullException.ThrowIfNull(content);
+
         var dir = Path.GetDirectoryName(path);
         if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
         {

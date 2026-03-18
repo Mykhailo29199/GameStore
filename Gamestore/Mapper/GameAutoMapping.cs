@@ -1,8 +1,5 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Models;
-using BusinessLogicLayer.Models.CommentModels;
-using BusinessLogicLayer.Models.OrderModels;
-using BusinessLogicLayer.Models.Payment;
 using DataAccessLayer.Entities;
 using Gamestore.WebAPI.DTOs.CommentDTOs;
 using Gamestore.WebAPI.DTOs.GameDTO;
@@ -191,6 +188,8 @@ public class GameAutoMapping : Profile
         // Nested responses
         CreateMap<BankResponseModel, BankResponseDTO>();
         CreateMap<IBoxResponseModel, IBoxResponseDTO>();
+
+        CreateMap<PaymentMethodResponseDTO, PaymentMethodResponseModel>().ReverseMap();
 
         // CommentEntity → CommentModel
         // =============================

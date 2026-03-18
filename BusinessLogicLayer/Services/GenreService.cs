@@ -132,7 +132,7 @@ public class GenreService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapp
 
             if (parent.Id == genreId)
             {
-                return true;
+                return true; // Cyclic reference detected
             }
 
             if (!parent.ParentGenreId.HasValue)

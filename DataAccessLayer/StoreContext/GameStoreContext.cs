@@ -127,6 +127,30 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
             .OnDelete(DeleteBehavior.Cascade);
         });
 
+        // ===================== GenreEntity =====================
+        modelBuilder.Entity<GenreEntity>(entity =>
+        {
+            entity.HasKey(g => g.Id);                            // Self-reference: ParentGenre → SubGenres
+
+            entity.HasOne(g => g.ParentGenre)
+            .WithMany(g => g.SubGenres)
+            .HasForeignKey(g => g.ParentGenreId);
+        });
+
+        // ===================== PlatformEntity =====================
+        modelBuilder.Entity<PlatformEntity>().HasIndex(p => p.Type).IsUnique();
+
+        // ===================== PublisherEntity =====================
+        modelBuilder.Entity<PublisherEntity>(entity =>
+        {
+            entity.HasKey(p => p.Id);
+
+            entity.HasMany(p => p.Games)
+            .WithOne(g => g.Publisher)
+            .HasForeignKey(g => g.PublisherId)
+            .OnDelete(DeleteBehavior.Cascade);
+        });
+
         // ===================== OrderEntity =====================
         modelBuilder.Entity<OrderEntity>(entity =>
         {
@@ -194,6 +218,33 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
 
             entity.Property(b => b.ExpireAt)
                 .IsRequired(false);
+        });
+
+        // ===================== OrderEntity =====================
+        modelBuilder.Entity<OrderEntity>(entity =>
+        {
+            entity.HasKey(o => o.Id);
+
+            entity.HasMany(o => o.OrderGames)
+                .WithOne(og => og.Order)
+                .HasForeignKey(og => og.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ===================== OrderGameEntity =====================
+        modelBuilder.Entity<OrderGameEntity>(entity =>
+        {
+            entity.HasKey(og => new { og.OrderId, og.ProductId });
+
+            entity.HasOne(og => og.Order)
+                .WithMany(o => o.OrderGames)
+                .HasForeignKey(og => og.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(og => og.Game)
+                .WithMany()
+                .HasForeignKey(og => og.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

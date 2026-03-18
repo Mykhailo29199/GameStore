@@ -6,13 +6,11 @@ namespace GameStore.Shared.Logging;
 
 public class FileLogWriter : IFileLogWriter
 {
-    private readonly FileSystem.IFileSystem _fileSystem;
     private static readonly object _lockObject = new();
 
     public FileLogWriter(FileSystem.IFileSystem fileSystem)
     {
-        _fileSystem = fileSystem;
-        _fileSystem.CreateDirectory(LogDirectory);
+        fileSystem.CreateDirectory(LogDirectory);
     }
 
     public void WriteLog<TState>(LogLevel logLevel, TState state)

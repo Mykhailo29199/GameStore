@@ -83,7 +83,7 @@ public class PublisherService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper 
 
     public async Task<List<GameModel>> GetGamesByPublisherNameAsync(string publisherName)
     {
-        var publisher = await _unitOfWork.PublisherRepository
+        _ = await _unitOfWork.PublisherRepository
         .FirstOrDefaultAsync(p => p.CompanyName == publisherName)
         ?? throw new NotFoundException($"Publisher '{publisherName}' not found.");
 

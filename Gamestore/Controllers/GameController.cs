@@ -77,9 +77,11 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
     {
         var filterModel = _mapper.Map<GameFilterModel>(filterDto);
 
-        var result = await _gameService.GetFilteredGamesAsync(filterModel);
+        var resultModel = await _gameService.GetFilteredGamesAsync(filterModel);
 
-        return Ok(result);
+        var responseDto = _mapper.Map<FilteredGamesResponseDTO>(resultModel);
+
+        return Ok(responseDto);
     }
 
     [HttpGet("genres/game/{key}")]

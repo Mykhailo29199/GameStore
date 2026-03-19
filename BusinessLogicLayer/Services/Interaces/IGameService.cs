@@ -34,5 +34,5 @@ public interface IGameService
 
     List<PublichDateOptions> GetPublichDateOptions();
 
-    Task<FilteredGamesResultModel> GetFilteredGamesAsync(GameFilterModel filter);
+    Task<FilteredGamesResponseModel> GetFilteredGamesAsync(GameFilterModel filter);
 }

@@ -232,12 +232,7 @@ public class GameAutoMapping : Profile
         string.IsNullOrWhiteSpace(src.Action) ? null : src.Action))
     .ForMember(dest => dest.ParentId, opt => opt.MapFrom((src, dest) =>
     {
-        if (string.IsNullOrWhiteSpace(src.ParentId))
-        {
-            return null;
-        }
-
-        return Guid.TryParse(src.ParentId, out var guid) ? guid : (Guid?)null;
+        return string.IsNullOrWhiteSpace(src.ParentId) ? null : Guid.TryParse(src.ParentId, out var guid) ? guid : (Guid?)null;
     }));
 
         // FilterDTO -> FilterModel
@@ -247,7 +242,7 @@ public class GameAutoMapping : Profile
         // ================================
         // ResultModel -> ResultDto
         // ================================
-        CreateMap<FilteredGamesResultModel, FilteredGamesResultDTO>()
+        CreateMap<FilteredGamesResponseModel, FilteredGamesResponseDTO>()
             .ForMember(dest => dest.Games, opt => opt.MapFrom(src => src.Games));
     }
 }

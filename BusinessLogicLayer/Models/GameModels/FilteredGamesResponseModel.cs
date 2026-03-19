@@ -1,6 +1,6 @@
 ﻿namespace BusinessLogicLayer.Models.GameModels;
 
-public class FilteredGamesResultModel
+public class FilteredGamesResponseModel
 {
     public List<GameModel> Games { get; set; }
 

@@ -206,7 +206,7 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
         };
     }
 
-    public async Task<FilteredGamesResultModel> GetFilteredGamesAsync(GameFilterModel filter)
+    public async Task<FilteredGamesResponseModel> GetFilteredGamesAsync(GameFilterModel filter)
     {
         var query = _unitOfWork.GameRepository.GetQueryable();
 
@@ -216,7 +216,7 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
 
         var games = await query.ToListAsync();
 
-        return new FilteredGamesResultModel
+        return new FilteredGamesResponseModel
         {
             Games = _mapper.Map<List<GameModel>>(games),
             CurrentPage = filter.Page,

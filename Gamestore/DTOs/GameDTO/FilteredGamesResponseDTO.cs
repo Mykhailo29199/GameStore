@@ -1,6 +1,6 @@
 ﻿namespace Gamestore.WebAPI.DTOs.GameDTO;
 
-public class FilteredGamesResultDTO
+public class FilteredGamesResponseDTO
 {
     public IEnumerable<GameWithIdDTO> Games { get; set; }
 

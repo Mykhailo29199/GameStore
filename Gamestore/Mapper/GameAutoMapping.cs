@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Models;
+using BusinessLogicLayer.Models.BanModels;
 using BusinessLogicLayer.Models.CommentModels;
 using BusinessLogicLayer.Models.OrderModels;
 using BusinessLogicLayer.Models.Payment;
@@ -129,15 +130,10 @@ public class GameAutoMapping : Profile
         // Visa
         CreateMap<VisaPaymentDTO, VisaPaymentModel>()
             .ForMember(dest => dest.CardHolderName, opt => opt.MapFrom(src => src.Holder))
-
             .ForMember(dest => dest.ExpirationMonth, opt => opt.MapFrom(src => src.MonthExpire))
-
             .ForMember(dest => dest.ExpirationYear, opt => opt.MapFrom(src => src.YearExpire))
-
             .ForMember(dest => dest.Cvv, opt => opt.MapFrom(src => src.Cvv2))
-
-            // if TransactionAmount is not filled in from DTO
-            .ForMember(dest => dest.TransactionAmount, opt => opt.Ignore());
+            .ForMember(dest => dest.TotalAmount, opt => opt.Ignore());
 
         // OrderEntity->OrderModel
         CreateMap<OrderEntity, OrderModel>()
@@ -178,7 +174,7 @@ public class GameAutoMapping : Profile
         CreateMap<PaymentRequestDTO, PaymentRequestModel>()
      .ForMember(
          dest => dest.Method,
-         opt => opt.MapFrom(src => src.Method.ToEnumFromDescription<PaymentOptions>()));
+         opt => opt.MapFrom(src => src.Method.ToEnum<PaymentOptions>()));
 
         // Response
         CreateMap<PaymentResponseModel, PaymentResponseDTO>()
@@ -210,7 +206,8 @@ public class GameAutoMapping : Profile
              .ForMember(dest => dest.ParentCommentId, opt => opt.MapFrom(src => src.ParentId));
 
         // DTO → Model
-        CreateMap<BanRequestDTO, BanModel>();
+        CreateMap<BanRequestDTO, BanModel>()
+    .ForMember(dest => dest.Duration, opt => opt.MapFrom(src => src.Duration.ToEnum<BanDurationOption>()));
 
         // =============================
         // BanModel ↔ BanEntity

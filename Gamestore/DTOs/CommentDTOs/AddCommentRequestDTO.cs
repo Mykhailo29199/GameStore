@@ -9,5 +9,5 @@ public class AddCommentRequestDTO
 
     public string? ParentId { get; set; }
 
-    public string? Action { get; set; } // reply | quote
+    public string? Action { get; set; }
 }

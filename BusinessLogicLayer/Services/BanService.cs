@@ -1,10 +1,12 @@
 ﻿using AutoMapper;
-using BusinessLogicLayer.Models.CommentModels;
+using BusinessLogicLayer.Models.BanModels;
 using BusinessLogicLayer.Services.Interaces;
 using DataAccessLayer.Entities;
 using DataAccessLayer.StoreContext;
 using DataAccessLayer.UnitOfWork;
+using GameStore.Shared.Enums;
 using GameStore.Shared.Exceptions;
+using GameStore.Shared.Extensions;
 
 namespace BusinessLogicLayer.Services;
 
@@ -13,15 +15,12 @@ public class BanService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapper
     private readonly IUnitOfWork<GameStoreContext> _unitOfWork = unitOfWork;
     private readonly IMapper _mapper = mapper;
 
-    public List<BanDurationOption> GetBanDurations()
+    public List<string> GetBanDurations()
     {
-        return new List<BanDurationOption>
-    {
-        new() { Duration = "1 hour" },
-        new() { Duration = "1 day" },
-        new() { Duration = "1 week" },
-        new() { Duration = "1 month" },
-    };
+        return Enum.GetValues(typeof(BanDurationOption))
+         .Cast<BanDurationOption>()
+         .Select(d => d.GetDescription())
+         .ToList();
     }
 
     public async Task BanUserAsync(BanModel model)
@@ -36,16 +35,16 @@ public class BanService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapper
 
         if (activeBan != null)
         {
-            throw new AlreadyExistsException("User already banned");
+            throw new BadRequestException("User already banned");
         }
 
         DateTime? expireAt = model.Duration switch
         {
-            "1 hour" => DateTime.UtcNow.AddHours(1),
-            "1 day" => DateTime.UtcNow.AddDays(1),
-            "1 week" => DateTime.UtcNow.AddDays(7),
-            "1 month" => DateTime.UtcNow.AddMonths(1),
-            "permanent" => null,
+            BanDurationOption.OneHour => DateTime.UtcNow.AddHours(1),
+            BanDurationOption.OneDay => DateTime.UtcNow.AddDays(1),
+            BanDurationOption.OneWeek => DateTime.UtcNow.AddDays(7),
+            BanDurationOption.OneMonth => DateTime.UtcNow.AddMonths(1),
+            BanDurationOption.Permanent => DateTime.MaxValue,
             _ => throw new BadRequestException("Invalid duration"),
         };
 

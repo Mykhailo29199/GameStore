@@ -1,10 +1,10 @@
-﻿using BusinessLogicLayer.Models.CommentModels;
+﻿using BusinessLogicLayer.Models.BanModels;
 
 namespace BusinessLogicLayer.Services.Interaces;
 
 public interface IBanService
 {
-    List<BanDurationOption> GetBanDurations();
+    List<string> GetBanDurations();
 
     Task BanUserAsync(BanModel model);
 }

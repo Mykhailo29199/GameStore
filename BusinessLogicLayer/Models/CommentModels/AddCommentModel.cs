@@ -1,4 +1,6 @@
-﻿namespace BusinessLogicLayer.Models.CommentModels;
+﻿using GameStore.Shared.Enums;
+
+namespace BusinessLogicLayer.Models.CommentModels;
 
 public class AddCommentModel
 {
@@ -8,5 +10,5 @@ public class AddCommentModel
 
     public Guid? ParentId { get; set; }
 
-    public string? Action { get; set; } // "reply" | "quote"
+    public CommentActions? Action { get; set; }
 }

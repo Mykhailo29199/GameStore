@@ -53,6 +53,9 @@ namespace DataAccessLayer.Migrations
                     b.Property<Guid>("GameId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -94,14 +97,6 @@ namespace DataAccessLayer.Migrations
 
                     b.Property<double>("Price")
                         .HasColumnType("float");
-
-                    b.Property<Guid>("PublisherId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("UnitInStock")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
 
                     b.Property<Guid>("PublisherId")
                         .HasColumnType("uniqueidentifier");

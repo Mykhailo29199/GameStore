@@ -4,6 +4,7 @@ using BusinessLogicLayer.Services.Interaces;
 using DataAccessLayer.Entities;
 using DataAccessLayer.StoreContext;
 using DataAccessLayer.UnitOfWork;
+using GameStore.Shared.Enums;
 using GameStore.Shared.Exceptions;
 
 namespace BusinessLogicLayer.Services;
@@ -23,11 +24,11 @@ public class CommentService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper ma
 
         var ban = await _unitOfWork.BanRepository.FirstOrDefaultAsync(b =>
             b.UserName == model.Name &&
-            (b.ExpireAt == null || b.ExpireAt > DateTime.UtcNow));
+            (b.ExpireAt > DateTime.UtcNow));
 
         if (ban != null)
         {
-            throw new ForbiddenException("User is banned");
+            throw new BadRequestException("User is banned");
         }
 
         string body = model.Body;
@@ -38,16 +39,16 @@ public class CommentService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper ma
                 .GetByIdAsync(model.ParentId.Value)
                 ?? throw new NotFoundException("Parent comment not found");
 
-            if (model.Action == "Reply")
+            if (model.Action == CommentActions.Reply)
             {
                 body = $"[{parent.Name}], {body}";
             }
-            else if (model.Action == "Quote")
+            else if (model.Action == CommentActions.Quote)
             {
                 var quotedText = parent.Body;
                 if (string.IsNullOrWhiteSpace(quotedText))
                 {
-                    quotedText = "[Comment deleted]";
+                    quotedText = _deletedMessage;
                 }
 
                 body = $"> {quotedText}\n\n{body}";
@@ -93,6 +94,7 @@ public class CommentService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper ma
         }
 
         comment.Body = _deletedMessage;
+        comment.IsDeleted = true;
 
         await _unitOfWork.SaveAsync();
     }

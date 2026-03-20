@@ -77,7 +77,7 @@ public class PaymentService : IPaymentService
         OrderEntity order,
         decimal total)
     {
-        model.TransactionAmount = total;
+        model.TotalAmount = total;
 
         var response = await ExecuteHttpPayment(
             order,

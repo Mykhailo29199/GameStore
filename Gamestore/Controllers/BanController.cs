@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using BusinessLogicLayer.Models.CommentModels;
+using BusinessLogicLayer.Models.BanModels;
 using BusinessLogicLayer.Services.Interaces;
 using Gamestore.WebAPI.DTOs.Users;
 using Microsoft.AspNetCore.Mvc;
@@ -14,9 +14,7 @@ public class BanController(IBanService banService, IMapper mapper) : ControllerB
     public IActionResult GetBanDurations()
     {
         var result = banService
-        .GetBanDurations()
-        .Select(x => x.Duration)
-        .ToList();
+        .GetBanDurations();
 
         return Ok(result);
     }

@@ -14,11 +14,17 @@ public class FileSystem : IFileSystem
 
     public Task WriteFileAsync(string path, byte[] content)
     {
-        return string.IsNullOrEmpty(path)
-            ? throw new BadRequestException("Path cannot be null or empty.")
-            : content == null || content.Length == 0
-            ? throw new BadRequestException("The file content can`t be empty.")
-            : WriteFileInternalAsync(path, content);
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            throw new BadRequestException("Path cannot be null or empty.");
+        }
+
+        if (content == null || content.Length == 0)
+        {
+            throw new BadRequestException("The file content can't be empty.");
+        }
+
+        return WriteFileInternalAsync(path, content);
     }
 
     public async Task<byte[]> ReadFileAsync(string path)

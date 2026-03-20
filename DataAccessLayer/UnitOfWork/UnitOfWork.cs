@@ -17,6 +17,8 @@ public class UnitOfWork : IUnitOfWork<GameStoreContext>
     private IPublisherRepository? _publisherRepository;
     private IOrderRepository? _orderRepository;
     private IOrderGameRepository? _orderGameRepository;
+    private ICommentRepository? _commentRepository;
+    private IBanRepository? _banRepository;
 
     public UnitOfWork(GameStoreContext context)
     {
@@ -51,6 +53,12 @@ public class UnitOfWork : IUnitOfWork<GameStoreContext>
 
     public IOrderGameRepository OrderGameRepository =>
         _orderGameRepository ??= new OrderGameRepository(Context);
+
+    public ICommentRepository CommentRepository =>
+        _commentRepository ??= new CommentRepository(Context);
+
+    public IBanRepository BanRepository =>
+        _banRepository ??= new BanRepository(Context);
 
     public async Task CreateTransactionAsync() =>
         await Context.Database.BeginTransactionAsync();

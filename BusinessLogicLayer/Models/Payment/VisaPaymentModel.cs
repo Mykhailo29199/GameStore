@@ -2,7 +2,7 @@
 
 public class VisaPaymentModel
 {
-    public decimal TransactionAmount { get; set; }
+    public decimal TotalAmount { get; set; }
 
     public string CardHolderName { get; set; }
 

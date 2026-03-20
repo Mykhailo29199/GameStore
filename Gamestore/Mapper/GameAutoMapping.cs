@@ -183,7 +183,6 @@ public class GameAutoMapping : Profile
 
         // Nested responses
         CreateMap<BankResponseModel, BankResponseDTO>();
-        CreateMap<IBoxResponseModel, IBoxResponseDTO>();
 
         CreateMap<PaymentMethodResponseDTO, PaymentMethodResponseModel>().ReverseMap();
 

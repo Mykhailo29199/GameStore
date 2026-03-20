@@ -25,7 +25,7 @@ public class BanService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapper
 
     public async Task BanUserAsync(BanModel model)
     {
-        var comment = await _unitOfWork.CommentRepository
+        _ = await _unitOfWork.CommentRepository
             .FirstOrDefaultAsync(c => c.Name == model.User) ?? throw new NotFoundException("User with this name has no comments");
 
         var activeBan = await _unitOfWork.BanRepository

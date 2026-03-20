@@ -174,7 +174,7 @@ public class PaymentService : IPaymentService
     PaymentOptions method)
     {
         PaymentResponseModel result = response.StatusCode == HttpStatusCode.PaymentRequired
-            ? throw new NotEnoughException("Not enough funds to complete the payment.")
+            ? throw new BadRequestException("Not enough funds to complete the payment.")
             : new PaymentResponseModel
             {
                 Method = method,

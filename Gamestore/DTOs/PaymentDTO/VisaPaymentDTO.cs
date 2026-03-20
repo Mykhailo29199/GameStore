@@ -5,7 +5,7 @@ namespace Gamestore.WebAPI.DTOs.PaymentDTO;
 public class VisaPaymentDTO
 {
     [Required]
-    [StringLength(100, MinimumLength = 2, ErrorMessage = "Card holder name must be between 2 and 100 characters.")]
+    [StringLength(100, MinimumLength = 2, ErrorMessage = $"Card holder name length is invalid.")]
     [RegularExpression(@"^[a-zA-Z\s'-]+$", ErrorMessage = "Card holder name contains invalid characters.")]
     public string Holder { get; set; }
 
@@ -14,7 +14,7 @@ public class VisaPaymentDTO
     public string CardNumber { get; set; }
 
     [Required]
-    [Range(1, 12, ErrorMessage = "Expiration month must be between 1 and 12.")]
+    [Range(1, 12, ErrorMessage = "Expiration month is invalid.")]
     public int MonthExpire { get; set; }
 
     public int YearExpire { get; set; }

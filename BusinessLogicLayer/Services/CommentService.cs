@@ -96,7 +96,6 @@ public class CommentService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper ma
         comment.Body = _deletedMessage;
         comment.IsDeleted = true;
 
-        await _unitOfWork.BanRepository.AddAsync(banEntity);
         await _unitOfWork.SaveAsync();
     }
 

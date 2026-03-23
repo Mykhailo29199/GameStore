@@ -10,5 +10,5 @@ public class BanEntity
     [Required]
     public string UserName { get; set; }
 
-    public DateTime? ExpireAt { get; set; } // null = permanent
+    public DateTime? ExpireAt { get; set; }
 }

@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Models;
-using BusinessLogicLayer.Models.BanModels;
 using BusinessLogicLayer.Models.CommentModels;
+using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Models.OrderModels;
 using BusinessLogicLayer.Models.Payment;
 using DataAccessLayer.Entities;
@@ -16,6 +16,8 @@ using Gamestore.WebAPI.DTOs.PaymentDTO.PaymentResponseDTOs;
 using Gamestore.WebAPI.DTOs.PlatformDTO;
 using Gamestore.WebAPI.DTOs.PublisherDTO;
 using Gamestore.WebAPI.DTOs.Users;
+using BanDurationOption = GameStore.Shared.Enums.BanDurationOption;
+using BanModel = BusinessLogicLayer.Models.BanModels.BanModel;
 
 namespace Gamestore.WebAPI.Mapper;
 

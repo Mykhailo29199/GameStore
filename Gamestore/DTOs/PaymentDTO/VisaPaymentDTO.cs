@@ -4,12 +4,8 @@ namespace Gamestore.WebAPI.DTOs.PaymentDTO;
 
 public class VisaPaymentDTO
 {
-    //[Required]
-    //[Range(0.01, 1_000_000, ErrorMessage = "Transaction amount must be greater than 0.")]
-    //public double TransactionAmount { get; set; }
-
     [Required]
-    [StringLength(100, MinimumLength = 2, ErrorMessage = "Card holder name must be between 2 and 100 characters.")]
+    [StringLength(100, MinimumLength = 2, ErrorMessage = $"Card holder name length is invalid.")]
     [RegularExpression(@"^[a-zA-Z\s'-]+$", ErrorMessage = "Card holder name contains invalid characters.")]
     public string Holder { get; set; }
 
@@ -18,7 +14,7 @@ public class VisaPaymentDTO
     public string CardNumber { get; set; }
 
     [Required]
-    [Range(1, 12, ErrorMessage = "Expiration month must be between 1 and 12.")]
+    [Range(1, 12, ErrorMessage = "Expiration month is invalid.")]
     public int MonthExpire { get; set; }
 
     public int YearExpire { get; set; }
@@ -27,9 +23,9 @@ public class VisaPaymentDTO
     [RegularExpression(@"^[0-9]{3}$", ErrorMessage = "CVV must be exactly 3 digits.")]
     public int Cvv2 { get; set; }
 
-    public IEnumerable<ValidationResult> Validate(
-      ValidationContext validationContext)
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
+        _ = validationContext;
         var now = DateTime.UtcNow;
 
         if (YearExpire < now.Year)

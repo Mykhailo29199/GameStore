@@ -80,7 +80,7 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
 
     public async Task UpdateGameAsync(GameModel gameModel)
     {
-        GameEntity existingGame = await _unitOfWork.GameRepository.GetFull(gameModel.Id)
+        GameEntity existingGame = await _unitOfWork.GameRepository.GetFullGame(gameModel.Id)
             ?? throw new NotFoundException($"Game with Id `{gameModel.Id}` was not found.");
 
         existingGame.Key = await GenerateUniqueGameKeyAsync(gameModel.Key, gameModel.Name);

@@ -2,7 +2,6 @@
 using BusinessLogicLayer.Models.CommentModels;
 using BusinessLogicLayer.Services.Interaces;
 using Gamestore.WebAPI.DTOs.CommentDTOs;
-using Gamestore.WebAPI.DTOs.Users;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Gamestore.WebAPI.Controllers;
@@ -11,7 +10,6 @@ namespace Gamestore.WebAPI.Controllers;
 [Route("api/")]
 public class CommentController(ICommentService commentService, IMapper mapper) : ControllerBase
 {
-    // Add Comment
     [HttpPost("games/{key}/comments")]
     public async Task<IActionResult> AddComment(string key, [FromBody] AddCommentRequestDTO dto)
     {
@@ -34,25 +32,5 @@ public class CommentController(ICommentService commentService, IMapper mapper) :
         await commentService.DeleteCommentAsync(key, id);
 
         return NoContent();
-    }
-
-    [HttpGet("comments/ban/durations")]
-    public IActionResult GetBanDurations()
-    {
-        var result = commentService
-        .GetBanDurations()
-        .Select(x => x.Duration)
-        .ToList();
-
-        return Ok(result);
-    }
-
-    [HttpPost("comments/ban")]
-    public async Task<IActionResult> BanUser([FromBody] BanRequestDTO dto)
-    {
-        await commentService.BanUserAsync(
-            mapper.Map<BanModel>(dto));
-
-        return Ok();
     }
 }

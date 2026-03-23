@@ -17,6 +17,9 @@ public class CommentEntity
     public Guid? ParentCommentId { get; set; }
 
     [Required]
+    public bool IsDeleted { get; set; } = false;
+
+    [Required]
     public Guid GameId { get; set; }
 
     public GameEntity Game { get; set; }

@@ -33,11 +33,9 @@ namespace DataAccessLayer.Migrations
 
                     b.Property<string>("UserName")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("UserName");
 
                     b.ToTable("BanEntity");
                 });
@@ -54,6 +52,9 @@ namespace DataAccessLayer.Migrations
 
                     b.Property<Guid>("GameId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Name")
                         .IsRequired()

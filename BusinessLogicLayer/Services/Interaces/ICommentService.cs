@@ -9,8 +9,4 @@ public interface ICommentService
     Task<List<CommentModel>> GetGameCommentsAsync(string gameKey);
 
     Task DeleteCommentAsync(string gameKey, Guid id);
-
-    List<BanDurationOption> GetBanDurations();
-
-    Task BanUserAsync(BanModel model);
 }

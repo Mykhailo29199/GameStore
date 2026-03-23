@@ -1,44 +1,43 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Models.Payment;
 using BusinessLogicLayer.Services.Interaces;
+using GameStore.Shared.Enums;
 using Gamestore.WebAPI.DTOs.PaymentDTO;
+using Gamestore.WebAPI.DTOs.PaymentDTO.PaymentResponseDTOs;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GameStore.WebAPI.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/")]
 public class PaymentController(IPaymentService paymentService, IMapper mapper) : ControllerBase
 {
     private readonly IPaymentService _paymentService = paymentService;
     private readonly IMapper _mapper = mapper;
 
-    [HttpPost("payment")]
+    [HttpPost("orders/payment")]
     public async Task<IActionResult> ProcessPayment([FromBody] PaymentRequestDTO request)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
-
         var requestModel = _mapper.Map<PaymentRequestModel>(request);
         var responseModel = await _paymentService.ProcessPayment(requestModel);
 
-        if (responseModel.Status != "Success")
+        return responseModel.Method switch
         {
-            return BadRequest(responseModel.Message);
-        }
+            PaymentOptions.Bank when responseModel.BankResponseModel.FileBytes != null =>
+                File(responseModel.BankResponseModel.FileBytes, "application/pdf", "invoice.pdf"),
+            PaymentOptions.IBoxTerminal when responseModel.IBoxResponseModel != null =>
+                Ok(responseModel.IBoxResponseModel),
+            PaymentOptions.Visa =>
+        Ok(new { message = "Payment completed successfully via Visa." }),
+            _ => BadRequest("Unknown payment method"),
+        };
+    }
 
-        if (responseModel.Method == "Bank" && responseModel.BankResponseModel.FileBytes != null)
-        {
-            return File(responseModel.BankResponseModel.FileBytes, "application/pdf", $"invoice.pdf");
-        }
+    [HttpGet("orders/payment-methods")]
+    public IActionResult GetPaymentMethods()
+    {
+        var paymentMethods = _mapper.Map<List<PaymentMethodResponseDTO>>(_paymentService.GetPaymentMethods());
 
-        if (responseModel.Method == "IBox terminal" && responseModel.IBoxResponseModel != null)
-        {
-            return Ok(responseModel.IBoxResponseModel);
-        }
-
-        return Ok();
+        return Ok(new { paymentMethods });
     }
 }

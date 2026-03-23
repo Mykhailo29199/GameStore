@@ -4,9 +4,9 @@ namespace BusinessLogicLayer.Services.Interaces;
 
 public interface IOrderService
 {
-    Task AddGameAsync(Guid userId, string gameKey);
+    Task AddGameToCartAsync(Guid userId, string gameKey);
 
-    Task RemoveGameAsync(Guid? userId, string gameKey);
+    Task RemoveGameFromCartAsync(Guid userId, string gameKey);
 
     Task<IEnumerable<OrderModel>> GetClosedOrdersAsync();
 

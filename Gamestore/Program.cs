@@ -28,6 +28,18 @@ builder.Services.AddSwaggerGen();
 builder.Services.Configure<PaymentServiceOptions>(
     builder.Configuration.GetSection("PaymentService"));
 
+// 2. Registering HttpClient with a base URL
+builder.Services.AddHttpClient("PaymentService", (sp, client) =>
+{
+    var options = sp.GetRequiredService<
+        Microsoft.Extensions.Options.IOptions<PaymentServiceOptions>>().Value;
+
+    client.BaseAddress = new Uri(options.BaseUrl);
+});
+
+builder.Services.AddScoped<IFileSystem, FileSystem>();
+builder.Services.AddScoped<IFileLogWriter, FileLogWriter>();
+
 // 2. Реєстрація HttpClient з базовою адресою
 builder.Services.AddHttpClient("PaymentService", (sp, client) =>
 {
@@ -60,6 +72,7 @@ builder.Services.AddScoped<IPublisherService, PublisherService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<ICommentService, CommentService>();
+builder.Services.AddScoped<IBanService, BanService>();
 
 builder.Services.AddScoped<IGamePipelineStep, GenreFilterStep>();
 builder.Services.AddScoped<IGamePipelineStep, PlatformFilterStep>();
@@ -105,7 +118,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseRouting();
-app.UseCors("AllowFrontend"); //  This will allow Angular to interact with the API without errors.
+app.UseCors("AllowFrontend"); // This allows Angular to interact with the API without errors
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
 

@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Models.Payment;
 using BusinessLogicLayer.Services.Interaces;
-using GameStore.Shared.Enums;
+using GameStore.Shared.Enums.PaymentEnums;
 using Gamestore.WebAPI.DTOs.PaymentDTO;
 using Gamestore.WebAPI.DTOs.PaymentDTO.PaymentResponseDTOs;
 using Microsoft.AspNetCore.Mvc;

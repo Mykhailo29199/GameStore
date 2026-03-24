@@ -114,21 +114,21 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
     [HttpGet("games/pagination-options")]
     public IActionResult GetPaginationOptions()
     {
-        var options = _gameService.GetPaginationOptions().Select(x => x.Pagination).ToList();
+        var options = _gameService.GetPaginationOptions();
         return Ok(options);
     }
 
     [HttpGet("games/sorting-options")]
     public IActionResult GetSortingOptions()
     {
-        var options = _gameService.GetSortingOptions().Select(x => x.Sorting).ToList();
+        var options = _gameService.GetSortingOptions();
         return Ok(options);
     }
 
     [HttpGet("games/publish-date-options")]
     public IActionResult GetPublishDateOptions()
     {
-        var options = _gameService.GetPublichDateOptions().Select(x => x.PublishDate).ToList();
+        var options = _gameService.GetPublichDateOptions();
         return Ok(options);
     }
 }

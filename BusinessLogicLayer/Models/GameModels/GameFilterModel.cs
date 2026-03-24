@@ -1,4 +1,6 @@
-﻿namespace BusinessLogicLayer.Models.GameModels;
+﻿using GameStore.Shared.Enums.FilterOptionsEnums;
+
+namespace BusinessLogicLayer.Models.GameModels;
 
 public class GameFilterModel
 {
@@ -12,7 +14,7 @@ public class GameFilterModel
 
     public double? MaxPrice { get; set; }
 
-    public string? DatePublishing { get; set; }
+    public PublichDateOptions DatePublishing { get; set; }
 
     public string? Name { get; set; }
 
@@ -20,5 +22,5 @@ public class GameFilterModel
 
     public int Page { get; set; } = 1;
 
-    public string PageCount { get; set; }
+    public int PageCount { get; set; }
 }

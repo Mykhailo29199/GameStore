@@ -23,6 +23,4 @@ public class GameFilterDTO
     public int Page { get; set; } = 1;
 
     public string? PageCount { get => _pageCount ?? "10"; set => _pageCount = value; }
-
-    public string Trigger { get; set; }
 }

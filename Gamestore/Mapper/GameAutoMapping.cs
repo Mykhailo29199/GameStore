@@ -5,7 +5,8 @@ using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Models.OrderModels;
 using BusinessLogicLayer.Models.Payment;
 using DataAccessLayer.Entities;
-using GameStore.Shared.Enums;
+using GameStore.Shared.Enums.FilterOptionsEnums;
+using GameStore.Shared.Enums.PaymentEnums;
 using GameStore.Shared.Extensions;
 using Gamestore.WebAPI.DTOs.CommentDTOs;
 using Gamestore.WebAPI.DTOs.GameDTO;
@@ -234,7 +235,17 @@ public class GameAutoMapping : Profile
 
         // FilterDTO -> FilterModel
         // ================================
-        CreateMap<GameFilterDTO, GameFilterModel>();
+        CreateMap<GameFilterDTO, GameFilterModel>()
+    .ForMember(dest => dest.PageCount, opt => opt.MapFrom(src =>
+        string.IsNullOrWhiteSpace(src.PageCount)
+            ? (int)PaginationOptions.Ten
+            : src.PageCount == "All"
+                ? (int)PaginationOptions.All
+                : int.Parse(src.PageCount)))
+    .ForMember(dest => dest.DatePublishing, opt => opt.MapFrom(src =>
+        string.IsNullOrWhiteSpace(src.DatePublishing)
+            ? PublichDateOptions.AllTime
+            : src.DatePublishing.ToEnum<PublichDateOptions>()));
 
         // ================================
         // ResultModel -> ResultDto

@@ -1,17 +1,19 @@
 ﻿using System.Text.RegularExpressions;
 using AutoMapper;
 using BusinessLogicLayer.Models;
-using BusinessLogicLayer.Models.FilterOptions;
 using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Pipelines;
 using BusinessLogicLayer.Services.Interaces;
 using DataAccessLayer.Entities;
 using DataAccessLayer.StoreContext;
 using DataAccessLayer.UnitOfWork;
+using GameStore.Shared.Enums.FilterOptionsEnums;
 using GameStore.Shared.Exceptions;
+using GameStore.Shared.Extensions;
 using GameStore.Shared.FileSystem;
 using Microsoft.EntityFrameworkCore;
 using CultureInfo = System.Globalization.CultureInfo;
+using PublichDateOptions = GameStore.Shared.Enums.FilterOptionsEnums.PublichDateOptions;
 
 namespace BusinessLogicLayer.Services;
 
@@ -170,40 +172,28 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
         return games.Count();
     }
 
-    public List<PaginationOptions> GetPaginationOptions()
+    public List<string> GetPaginationOptions()
     {
-        return new List<PaginationOptions>()
-        {
-            new PaginationOptions { Pagination = "10" },
-            new PaginationOptions { Pagination = "20" },
-            new PaginationOptions { Pagination = "50" },
-            new PaginationOptions { Pagination = "100" },
-            new PaginationOptions { Pagination = "All" },
-        };
+        return Enum.GetValues(typeof(PaginationOptions))
+            .Cast<PaginationOptions>()
+            .Select(x => x.GetDescription())
+            .ToList();
     }
 
-    public List<SortingOptions> GetSortingOptions()
+    public List<string> GetSortingOptions()
     {
-        return new List<SortingOptions>()
-        {
-            new SortingOptions { Sorting = "Most popular" },
-            new SortingOptions { Sorting = "Most commented" },
-            new SortingOptions { Sorting = "Price ASC" },
-            new SortingOptions { Sorting = "Price DESC" },
-            new SortingOptions { Sorting = "New" },
-        };
+        return Enum.GetValues(typeof(SortingOptions))
+            .Cast<SortingOptions>()
+            .Select(x => x.GetDescription())
+            .ToList();
     }
 
-    public List<PublichDateOptions> GetPublichDateOptions()
+    public List<string> GetPublichDateOptions()
     {
-        return new List<PublichDateOptions>()
-        {
-            new PublichDateOptions { PublishDate = "Last 24 hours" },
-            new PublichDateOptions { PublishDate = "Last week" },
-            new PublichDateOptions { PublishDate = "Last month" },
-            new PublichDateOptions { PublishDate = "Last year" },
-            new PublichDateOptions { PublishDate = "All time" },
-        };
+        return Enum.GetValues(typeof(PublichDateOptions))
+        .Cast<PublichDateOptions>()
+        .Select(x => x.GetDescription())
+        .ToList();
     }
 
     public async Task<FilteredGamesResponseModel> GetFilteredGamesAsync(GameFilterModel filter)
@@ -220,9 +210,9 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
         {
             Games = _mapper.Map<List<GameModel>>(games),
             CurrentPage = filter.Page,
-            TotalPages = filter.PageCount == "All"
-                ? 1
-                : (int)Math.Ceiling(totalCount / (double)int.Parse(filter.PageCount)),
+            TotalPages = filter.PageCount == (int)PaginationOptions.All
+             ? 1
+             : (int)Math.Ceiling(totalCount / (double)filter.PageCount),
         };
     }
 

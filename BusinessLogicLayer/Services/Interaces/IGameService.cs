@@ -1,5 +1,4 @@
 ﻿using BusinessLogicLayer.Models;
-using BusinessLogicLayer.Models.FilterOptions;
 using BusinessLogicLayer.Models.GameModels;
 
 namespace BusinessLogicLayer.Services.Interaces;
@@ -28,11 +27,11 @@ public interface IGameService
 
     Task<int> GetTotalGamesCountAsync();
 
-    List<PaginationOptions> GetPaginationOptions();
+    List<string> GetPaginationOptions();
 
-    List<SortingOptions> GetSortingOptions();
+    List<string> GetSortingOptions();
 
-    List<PublichDateOptions> GetPublichDateOptions();
+    List<string> GetPublichDateOptions();
 
     Task<FilteredGamesResponseModel> GetFilteredGamesAsync(GameFilterModel filter);
 }

@@ -12,7 +12,7 @@ public class GameFilterPipeline(IEnumerable<IGamePipelineStep> steps)
     {
         foreach (var step in _steps)
         {
-            query = step.Process(query, filter);
+            query = step.Filter(query, filter);
         }
 
         return query;

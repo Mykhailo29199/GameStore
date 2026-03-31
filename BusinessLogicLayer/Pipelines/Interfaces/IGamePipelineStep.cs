@@ -5,5 +5,5 @@ namespace BusinessLogicLayer.Pipelines.Interfaces;
 
 public interface IGamePipelineStep
 {
-    IQueryable<GameEntity> Process(IQueryable<GameEntity> query, GameFilterModel filter);
+    IQueryable<GameEntity> Filter(IQueryable<GameEntity> query, GameFilterModel filter);
 }

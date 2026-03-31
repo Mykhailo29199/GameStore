@@ -8,7 +8,7 @@ namespace BusinessLogicLayer.Pipelines.Steps;
 
 public class SortingStep : IGamePipelineStep
 {
-    public IQueryable<GameEntity> Process(IQueryable<GameEntity> query, GameFilterModel filter)
+    public IQueryable<GameEntity> Filter(IQueryable<GameEntity> query, GameFilterModel filter)
     {
         var sortOption = string.IsNullOrWhiteSpace(filter.Sort)
             ? SortingOptions.MostPopular

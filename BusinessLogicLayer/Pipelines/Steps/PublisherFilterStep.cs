@@ -6,7 +6,7 @@ namespace BusinessLogicLayer.Pipelines.Steps;
 
 public class PublisherFilterStep : IGamePipelineStep
 {
-    public IQueryable<GameEntity> Process(IQueryable<GameEntity> query, GameFilterModel filter)
+    public IQueryable<GameEntity> Filter(IQueryable<GameEntity> query, GameFilterModel filter)
     {
         if (filter.Publishers?.Count > 0)
         {

@@ -1,6 +1,7 @@
 ﻿using System.Linq.Expressions;
 using AutoMapper;
 using BusinessLogicLayer.Models;
+using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Services;
 using DataAccessLayer.Entities;
 using DataAccessLayer.StoreContext;

@@ -1,4 +1,4 @@
-﻿using GameStore.Shared.Enums;
+﻿using GameStore.Shared.Enums.PaymentEnums;
 
 namespace BusinessLogicLayer.Models.Payment;
 

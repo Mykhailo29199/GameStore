@@ -1,7 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DataAccessLayer.Entities;
 
+[Table("BanEntity")]
 public class BanEntity
 {
     [Key]
@@ -10,5 +12,5 @@ public class BanEntity
     [Required]
     public string UserName { get; set; }
 
-    public DateTime? ExpireAt { get; set; } // null = permanent
+    public DateTime? ExpireAt { get; set; }
 }

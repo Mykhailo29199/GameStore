@@ -23,6 +23,10 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
 
     public DbSet<OrderGameEntity> OrderGames { get; set; }
 
+    public DbSet<CommentEntity> Comments { get; set; }
+
+    public DbSet<BanEntity> Bans { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -32,16 +36,23 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
         {
             entity.HasKey(g => g.Id);
 
-            entity.HasOne(g => g.Publisher)
-             .WithMany(p => p.Games)
-             .HasForeignKey(g => g.PublisherId)
-             .OnDelete(DeleteBehavior.Cascade);
+            entity.Property(g => g.Views)
+                .IsRequired()
+                .HasDefaultValue(0);
 
-            // One-to-One: Game ↔ GameFile
+            entity.Property(g => g.CreatedAt)
+                .IsRequired()
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(g => g.Publisher)
+                .WithMany(p => p.Games)
+                .HasForeignKey(g => g.PublisherId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             entity.HasOne(g => g.GameFile)
-            .WithOne(f => f.Game)
-            .HasForeignKey<GameFileEntity>(f => f.GameId)
-            .OnDelete(DeleteBehavior.Cascade);
+                .WithOne(f => f.Game)
+                .HasForeignKey<GameFileEntity>(f => f.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // ===================== GameFileEntity =====================
@@ -56,14 +67,14 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
             entity.HasKey(gg => new { gg.GameId, gg.GenreId });
 
             entity.HasOne(gg => gg.Game)
-            .WithMany(g => g.GameGenres)
-            .HasForeignKey(gg => gg.GameId)
-            .OnDelete(DeleteBehavior.Cascade);
+                .WithMany(g => g.GameGenres)
+                .HasForeignKey(gg => gg.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(gg => gg.Genre)
-            .WithMany()
-            .HasForeignKey(gg => gg.GenreId)
-            .OnDelete(DeleteBehavior.Cascade);
+                .WithMany()
+                .HasForeignKey(gg => gg.GenreId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // ===================== GamePlatformEntity =====================
@@ -72,83 +83,41 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
             entity.HasKey(gp => new { gp.GameId, gp.PlatformId });
 
             entity.HasOne(gp => gp.Game)
-            .WithMany(g => g.GamePlatforms)
-            .HasForeignKey(gp => gp.GameId)
-            .OnDelete(DeleteBehavior.Cascade);
+                .WithMany(g => g.GamePlatforms)
+                .HasForeignKey(gp => gp.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(gp => gp.Platform).WithMany().HasForeignKey(gp => gp.PlatformId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(gp => gp.Platform)
+                .WithMany()
+                .HasForeignKey(gp => gp.PlatformId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // ===================== GenreEntity =====================
         modelBuilder.Entity<GenreEntity>(entity =>
         {
-            entity.HasKey(g => g.Id);                            // Self-reference: ParentGenre → SubGenres
+            entity.HasKey(g => g.Id);
 
             entity.HasOne(g => g.ParentGenre)
-            .WithMany(g => g.SubGenres)
-            .HasForeignKey(g => g.ParentGenreId);
+                .WithMany(g => g.SubGenres)
+                .HasForeignKey(g => g.ParentGenreId);
         });
 
         // ===================== PlatformEntity =====================
-        modelBuilder.Entity<PlatformEntity>().HasIndex(p => p.Type).IsUnique();
+        modelBuilder.Entity<PlatformEntity>()
+            .HasIndex(p => p.Type)
+            .IsUnique();
 
         // ===================== PublisherEntity =====================
         modelBuilder.Entity<PublisherEntity>(entity =>
         {
             entity.HasKey(p => p.Id);
 
+            // Зв'язок уже описаний в GameEntity, але дублювання тут не завадить для ясності
             entity.HasMany(p => p.Games)
-            .WithOne(g => g.Publisher)
-            .HasForeignKey(g => g.PublisherId)
-            .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        // ===================== GenreEntity =====================
-        modelBuilder.Entity<GenreEntity>(entity =>
-        {
-            entity.HasKey(g => g.Id);                            // Self-reference: ParentGenre → SubGenres
-
-            entity.HasOne(g => g.ParentGenre)
-            .WithMany(g => g.SubGenres)
-            .HasForeignKey(g => g.ParentGenreId);
-        });
-
-        // ===================== PlatformEntity =====================
-        modelBuilder.Entity<PlatformEntity>().HasIndex(p => p.Type).IsUnique();
-
-        // ===================== PublisherEntity =====================
-        modelBuilder.Entity<PublisherEntity>(entity =>
-        {
-            entity.HasKey(p => p.Id);
-
-            entity.HasMany(p => p.Games)
-            .WithOne(g => g.Publisher)
-            .HasForeignKey(g => g.PublisherId)
-            .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        // ===================== GenreEntity =====================
-        modelBuilder.Entity<GenreEntity>(entity =>
-        {
-            entity.HasKey(g => g.Id);                            // Self-reference: ParentGenre → SubGenres
-
-            entity.HasOne(g => g.ParentGenre)
-            .WithMany(g => g.SubGenres)
-            .HasForeignKey(g => g.ParentGenreId);
-        });
-
-        // ===================== PlatformEntity =====================
-        modelBuilder.Entity<PlatformEntity>().HasIndex(p => p.Type).IsUnique();
-
-        // ===================== PublisherEntity =====================
-        modelBuilder.Entity<PublisherEntity>(entity =>
-        {
-            entity.HasKey(p => p.Id);
-
-            entity.HasMany(p => p.Games)
-            .WithOne(g => g.Publisher)
-            .HasForeignKey(g => g.PublisherId)
-            .OnDelete(DeleteBehavior.Cascade);
+                .WithOne(g => g.Publisher)
+                .HasForeignKey(g => g.PublisherId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // ===================== OrderEntity =====================
@@ -178,73 +147,33 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // Comment Configuration
-        // =============================
+        // ===================== CommentEntity =====================
         modelBuilder.Entity<CommentEntity>(entity =>
         {
             entity.HasKey(c => c.Id);
 
-            entity.Property(c => c.Name)
-                .IsRequired();
+            entity.Property(c => c.Name).IsRequired();
+            entity.Property(c => c.Body).IsRequired();
+            entity.Property(c => c.GameId).IsRequired();
 
-            entity.Property(c => c.Body)
-                .IsRequired();
-
-            entity.Property(c => c.GameId)
-                .IsRequired();
-
-            // Comment → Game (Many-to-One)
             entity.HasOne(c => c.Game)
                 .WithMany(g => g.Comments)
                 .HasForeignKey(c => c.GameId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Self reference (Parent Comment)
             entity.HasOne<CommentEntity>()
                 .WithMany()
                 .HasForeignKey(c => c.ParentCommentId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
-        // =============================
-        // Ban Configuration
-        // =============================
+        // ===================== BanEntity =====================
         modelBuilder.Entity<BanEntity>(entity =>
         {
             entity.HasKey(b => b.Id);
-
-            entity.Property(b => b.UserName)
-                .IsRequired();
-
-            entity.Property(b => b.ExpireAt)
-                .IsRequired(false);
-        });
-
-        // ===================== OrderEntity =====================
-        modelBuilder.Entity<OrderEntity>(entity =>
-        {
-            entity.HasKey(o => o.Id);
-
-            entity.HasMany(o => o.OrderGames)
-                .WithOne(og => og.Order)
-                .HasForeignKey(og => og.OrderId)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        // ===================== OrderGameEntity =====================
-        modelBuilder.Entity<OrderGameEntity>(entity =>
-        {
-            entity.HasKey(og => new { og.OrderId, og.ProductId });
-
-            entity.HasOne(og => og.Order)
-                .WithMany(o => o.OrderGames)
-                .HasForeignKey(og => og.OrderId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasOne(og => og.Game)
-                .WithMany()
-                .HasForeignKey(og => og.ProductId)
-                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(b => b.UserName);
+            entity.Property(b => b.UserName).IsRequired();
+            entity.Property(b => b.ExpireAt).IsRequired(false);
         });
     }
 }

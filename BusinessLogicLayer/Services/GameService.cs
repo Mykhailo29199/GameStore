@@ -1,21 +1,28 @@
 ﻿using System.Text.RegularExpressions;
 using AutoMapper;
 using BusinessLogicLayer.Models;
+using BusinessLogicLayer.Models.GameModels;
+using BusinessLogicLayer.Pipelines;
 using BusinessLogicLayer.Services.Interaces;
 using DataAccessLayer.Entities;
 using DataAccessLayer.StoreContext;
 using DataAccessLayer.UnitOfWork;
+using GameStore.Shared.Enums.FilterOptionsEnums;
 using GameStore.Shared.Exceptions;
+using GameStore.Shared.Extensions;
 using GameStore.Shared.FileSystem;
+using Microsoft.EntityFrameworkCore;
 using CultureInfo = System.Globalization.CultureInfo;
+using PublishDateOptions = GameStore.Shared.Enums.FilterOptionsEnums.PublishDateOptions;
 
 namespace BusinessLogicLayer.Services;
 
-public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapper, IFileSystem fileSystem) : IGameService
+public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapper, IFileSystem fileSystem, GameFilterPipeline pipeline) : IGameService
 {
     private readonly IUnitOfWork<GameStoreContext> _unitOfWork = unitOfWork;
     private readonly IMapper _mapper = mapper;
     private readonly IFileSystem _fileSystem = fileSystem;
+    private readonly GameFilterPipeline _pipeline = pipeline;
 
     public async Task CreateGameAsync(GameModel gameModel)
     {
@@ -51,11 +58,17 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
 
     public async Task<GameModel> GetGameByKeyAsync(string key)
     {
-        var gameEntity = await _unitOfWork.GameRepository.GetGameByKeyAsync(key);
+        var gameEntity = await _unitOfWork.GameRepository.GetGameByKeyAsync(key)
+            ?? throw new NotFoundException($"Game with Key '{key}' was not found.");
 
-        return gameEntity != null
-            ? _mapper.Map<GameModel>(gameEntity)
-            : throw new NotFoundException($"Game with Key '{key}' was not found.");
+        gameEntity.Views++;
+
+        await _unitOfWork.GameRepository.UpdateAsync(gameEntity);
+        await _unitOfWork.SaveAsync();
+
+        var resultGameEntity = _mapper.Map<GameModel>(gameEntity);
+
+        return resultGameEntity;
     }
 
     public async Task<GameModel> GetGameByIdAsync(Guid gameId)
@@ -157,6 +170,41 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
         var games = await _unitOfWork.GameRepository.GetAllAsync();
 
         return games.Count();
+    }
+
+    public List<string> GetPaginationOptions()
+    {
+        return EnumExtensions.GetDescriptions<PaginationOptions>();
+    }
+
+    public List<string> GetSortingOptions()
+    {
+        return EnumExtensions.GetDescriptions<SortingOptions>();
+    }
+
+    public List<string> GetPublichDateOptions()
+    {
+        return EnumExtensions.GetDescriptions<PublishDateOptions>();
+    }
+
+    public async Task<FilteredGamesResponseModel> GetFilteredGamesAsync(GameFilterModel filter)
+    {
+        var query = _unitOfWork.GameRepository.GetQueryable();
+
+        int totalCount = await query.CountAsync();
+
+        query = _pipeline.Execute(query, filter);
+
+        var games = await query.ToListAsync();
+
+        return new FilteredGamesResponseModel
+        {
+            Games = _mapper.Map<List<GameModel>>(games),
+            CurrentPage = filter.Page,
+            TotalPages = filter.PageSize == (int)PaginationOptions.All
+             ? 1
+             : (int)Math.Ceiling(totalCount / (double)filter.PageSize),
+        };
     }
 
     private async Task<string> GenerateUniqueGameKeyAsync(string gameKey, string gameName)

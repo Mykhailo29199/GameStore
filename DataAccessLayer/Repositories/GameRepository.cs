@@ -11,13 +11,7 @@ public class GameRepository(GameStoreContext context) : GenericRepository<GameEn
 
     public async Task<GameEntity> GetFullGame(Guid id)
     {
-        return await _dbSet
-            .Include(g => g.Publisher)
-            .Include(g => g.GameGenres)
-                .ThenInclude(gg => gg.Genre)
-            .Include(g => g.GamePlatforms)
-                .ThenInclude(gp => gp.Platform)
-            .FirstOrDefaultAsync(g => g.Id == id);
+        return await GetDefaultIncludes().FirstOrDefaultAsync(g => g.Id == id);
     }
 
     public async Task<GameEntity?> GetGameByKeyAsync(string gameKey)
@@ -49,5 +43,21 @@ public class GameRepository(GameStoreContext context) : GenericRepository<GameEn
         .FirstOrDefaultAsync();
 
         return publisher;
+    }
+
+    public IQueryable<GameEntity> GetQueryable()
+    {
+        return GetDefaultIncludes();
+    }
+
+    private IQueryable<GameEntity> GetDefaultIncludes()
+    {
+        return _dbSet
+            .Include(g => g.Publisher)
+            .Include(g => g.GameGenres)
+                .ThenInclude(gg => gg.Genre)
+            .Include(g => g.GamePlatforms)
+                .ThenInclude(gp => gp.Platform)
+            .Include(g => g.Comments);
     }
 }

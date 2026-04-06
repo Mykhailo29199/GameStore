@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Models;
+using BusinessLogicLayer.Models.GameModels;
+using BusinessLogicLayer.Pipelines;
 using BusinessLogicLayer.Services;
 using DataAccessLayer.Entities;
 using DataAccessLayer.StoreContext;
@@ -18,13 +20,16 @@ public class GameServiceTests
     private readonly Mock<IUnitOfWork<GameStoreContext>> _unitOfWorkMock;
     private readonly Mock<IMapper> _mapperMock;
     private readonly Mock<IFileSystem> _fileSystemMock;
+    private readonly Mock<GameFilterPipeline> _pipelineMock;
 
     public GameServiceTests()
     {
         _unitOfWorkMock = new Mock<IUnitOfWork<GameStoreContext>>();
         _mapperMock = new Mock<IMapper>();
         _fileSystemMock = new Mock<IFileSystem>();
-        _gameService = new GameService(_unitOfWorkMock.Object, _mapperMock.Object, _fileSystemMock.Object);
+        _pipelineMock = new Mock<GameFilterPipeline>();
+
+        _gameService = new GameService(_unitOfWorkMock.Object, _mapperMock.Object, _fileSystemMock.Object, _pipelineMock.Object);
     }
 
     [Fact]

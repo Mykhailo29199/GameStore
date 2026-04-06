@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace GameStore.Shared.Enums;
+namespace GameStore.Shared.Enums.PaymentEnums;
 
 public enum PaymentOptions
 {

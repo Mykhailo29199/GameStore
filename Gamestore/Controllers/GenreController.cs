@@ -71,7 +71,7 @@ public class GenreController(IGenreService genreService, IMapper mapper) : Contr
     public async Task<IActionResult> GetGamesByGenreIdAsync([FromRoute] Guid genreId)
     {
         var gameModels = await _genreService.GetGamesByGenreIdAsync(genreId);
-        var gameDTOs = _mapper.Map<IEnumerable<GameWithIdDto>>(gameModels);
+        var gameDTOs = _mapper.Map<IEnumerable<GameWithIdDTO>>(gameModels);
 
         return Ok(gameDTOs);
     }

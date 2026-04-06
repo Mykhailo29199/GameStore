@@ -236,16 +236,16 @@ public class GameAutoMapping : Profile
         // FilterDTO -> FilterModel
         // ================================
         CreateMap<GameFilterDTO, GameFilterModel>()
-    .ForMember(dest => dest.PageCount, opt => opt.MapFrom(src =>
-        string.IsNullOrWhiteSpace(src.PageCount)
-            ? (int)PaginationOptions.Ten
-            : src.PageCount == "All"
-                ? (int)PaginationOptions.All
-                : int.Parse(src.PageCount)))
-    .ForMember(dest => dest.DatePublishing, opt => opt.MapFrom(src =>
-        string.IsNullOrWhiteSpace(src.DatePublishing)
-            ? PublichDateOptions.AllTime
-            : src.DatePublishing.ToEnum<PublichDateOptions>()));
+     .ForMember(dest => dest.PageSize, opt => opt.MapFrom(src =>
+         string.IsNullOrWhiteSpace(src.PageCount)
+             ? (int)PaginationOptions.Ten
+             : src.PageCount == "All"
+                 ? (int)PaginationOptions.All
+                 : int.Parse(src.PageCount)))
+     .ForMember(dest => dest.DatePublishing, opt => opt.MapFrom(src =>
+         string.IsNullOrWhiteSpace(src.DatePublishing)
+             ? PublishDateOptions.AllTime
+             : src.DatePublishing.ToEnum<PublishDateOptions>()));
 
         // ================================
         // ResultModel -> ResultDto

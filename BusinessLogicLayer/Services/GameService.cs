@@ -13,7 +13,7 @@ using GameStore.Shared.Extensions;
 using GameStore.Shared.FileSystem;
 using Microsoft.EntityFrameworkCore;
 using CultureInfo = System.Globalization.CultureInfo;
-using PublichDateOptions = GameStore.Shared.Enums.FilterOptionsEnums.PublichDateOptions;
+using PublishDateOptions = GameStore.Shared.Enums.FilterOptionsEnums.PublishDateOptions;
 
 namespace BusinessLogicLayer.Services;
 
@@ -174,26 +174,17 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
 
     public List<string> GetPaginationOptions()
     {
-        return Enum.GetValues(typeof(PaginationOptions))
-            .Cast<PaginationOptions>()
-            .Select(x => x.GetDescription())
-            .ToList();
+        return EnumExtensions.GetDescriptions<PaginationOptions>();
     }
 
     public List<string> GetSortingOptions()
     {
-        return Enum.GetValues(typeof(SortingOptions))
-            .Cast<SortingOptions>()
-            .Select(x => x.GetDescription())
-            .ToList();
+        return EnumExtensions.GetDescriptions<SortingOptions>();
     }
 
     public List<string> GetPublichDateOptions()
     {
-        return Enum.GetValues(typeof(PublichDateOptions))
-        .Cast<PublichDateOptions>()
-        .Select(x => x.GetDescription())
-        .ToList();
+        return EnumExtensions.GetDescriptions<PublishDateOptions>();
     }
 
     public async Task<FilteredGamesResponseModel> GetFilteredGamesAsync(GameFilterModel filter)
@@ -210,9 +201,9 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
         {
             Games = _mapper.Map<List<GameModel>>(games),
             CurrentPage = filter.Page,
-            TotalPages = filter.PageCount == (int)PaginationOptions.All
+            TotalPages = filter.PageSize == (int)PaginationOptions.All
              ? 1
-             : (int)Math.Ceiling(totalCount / (double)filter.PageCount),
+             : (int)Math.Ceiling(totalCount / (double)filter.PageSize),
         };
     }
 

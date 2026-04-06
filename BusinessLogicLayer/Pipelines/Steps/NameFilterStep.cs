@@ -8,9 +8,10 @@ public class NameFilterStep : IGamePipelineStep
 {
     public IQueryable<GameEntity> Filter(IQueryable<GameEntity> query, GameFilterModel filter)
     {
-        if (!string.IsNullOrWhiteSpace(filter.Name) && filter.Name.Length >= 1)
+        if (!string.IsNullOrWhiteSpace(filter?.Name))
         {
-            query = query.Where(g => g.Name.Contains(filter.Name));
+            var name = filter.Name.Trim();
+            query = query.Where(g => g.Name.Contains(name, StringComparison.OrdinalIgnoreCase));
         }
 
         return query;

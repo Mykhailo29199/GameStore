@@ -14,11 +14,11 @@ public class DateFilterStep : IGamePipelineStep
 
         DateTime fromDate = filter.DatePublishing switch
         {
-            PublichDateOptions.Last24Hours => now.AddDays(-1),
-            PublichDateOptions.LastWeek => now.AddDays(-7),
-            PublichDateOptions.LastMonth => now.AddMonths(-1),
-            PublichDateOptions.LastYear => now.AddYears(-1),
-            PublichDateOptions.AllTime => DateTime.MinValue,
+            PublishDateOptions.Last24Hours => now.AddDays(-1),
+            PublishDateOptions.LastWeek => now.AddDays(-7),
+            PublishDateOptions.LastMonth => now.AddMonths(-1),
+            PublishDateOptions.LastYear => now.AddYears(-1),
+            PublishDateOptions.AllTime => DateTime.MinValue,
             _ => throw new BadRequestException("Invalid date publishing option"),
         };
 

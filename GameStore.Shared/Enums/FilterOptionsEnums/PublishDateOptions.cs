@@ -2,7 +2,7 @@
 
 namespace GameStore.Shared.Enums.FilterOptionsEnums;
 
-public enum PublichDateOptions
+public enum PublishDateOptions
 {
     [Description("Last 24 hours")]
     Last24Hours,

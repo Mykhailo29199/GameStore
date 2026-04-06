@@ -2,7 +2,6 @@
 using BusinessLogicLayer.Pipelines.Interfaces;
 using DataAccessLayer.Entities;
 using GameStore.Shared.Enums.FilterOptionsEnums;
-using GameStore.Shared.Extensions;
 
 namespace BusinessLogicLayer.Pipelines.Steps;
 
@@ -10,9 +9,7 @@ public class SortingStep : IGamePipelineStep
 {
     public IQueryable<GameEntity> Filter(IQueryable<GameEntity> query, GameFilterModel filter)
     {
-        var sortOption = string.IsNullOrWhiteSpace(filter.Sort)
-            ? SortingOptions.MostPopular
-            : filter.Sort.ToEnum<SortingOptions>();
+        var sortOption = filter.Sort ?? SortingOptions.MostPopular;
 
         return sortOption switch
         {

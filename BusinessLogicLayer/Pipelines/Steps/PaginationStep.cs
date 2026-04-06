@@ -9,12 +9,12 @@ public class PaginationStep : IGamePipelineStep
 {
     public IQueryable<GameEntity> Filter(IQueryable<GameEntity> query, GameFilterModel filter)
     {
-        if (filter.PageCount == (int)PaginationOptions.All)
+        if (filter.PageSize == (int)PaginationOptions.All)
         {
             return query;
         }
 
-        int pageSize = filter.PageCount;
+        int pageSize = filter.PageSize;
 
         return query
             .Skip((filter.Page - 1) * pageSize)

@@ -38,4 +38,13 @@ public static class EnumExtensions
             ? result
             : throw new NotFoundException($"The value '{value}' was not found in the {typeof(T).Name}");
     }
+
+    public static List<string> GetDescriptions<T>()
+        where T : struct, Enum
+    {
+        return Enum.GetValues(typeof(T))
+            .Cast<T>()
+            .Select(e => e.GetDescription())
+            .ToList();
+    }
 }

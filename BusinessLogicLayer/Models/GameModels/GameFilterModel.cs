@@ -14,13 +14,13 @@ public class GameFilterModel
 
     public double? MaxPrice { get; set; }
 
-    public PublichDateOptions DatePublishing { get; set; }
+    public PublishDateOptions? DatePublishing { get; set; }
 
     public string? Name { get; set; }
 
-    public string? Sort { get; set; }
+    public SortingOptions? Sort { get; set; }
 
-    public int Page { get; set; } = 1;
+    public int Page { get; set; }
 
-    public int PageCount { get; set; }
+    public int PageSize { get; set; }
 }

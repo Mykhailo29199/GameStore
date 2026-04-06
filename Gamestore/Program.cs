@@ -28,7 +28,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.Configure<PaymentServiceOptions>(
     builder.Configuration.GetSection("PaymentService"));
 
-// 2. Registering HttpClient with a base URL
+// Registering HttpClient with a base URL
 builder.Services.AddHttpClient("PaymentService", (sp, client) =>
 {
     var options = sp.GetRequiredService<
@@ -39,15 +39,6 @@ builder.Services.AddHttpClient("PaymentService", (sp, client) =>
 
 builder.Services.AddScoped<IFileSystem, FileSystem>();
 builder.Services.AddScoped<IFileLogWriter, FileLogWriter>();
-
-// 2. Реєстрація HttpClient з базовою адресою
-builder.Services.AddHttpClient("PaymentService", (sp, client) =>
-{
-    var options = sp.GetRequiredService<
-        Microsoft.Extensions.Options.IOptions<PaymentServiceOptions>>().Value;
-
-    client.BaseAddress = new Uri(options.BaseUrl);
-});
 
 builder.Services.AddScoped<IFileSystem, FileSystem>();
 builder.Services.AddScoped<IFileLogWriter, FileLogWriter>();

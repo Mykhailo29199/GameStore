@@ -9,7 +9,7 @@ using GameStore.Shared.Exceptions;
 using GameStore.Shared.FileSystem;
 using GameStore.Shared.Stubs;
 using OrderStatus = GameStore.Shared.Enums.OrderStatus;
-using PaymentOptions = GameStore.Shared.Enums.PaymentOptions;
+using PaymentOptions = GameStore.Shared.Enums.PaymentEnums.PaymentOptions;
 
 namespace BusinessLogicLayer.Services;
 

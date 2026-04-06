@@ -1,11 +1,12 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Models;
-using BusinessLogicLayer.Models.BanModels;
 using BusinessLogicLayer.Models.CommentModels;
+using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Models.OrderModels;
 using BusinessLogicLayer.Models.Payment;
 using DataAccessLayer.Entities;
-using GameStore.Shared.Enums;
+using GameStore.Shared.Enums.FilterOptionsEnums;
+using GameStore.Shared.Enums.PaymentEnums;
 using GameStore.Shared.Extensions;
 using Gamestore.WebAPI.DTOs.CommentDTOs;
 using Gamestore.WebAPI.DTOs.GameDTO;
@@ -16,6 +17,8 @@ using Gamestore.WebAPI.DTOs.PaymentDTO.PaymentResponseDTOs;
 using Gamestore.WebAPI.DTOs.PlatformDTO;
 using Gamestore.WebAPI.DTOs.PublisherDTO;
 using Gamestore.WebAPI.DTOs.Users;
+using BanDurationOption = GameStore.Shared.Enums.BanDurationOption;
+using BanModel = BusinessLogicLayer.Models.BanModels.BanModel;
 
 namespace Gamestore.WebAPI.Mapper;
 
@@ -46,7 +49,7 @@ public class GameAutoMapping : Profile
     .ForMember(dest => dest.Publisher, opt => opt.MapFrom(src => src.PublisherId))
     ;
 
-        CreateMap<GameWithIdDto, GameModel>()
+        CreateMap<GameWithIdDTO, GameModel>()
             .IncludeBase<GameDTO, GameModel>()
             .ReverseMap();
 
@@ -229,5 +232,25 @@ public class GameAutoMapping : Profile
     {
         return string.IsNullOrWhiteSpace(src.ParentId) ? null : Guid.TryParse(src.ParentId, out var guid) ? guid : (Guid?)null;
     }));
+
+        // FilterDTO -> FilterModel
+        // ================================
+        CreateMap<GameFilterDTO, GameFilterModel>()
+     .ForMember(dest => dest.PageSize, opt => opt.MapFrom(src =>
+         string.IsNullOrWhiteSpace(src.PageCount)
+             ? (int)PaginationOptions.Ten
+             : src.PageCount == "All"
+                 ? (int)PaginationOptions.All
+                 : int.Parse(src.PageCount)))
+     .ForMember(dest => dest.DatePublishing, opt => opt.MapFrom(src =>
+         string.IsNullOrWhiteSpace(src.DatePublishing)
+             ? PublishDateOptions.AllTime
+             : src.DatePublishing.ToEnum<PublishDateOptions>()));
+
+        // ================================
+        // ResultModel -> ResultDto
+        // ================================
+        CreateMap<FilteredGamesResponseModel, FilteredGamesResponseDTO>()
+            .ForMember(dest => dest.Games, opt => opt.MapFrom(src => src.Games));
     }
 }

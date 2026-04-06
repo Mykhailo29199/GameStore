@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using BusinessLogicLayer.Models;
+using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Services.Interaces;
 using Gamestore.WebAPI.DTOs.GameDTO;
 using Gamestore.WebAPI.DTOs.GenreDTO;
@@ -29,7 +29,7 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
     public async Task<IActionResult> GetGameByKey([FromRoute] string key)
     {
         var gameModel = await _gameService.GetGameByKeyAsync(key);
-        var gameDTO = _mapper.Map<GameWithIdDto>(gameModel);
+        var gameDTO = _mapper.Map<GameWithIdDTO>(gameModel);
 
         return Ok(gameDTO);
     }
@@ -38,7 +38,7 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
     public async Task<IActionResult> GetGameById([FromRoute] Guid id)
     {
         var gameModel = await _gameService.GetGameByIdAsync(id);
-        var gameDTO = _mapper.Map<GameWithIdDto>(gameModel);
+        var gameDTO = _mapper.Map<GameWithIdDTO>(gameModel);
 
         return Ok(gameDTO);
     }
@@ -73,12 +73,15 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
     }
 
     [HttpGet("games")]
-    public async Task<IActionResult> GetAllGames()
+    public async Task<IActionResult> GetGames([FromQuery] GameFilterDTO filterDto)
     {
-        var gameModels = await _gameService.GetAllGamesAsync();
-        var gameDTOs = _mapper.Map<IEnumerable<GameWithIdDto>>(gameModels);
+        var filterModel = _mapper.Map<GameFilterModel>(filterDto);
 
-        return Ok(gameDTOs);
+        var resultModel = await _gameService.GetFilteredGamesAsync(filterModel);
+
+        var responseDto = _mapper.Map<FilteredGamesResponseDTO>(resultModel);
+
+        return Ok(responseDto);
     }
 
     [HttpGet("genres/game/{key}")]
@@ -106,5 +109,26 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
         var publisherDTO = _mapper.Map<PublisherWithIdDTO>(publisherModel);
 
         return Ok(publisherDTO);
+    }
+
+    [HttpGet("games/pagination-options")]
+    public IActionResult GetPaginationOptions()
+    {
+        var options = _gameService.GetPaginationOptions();
+        return Ok(options);
+    }
+
+    [HttpGet("games/sorting-options")]
+    public IActionResult GetSortingOptions()
+    {
+        var options = _gameService.GetSortingOptions();
+        return Ok(options);
+    }
+
+    [HttpGet("games/publish-date-options")]
+    public IActionResult GetPublishDateOptions()
+    {
+        var options = _gameService.GetPublichDateOptions();
+        return Ok(options);
     }
 }

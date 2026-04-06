@@ -1,3 +1,6 @@
+using BusinessLogicLayer.Pipelines;
+using BusinessLogicLayer.Pipelines.Interfaces;
+using BusinessLogicLayer.Pipelines.Steps;
 using BusinessLogicLayer.Services;
 using BusinessLogicLayer.Services.Interaces;
 using DataAccessLayer.Repositories;
@@ -25,7 +28,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.Configure<PaymentServiceOptions>(
     builder.Configuration.GetSection("PaymentService"));
 
-// 2. Registering HttpClient with a base URL
+// Registering HttpClient with a base URL
 builder.Services.AddHttpClient("PaymentService", (sp, client) =>
 {
     var options = sp.GetRequiredService<
@@ -33,6 +36,9 @@ builder.Services.AddHttpClient("PaymentService", (sp, client) =>
 
     client.BaseAddress = new Uri(options.BaseUrl);
 });
+
+builder.Services.AddScoped<IFileSystem, FileSystem>();
+builder.Services.AddScoped<IFileLogWriter, FileLogWriter>();
 
 builder.Services.AddScoped<IFileSystem, FileSystem>();
 builder.Services.AddScoped<IFileLogWriter, FileLogWriter>();
@@ -58,6 +64,17 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IBanService, BanService>();
+
+builder.Services.AddScoped<IGamePipelineStep, GenreFilterStep>();
+builder.Services.AddScoped<IGamePipelineStep, PlatformFilterStep>();
+builder.Services.AddScoped<IGamePipelineStep, PublisherFilterStep>();
+builder.Services.AddScoped<IGamePipelineStep, PriceFilterStep>();
+builder.Services.AddScoped<IGamePipelineStep, NameFilterStep>();
+builder.Services.AddScoped<IGamePipelineStep, DateFilterStep>();
+builder.Services.AddScoped<IGamePipelineStep, SortingStep>();
+builder.Services.AddScoped<IGamePipelineStep, PaginationStep>();
+
+builder.Services.AddScoped<GameFilterPipeline>();
 
 builder.Logging.ClearProviders();
 

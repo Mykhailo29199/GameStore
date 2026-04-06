@@ -55,6 +55,8 @@ dotnet_diagnostic.IDE0161.severity = error
 
 dotnet_diagnostic.IDE0301.severity = error
 
+dotnet_diagnostic.IDE0305.severity = none
+
 dotnet_diagnostic.SA0001.severity = none
 
 dotnet_diagnostic.SA1005.severity = none
@@ -114,6 +116,8 @@ dotnet_diagnostic.IDE0058.severity = none
 dotnet_diagnostic.IDE0290.severity = none
 
 dotnet_diagnostic.IDE0090.severity = none
+
+dotnet_diagnostic.IDE0078.severity = none
 
 dotnet_diagnostic.CA1305.severity = none
 

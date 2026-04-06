@@ -1,4 +1,5 @@
 ﻿using BusinessLogicLayer.Models;
+using BusinessLogicLayer.Models.GameModels;
 
 namespace BusinessLogicLayer.Services.Interaces;
 

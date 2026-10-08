@@ -118,6 +118,26 @@ public class OrderService(
         await DecreaseGameQuantityAsync(orderGame, order);
     }
 
+    public async Task RemoveGamePositionFromCartAsync(Guid userId, string gameKey)
+    {
+        // A game deleted after it was added to the cart must still be removable from it.
+        var game = await productCatalog.GetByKeyAsync(gameKey, includeDeleted: true) ?? throw new NotFoundException("Game not found");
+        var order = await _sqlUnitOfWork.OrderRepository.GetActiveCartAsync(userId) ?? throw new NotFoundException("Active cart not found");
+        var position = order.OrderDetails.FirstOrDefault(d => d.ProductId == game.Id) ?? throw new NotFoundException("Game not found in order");
+
+        if (order.OrderDetails.Count == 1)
+        {
+            // The cart becomes empty, so the open order is removed together with its last position.
+            await _sqlUnitOfWork.OrderRepository.DeleteAsync(order);
+        }
+        else
+        {
+            await _sqlUnitOfWork.OrderDetailsRepository.DeleteAsync(position);
+        }
+
+        await _sqlUnitOfWork.SaveAsync();
+    }
+
     public async Task CheckoutAsync(Guid orderId)
     {
         var order = await _sqlUnitOfWork.OrderRepository.GetOrderWithGamesAsync(orderId) ?? throw new NotFoundException("Order not found");

@@ -8,6 +8,11 @@ public interface IOrderService
 
     Task RemoveGameFromCartAsync(Guid userId, string gameKey);
 
+    /// <summary>
+    /// Removes the whole cart position of the game, whatever its quantity is.
+    /// </summary>
+    Task RemoveGamePositionFromCartAsync(Guid userId, string gameKey);
+
     Task<IEnumerable<OrderModel>> GetClosedOrdersAsync();
 
     Task<IEnumerable<OrderGameModel>> GetOrderDetailsAsync(Guid orderId);

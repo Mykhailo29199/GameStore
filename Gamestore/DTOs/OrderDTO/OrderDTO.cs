@@ -9,4 +9,8 @@ public class OrderDTO
 
     // Damaged Northwind dates are returned as null.
     public DateTime? Date { get; set; }
+
+    public string Status { get; set; }
+
+    public decimal? Sum { get; set; }
 }

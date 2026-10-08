@@ -37,15 +37,19 @@ public class OrderService(
     {
         var order = await _sqlUnitOfWork.OrderRepository.GetOrderWithGamesAsync(orderId);
 
-        if (order is not null)
+        var model = order is not null
+            ? _mapper.Map<OrderModel?>(order)
+            : _mapper.Map<OrderModel?>(await GetNorthwindOrderAsync(orderId)
+                ?? throw new NotFoundException($"Order with id `{orderId}` was not found."));
+
+        if (model is not null)
         {
-            return _mapper.Map<OrderModel?>(order);
+            var details = await GetOrderDetailsAsync(orderId);
+            model.Sum = OrderTotalCalculator.Total(
+                details.Select(d => ((decimal)d.Price, d.Quantity, (double?)d.Discount)));
         }
 
-        var northwindOrder = await GetNorthwindOrderAsync(orderId)
-            ?? throw new NotFoundException($"Order with id `{orderId}` was not found.");
-
-        return _mapper.Map<OrderModel?>(northwindOrder);
+        return model;
     }
 
     public async Task<IEnumerable<OrderGameModel>> GetOrderDetailsAsync(Guid orderId)

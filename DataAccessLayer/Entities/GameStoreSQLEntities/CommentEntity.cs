@@ -22,7 +22,7 @@ public class CommentEntity
     public bool IsDeleted { get; set; } = false;
 
     [Required]
-    public Guid GameId { get; set; }
+    public Guid ProductId { get; set; }
 
-    public GameEntity Game { get; set; }
+    public ProductEntity Product { get; set; }
 }

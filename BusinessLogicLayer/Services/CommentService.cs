@@ -2,16 +2,15 @@
 using BusinessLogicLayer.Models.CommentModels;
 using BusinessLogicLayer.Services.Interaces;
 using DataAccessLayer.Entities.GameStoreSQLEntities;
-using DataAccessLayer.StoreContext;
 using DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
 using GameStore.Shared.Enums;
 using GameStore.Shared.Exceptions;
 
 namespace BusinessLogicLayer.Services;
 
-public class CommentService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapper) : ICommentService
+public class CommentService(ISqlServerUnitOfWork unitOfWork, IMapper mapper) : ICommentService
 {
-    private readonly IUnitOfWork<GameStoreContext> _unitOfWork = unitOfWork;
+    private readonly ISqlServerUnitOfWork _unitOfWork = unitOfWork;
     private readonly IMapper _mapper = mapper;
 
     private readonly string _deletedMessage = "A comment/quote was deleted";
@@ -57,7 +56,7 @@ public class CommentService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper ma
 
         var entity = _mapper.Map<CommentEntity>(model);
         entity.Id = Guid.NewGuid();
-        entity.GameId = game.Id;
+        entity.ProductId = game.Id;
         entity.Body = body;
 
         await _unitOfWork.CommentRepository.AddAsync(entity);
@@ -71,7 +70,7 @@ public class CommentService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper ma
             ?? throw new NotFoundException("Game not found");
 
         var entities = await _unitOfWork.CommentRepository
-            .FindAsync(c => c.GameId == game.Id);
+            .FindAsync(c => c.ProductId == game.Id);
 
         var models = _mapper.Map<List<CommentModel>>(entities);
 
@@ -88,7 +87,7 @@ public class CommentService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper ma
             .GetByIdAsync(id)
             ?? throw new NotFoundException("Comment not found");
 
-        if (comment.GameId != game.Id)
+        if (comment.ProductId != game.Id)
         {
             throw new BadRequestException("Comment does not belong to this game");
         }

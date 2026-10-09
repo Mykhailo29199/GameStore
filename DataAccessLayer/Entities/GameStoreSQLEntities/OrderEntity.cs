@@ -8,7 +8,7 @@ public class OrderEntity
     [Required]
     public Guid Id { get; set; }
 
-    public DateTime? Date { get; set; }
+    public DateTime? OrderDate { get; set; }
 
     [Required]
     public Guid CustomerId { get; set; }
@@ -16,5 +16,5 @@ public class OrderEntity
     [Required]
     public OrderStatus Status { get; set; }
 
-    public ICollection<OrderGameEntity> OrderGames { get; set; } = new List<OrderGameEntity>();
+    public ICollection<OrderDetailsEntity> OrderDetails { get; set; } = new List<OrderDetailsEntity>();
 }

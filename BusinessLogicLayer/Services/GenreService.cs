@@ -4,15 +4,14 @@ using BusinessLogicLayer.Models;
 using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Services.Interaces;
 using DataAccessLayer.Entities.GameStoreSQLEntities;
-using DataAccessLayer.StoreContext;
 using DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
 using GameStore.Shared.Exceptions;
 
 namespace BusinessLogicLayer.Services;
 
-public class GenreService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapper) : IGenreService
+public class GenreService(ISqlServerUnitOfWork unitOfWork, IMapper mapper) : IGenreService
 {
-    private readonly IUnitOfWork<GameStoreContext> _unitOfWork = unitOfWork;
+    private readonly ISqlServerUnitOfWork _unitOfWork = unitOfWork;
     private readonly IMapper _mapper = mapper;
 
     public async Task CreateGenreAsync(GenreModel genreModel)
@@ -35,7 +34,7 @@ public class GenreService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapp
             throw new ValidationException("Cyclic genre references are not allowed.");
         }
 
-        var genreEntity = _mapper.Map<GenreEntity>(genreModel);
+        var genreEntity = _mapper.Map<CategoryEntity>(genreModel);
         await _unitOfWork.GenreRepository.AddAsync(genreEntity);
 
         await _unitOfWork.SaveAsync();
@@ -63,7 +62,7 @@ public class GenreService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapp
             ?? throw new NotFoundException($"Parent genre with Id {parentGenreId} does not exist.");
 
         var genreEntities = await _unitOfWork.GenreRepository
-            .FindAsync(g => g.ParentGenreId == parentGenreId);
+            .FindAsync(g => g.ParentCategoryId == parentGenreId);
 
         var genreModels = _mapper.Map<List<GenreModel>>(genreEntities);
         return genreModels;
@@ -136,12 +135,12 @@ public class GenreService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapp
                 return true; // Cyclic reference detected
             }
 
-            if (!parent.ParentGenreId.HasValue)
+            if (!parent.ParentCategoryId.HasValue)
             {
                 break;
             }
 
-            currentParentId = parent.ParentGenreId.Value;
+            currentParentId = parent.ParentCategoryId.Value;
         }
 
         return false;

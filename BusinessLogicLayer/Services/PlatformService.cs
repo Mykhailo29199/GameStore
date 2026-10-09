@@ -3,15 +3,14 @@ using BusinessLogicLayer.Models;
 using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Services.Interaces;
 using DataAccessLayer.Entities.GameStoreSQLEntities;
-using DataAccessLayer.StoreContext;
 using DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
 using GameStore.Shared.Exceptions;
 
 namespace BusinessLogicLayer.Services;
 
-public class PlatformService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapper) : IPlatformService
+public class PlatformService(ISqlServerUnitOfWork unitOfWork, IMapper mapper) : IPlatformService
 {
-    private readonly IUnitOfWork<GameStoreContext> _unitOfWork = unitOfWork;
+    private readonly ISqlServerUnitOfWork _unitOfWork = unitOfWork;
     private readonly IMapper _mapper = mapper;
 
     public async Task CreatePlatformAsync(string platformType)

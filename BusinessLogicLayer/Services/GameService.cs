@@ -5,7 +5,6 @@ using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Pipelines;
 using BusinessLogicLayer.Services.Interaces;
 using DataAccessLayer.Entities.GameStoreSQLEntities;
-using DataAccessLayer.StoreContext;
 using DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
 using GameStore.Shared.Enums.FilterOptionsEnums;
 using GameStore.Shared.Exceptions;
@@ -17,9 +16,9 @@ using PublishDateOptions = GameStore.Shared.Enums.FilterOptionsEnums.PublishDate
 
 namespace BusinessLogicLayer.Services;
 
-public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapper, IFileSystem fileSystem, GameFilterPipeline pipeline) : IGameService
+public class GameService(ISqlServerUnitOfWork unitOfWork, IMapper mapper, IFileSystem fileSystem, GameFilterPipeline pipeline) : IGameService
 {
-    private readonly IUnitOfWork<GameStoreContext> _unitOfWork = unitOfWork;
+    private readonly ISqlServerUnitOfWork _unitOfWork = unitOfWork;
     private readonly IMapper _mapper = mapper;
     private readonly IFileSystem _fileSystem = fileSystem;
     private readonly GameFilterPipeline _pipeline = pipeline;
@@ -48,10 +47,10 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
             }
         }
 
-        _ = await _unitOfWork.PublisherRepository.GetByIdAsync(gameModel.Publisher)
+        _ = await _unitOfWork.SupplierRepository.GetByIdAsync(gameModel.Publisher)
             ?? throw new NotFoundException($"Publisher with ID '{gameModel.Publisher}' was not found.");
 
-        GameEntity gameEntity = _mapper.Map<GameEntity>(gameModel);
+        ProductEntity gameEntity = _mapper.Map<ProductEntity>(gameModel);
         await _unitOfWork.GameRepository.AddAsync(gameEntity);
         await _unitOfWork.SaveAsync();
     }
@@ -82,7 +81,7 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
 
     public async Task UpdateGameAsync(GameModel gameModel)
     {
-        GameEntity existingGame = await _unitOfWork.GameRepository.GetFullGame(gameModel.Id)
+        ProductEntity existingGame = await _unitOfWork.GameRepository.GetFullGame(gameModel.Id)
             ?? throw new NotFoundException($"Game with Id `{gameModel.Id}` was not found.");
 
         existingGame.Key = await GenerateUniqueGameKeyAsync(gameModel.Key, gameModel.Name);
@@ -100,7 +99,7 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
             throw new NotFoundException("One or more platforms were not found.");
         }
 
-        _ = await _unitOfWork.PublisherRepository.GetByIdAsync(gameModel.Publisher)
+        _ = await _unitOfWork.SupplierRepository.GetByIdAsync(gameModel.Publisher)
         ?? throw new NotFoundException($"Publisher with Id `{gameModel.Publisher}` was not found.");
 
         _mapper.Map(gameModel, existingGame);
@@ -158,7 +157,7 @@ public class GameService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mappe
 
     public async Task<PublisherModel> GetPublisherByGameKeyAsync(string key)
     {
-        var publisher = await _unitOfWork.GameRepository.GetPublisherByGameKeyAsync(key)
+        var publisher = await _unitOfWork.GameRepository.GetSupplierByGameKeyAsync(key)
             ?? throw new NotFoundException($"Game with Key '{key}' was not found or has no publisher.");
 
         var resultModel = _mapper.Map<PublisherModel>(publisher);

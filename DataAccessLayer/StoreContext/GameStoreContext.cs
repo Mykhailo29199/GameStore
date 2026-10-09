@@ -5,23 +5,23 @@ namespace DataAccessLayer.StoreContext;
 
 public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbContext(options)
 {
-    public DbSet<GameEntity> Games { get; set; }
+    public DbSet<ProductEntity> Products { get; set; }
 
-    public DbSet<GameGenreEntity> GameGenres { get; set; }
+    public DbSet<ProductCategoryEntity> ProductCategories { get; set; }
 
-    public DbSet<GamePlatformEntity> GamePlatforms { get; set; }
+    public DbSet<ProductPlatformEntity> ProductPlatforms { get; set; }
 
-    public DbSet<GenreEntity> Genres { get; set; }
+    public DbSet<CategoryEntity> Categories { get; set; }
 
     public DbSet<PlatformEntity> Platforms { get; set; }
 
-    public DbSet<GameFileEntity> Files { get; set; }
+    public DbSet<ProductFileEntity> ProductFiles { get; set; }
 
-    public DbSet<PublisherEntity> Publishers { get; set; }
+    public DbSet<SupplierEntity> Suppliers { get; set; }
 
     public DbSet<OrderEntity> Orders { get; set; }
 
-    public DbSet<OrderGameEntity> OrderGames { get; set; }
+    public DbSet<OrderDetailsEntity> OrderDetails { get; set; }
 
     public DbSet<CommentEntity> Comments { get; set; }
 
@@ -32,7 +32,7 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
         base.OnModelCreating(modelBuilder);
 
         // ===================== GameEntity =====================
-        modelBuilder.Entity<GameEntity>(entity =>
+        modelBuilder.Entity<ProductEntity>(entity =>
         {
             entity.HasKey(g => g.Id);
 
@@ -44,47 +44,47 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
                 .IsRequired()
                 .HasDefaultValueSql("GETUTCDATE()");
 
-            entity.HasOne(g => g.Publisher)
-                .WithMany(p => p.Games)
-                .HasForeignKey(g => g.PublisherId)
+            entity.HasOne(g => g.Supplier)
+                .WithMany(p => p.Products)
+                .HasForeignKey(g => g.SupplierID)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(g => g.GameFile)
-                .WithOne(f => f.Game)
-                .HasForeignKey<GameFileEntity>(f => f.GameId)
+            entity.HasOne(g => g.ProductFile)
+                .WithOne(f => f.Product)
+                .HasForeignKey<ProductFileEntity>(f => f.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
         // ===================== GameFileEntity =====================
-        modelBuilder.Entity<GameFileEntity>(entity =>
+        modelBuilder.Entity<ProductFileEntity>(entity =>
         {
-            entity.HasKey(f => f.GameId);
+            entity.HasKey(f => f.ProductId);
         });
 
         // ===================== GameGenreEntity =====================
-        modelBuilder.Entity<GameGenreEntity>(entity =>
+        modelBuilder.Entity<ProductCategoryEntity>(entity =>
         {
-            entity.HasKey(gg => new { gg.GameId, gg.GenreId });
+            entity.HasKey(gg => new { gg.ProductId, gg.CategoryId });
 
-            entity.HasOne(gg => gg.Game)
-                .WithMany(g => g.GameGenres)
-                .HasForeignKey(gg => gg.GameId)
+            entity.HasOne(gg => gg.Product)
+                .WithMany(g => g.ProductCategories)
+                .HasForeignKey(gg => gg.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(gg => gg.Genre)
+            entity.HasOne(gg => gg.Category)
                 .WithMany()
-                .HasForeignKey(gg => gg.GenreId)
+                .HasForeignKey(gg => gg.CategoryId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
         // ===================== GamePlatformEntity =====================
-        modelBuilder.Entity<GamePlatformEntity>(entity =>
+        modelBuilder.Entity<ProductPlatformEntity>(entity =>
         {
-            entity.HasKey(gp => new { gp.GameId, gp.PlatformId });
+            entity.HasKey(gp => new { gp.ProductId, gp.PlatformId });
 
-            entity.HasOne(gp => gp.Game)
-                .WithMany(g => g.GamePlatforms)
-                .HasForeignKey(gp => gp.GameId)
+            entity.HasOne(gp => gp.Product)
+                .WithMany(g => g.ProductPlatforms)
+                .HasForeignKey(gp => gp.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(gp => gp.Platform)
@@ -94,13 +94,13 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
         });
 
         // ===================== GenreEntity =====================
-        modelBuilder.Entity<GenreEntity>(entity =>
+        modelBuilder.Entity<CategoryEntity>(entity =>
         {
             entity.HasKey(g => g.Id);
 
             entity.HasOne(g => g.ParentGenre)
                 .WithMany(g => g.SubGenres)
-                .HasForeignKey(g => g.ParentGenreId);
+                .HasForeignKey(g => g.ParentCategoryId);
         });
 
         // ===================== PlatformEntity =====================
@@ -109,14 +109,14 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
             .IsUnique();
 
         // ===================== PublisherEntity =====================
-        modelBuilder.Entity<PublisherEntity>(entity =>
+        modelBuilder.Entity<SupplierEntity>(entity =>
         {
             entity.HasKey(p => p.Id);
 
             // Зв'язок уже описаний в GameEntity, але дублювання тут не завадить для ясності
-            entity.HasMany(p => p.Games)
-                .WithOne(g => g.Publisher)
-                .HasForeignKey(g => g.PublisherId)
+            entity.HasMany(p => p.Products)
+                .WithOne(g => g.Supplier)
+                .HasForeignKey(g => g.SupplierID)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
@@ -125,23 +125,23 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
         {
             entity.HasKey(o => o.Id);
 
-            entity.HasMany(o => o.OrderGames)
+            entity.HasMany(o => o.OrderDetails)
                 .WithOne(og => og.Order)
                 .HasForeignKey(og => og.OrderId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
         // ===================== OrderGameEntity =====================
-        modelBuilder.Entity<OrderGameEntity>(entity =>
+        modelBuilder.Entity<OrderDetailsEntity>(entity =>
         {
             entity.HasKey(og => new { og.OrderId, og.ProductId });
 
             entity.HasOne(og => og.Order)
-                .WithMany(o => o.OrderGames)
+                .WithMany(o => o.OrderDetails)
                 .HasForeignKey(og => og.OrderId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(og => og.Game)
+            entity.HasOne(og => og.Product)
                 .WithMany()
                 .HasForeignKey(og => og.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
@@ -154,11 +154,11 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
 
             entity.Property(c => c.Name).IsRequired();
             entity.Property(c => c.Body).IsRequired();
-            entity.Property(c => c.GameId).IsRequired();
+            entity.Property(c => c.ProductId).IsRequired();
 
-            entity.HasOne(c => c.Game)
+            entity.HasOne(c => c.Product)
                 .WithMany(g => g.Comments)
-                .HasForeignKey(c => c.GameId)
+                .HasForeignKey(c => c.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne<CommentEntity>()

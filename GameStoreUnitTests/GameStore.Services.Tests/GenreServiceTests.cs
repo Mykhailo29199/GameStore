@@ -4,7 +4,6 @@ using BusinessLogicLayer.Models;
 using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Services;
 using DataAccessLayer.Entities.GameStoreSQLEntities;
-using DataAccessLayer.StoreContext;
 using DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
 using GameStore.Shared.Exceptions;
 using Moq;
@@ -16,12 +15,12 @@ namespace GameStoreUnitTests.GameStore.Services.Tests;
 public class GenreServiceTests
 {
     private readonly GenreService _genreService;
-    private readonly Mock<IUnitOfWork<GameStoreContext>> _unitOfWorkMock;
+    private readonly Mock<ISqlServerUnitOfWork> _unitOfWorkMock;
     private readonly Mock<IMapper> _mapperMock;
 
     public GenreServiceTests()
     {
-        _unitOfWorkMock = new Mock<IUnitOfWork<GameStoreContext>>();
+        _unitOfWorkMock = new Mock<ISqlServerUnitOfWork>();
         _mapperMock = new Mock<IMapper>();
         _genreService = new GenreService(_unitOfWorkMock.Object, _mapperMock.Object);
     }
@@ -38,7 +37,7 @@ public class GenreServiceTests
 
         _unitOfWorkMock
             .Setup(x => x.GenreRepository.GetByIdAsync(NonExistingGenreId))
-            .ReturnsAsync((GenreEntity?)null);
+            .ReturnsAsync((CategoryEntity?)null);
 
         // Act
         NotFoundException exception = await Assert.ThrowsAsync<NotFoundException>(
@@ -58,14 +57,14 @@ public class GenreServiceTests
             id: ExistingGenreId,
             name: ExistingGenre1.Name);
 
-        GenreEntity genreEntity = new()
+        CategoryEntity genreEntity = new()
         {
             Id = genreModel.Id,
             Name = genreModel.Name,
         };
 
         _mapperMock
-            .Setup(m => m.Map<GenreEntity>(genreModel))
+            .Setup(m => m.Map<CategoryEntity>(genreModel))
             .Returns(genreEntity);
 
         _unitOfWorkMock
@@ -94,7 +93,7 @@ public class GenreServiceTests
         // Arrange
         _unitOfWorkMock
             .Setup(x => x.GenreRepository.GetByIdAsync(NonExistingGenreId))
-            .ReturnsAsync((GenreEntity?)null);
+            .ReturnsAsync((CategoryEntity?)null);
 
         // Act
         NotFoundException exception = await Assert.ThrowsAsync<NotFoundException>(
@@ -138,7 +137,7 @@ public class GenreServiceTests
         // Arrange
         _unitOfWorkMock
             .Setup(x => x.GenreRepository.GetByIdAsync(NonExistingGenreId))
-            .ReturnsAsync((GenreEntity?)null);
+            .ReturnsAsync((CategoryEntity?)null);
 
         // Act
         NotFoundException exception = await Assert.ThrowsAsync<NotFoundException>(
@@ -155,15 +154,15 @@ public class GenreServiceTests
     {
         // Arrange
         Guid parentGenreId = ExistingGenreId;
-        GenreEntity parentGenre = ExistingGenre1;
+        CategoryEntity parentGenre = ExistingGenre1;
 
-        List<GenreEntity> genreEntities =
+        List<CategoryEntity> genreEntities =
         [
-            new GenreEntity
+            new CategoryEntity
             {
                 Id = AnotherExistingGenreId,
                 Name = ExistingGenre2.Name,
-                ParentGenreId = parentGenreId,
+                ParentCategoryId = parentGenreId,
             },
         ];
 
@@ -183,7 +182,7 @@ public class GenreServiceTests
 
         _unitOfWorkMock
             .Setup(x => x.GenreRepository.FindAsync(
-                It.IsAny<Expression<Func<GenreEntity, bool>>>()))
+                It.IsAny<Expression<Func<CategoryEntity, bool>>>()))
             .ReturnsAsync(genreEntities);
 
         _mapperMock
@@ -211,7 +210,7 @@ public class GenreServiceTests
 
         _unitOfWorkMock
             .Setup(x => x.GenreRepository.GetByIdAsync(genreModel.Id))
-            .ReturnsAsync((GenreEntity?)null);
+            .ReturnsAsync((CategoryEntity?)null);
 
         // Act
         NotFoundException exception = await Assert.ThrowsAsync<NotFoundException>(
@@ -237,7 +236,7 @@ public class GenreServiceTests
 
         _unitOfWorkMock
             .Setup(x => x.GenreRepository.GetByIdAsync(genreModel.ParentGenreId!.Value))
-            .ReturnsAsync((GenreEntity?)null);
+            .ReturnsAsync((CategoryEntity?)null);
 
         // Act
         NotFoundException exception = await Assert.ThrowsAsync<NotFoundException>(
@@ -257,7 +256,7 @@ public class GenreServiceTests
             id: ExistingGenreId,
             parentGenreId: AnotherExistingGenreId);
 
-        GenreEntity existingGenre = ExistingGenre1;
+        CategoryEntity existingGenre = ExistingGenre1;
 
         _unitOfWorkMock
             .Setup(x => x.GenreRepository.GetByIdAsync(genreModel.Id))
@@ -294,7 +293,7 @@ public class GenreServiceTests
         // Arrange
         _unitOfWorkMock
             .Setup(x => x.GenreRepository.GetWithSubGenresAsync(NonExistingGenreId))
-            .ReturnsAsync((GenreEntity?)null);
+            .ReturnsAsync((CategoryEntity?)null);
 
         // Act
         NotFoundException exception = await Assert.ThrowsAsync<NotFoundException>(
@@ -336,7 +335,7 @@ public class GenreServiceTests
     {
         // Arrange
         _unitOfWorkMock.Setup(x => x.GenreRepository.GetByIdAsync(NonExistingGenreId))
-            .ReturnsAsync((GenreEntity?)null);
+            .ReturnsAsync((CategoryEntity?)null);
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<NotFoundException>(
@@ -352,10 +351,10 @@ public class GenreServiceTests
         _unitOfWorkMock.Setup(x => x.GenreRepository.GetByIdAsync(ExistingGenreId))
             .ReturnsAsync(ExistingGenre1);
 
-        var gameEntities = new List<GameEntity>
+        var gameEntities = new List<ProductEntity>
     {
-        new() { Id = ExistingGameId, Name = "Game 1", Key = ExistingGameKey },
-        new() { Id = ExistingGameId2, Name = "Game 2", Key = ExistingGameKey2 },
+        new() { Id = ExistingGameId, ProductName = "Game 1", Key = ExistingGameKey },
+        new() { Id = ExistingGameId2, ProductName = "Game 2", Key = ExistingGameKey2 },
     };
 
         _unitOfWorkMock.Setup(x => x.GameGenreRepository.GetGamesByGenreIdAsync(ExistingGenreId))
@@ -365,7 +364,7 @@ public class GenreServiceTests
      .Select(g => new GameModel
      {
          Id = g.Id,
-         Name = g.Name,
+         Name = g.ProductName,
          Key = g.Key,
      })
      .ToList();

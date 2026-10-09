@@ -2,7 +2,6 @@
 using BusinessLogicLayer.Models.BanModels;
 using BusinessLogicLayer.Services.Interaces;
 using DataAccessLayer.Entities.GameStoreSQLEntities;
-using DataAccessLayer.StoreContext;
 using DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
 using GameStore.Shared.Enums;
 using GameStore.Shared.Exceptions;
@@ -10,9 +9,9 @@ using GameStore.Shared.Extensions;
 
 namespace BusinessLogicLayer.Services;
 
-public class BanService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapper) : IBanService
+public class BanService(ISqlServerUnitOfWork unitOfWork, IMapper mapper) : IBanService
 {
-    private readonly IUnitOfWork<GameStoreContext> _unitOfWork = unitOfWork;
+    private readonly ISqlServerUnitOfWork _unitOfWork = unitOfWork;
     private readonly IMapper _mapper = mapper;
 
     public List<string> GetBanDurations()

@@ -7,7 +7,7 @@ namespace BusinessLogicLayer.Pipelines.Steps;
 
 public class SortingStep : IGamePipelineStep
 {
-    public IQueryable<GameEntity> Filter(IQueryable<GameEntity> query, GameFilterModel filter)
+    public IQueryable<ProductEntity> Filter(IQueryable<ProductEntity> query, GameFilterModel filter)
     {
         var sortOption = filter.Sort ?? SortingOptions.MostPopular;
 
@@ -15,10 +15,10 @@ public class SortingStep : IGamePipelineStep
         {
             SortingOptions.MostPopular => query.OrderByDescending(g => g.Views),
             SortingOptions.MostCommented => query.OrderByDescending(g => g.Comments.Count),
-            SortingOptions.PriceAsc => query.OrderBy(g => g.Price),
-            SortingOptions.PriceDesc => query.OrderByDescending(g => g.Price),
+            SortingOptions.PriceAsc => query.OrderBy(g => g.UnitPrice),
+            SortingOptions.PriceDesc => query.OrderByDescending(g => g.UnitPrice),
             SortingOptions.New => query.OrderByDescending(g => g.CreatedAt),
-            _ => query.OrderBy(g => g.Name),
+            _ => query.OrderBy(g => g.ProductName),
         };
     }
 }

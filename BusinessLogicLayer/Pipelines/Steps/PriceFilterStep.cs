@@ -6,16 +6,16 @@ namespace BusinessLogicLayer.Pipelines.Steps;
 
 public class PriceFilterStep : IGamePipelineStep
 {
-    public IQueryable<GameEntity> Filter(IQueryable<GameEntity> query, GameFilterModel filter)
+    public IQueryable<ProductEntity> Filter(IQueryable<ProductEntity> query, GameFilterModel filter)
     {
         if (filter.MinPrice.HasValue)
         {
-            query = query.Where(g => g.Price >= filter.MinPrice);
+            query = query.Where(g => g.UnitPrice >= filter.MinPrice);
         }
 
         if (filter.MaxPrice.HasValue)
         {
-            query = query.Where(g => g.Price <= filter.MaxPrice);
+            query = query.Where(g => g.UnitPrice <= filter.MaxPrice);
         }
 
         return query;

@@ -7,7 +7,7 @@ namespace BusinessLogicLayer.Pipelines.Steps;
 
 public class PaginationStep : IGamePipelineStep
 {
-    public IQueryable<GameEntity> Filter(IQueryable<GameEntity> query, GameFilterModel filter)
+    public IQueryable<ProductEntity> Filter(IQueryable<ProductEntity> query, GameFilterModel filter)
     {
         if (filter.PageSize == (int)PaginationOptions.All)
         {

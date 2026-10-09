@@ -6,11 +6,11 @@ namespace BusinessLogicLayer.Pipelines.Steps;
 
 public class PublisherFilterStep : IGamePipelineStep
 {
-    public IQueryable<GameEntity> Filter(IQueryable<GameEntity> query, GameFilterModel filter)
+    public IQueryable<ProductEntity> Filter(IQueryable<ProductEntity> query, GameFilterModel filter)
     {
         if (filter.Publishers?.Count > 0)
         {
-            query = query.Where(g => filter.Publishers.Contains(g.PublisherId));
+            query = query.Where(g => filter.Publishers.Contains(g.SupplierID));
         }
 
         return query;

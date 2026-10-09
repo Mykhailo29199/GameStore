@@ -2,7 +2,6 @@
 using BusinessLogicLayer.Models.OrderModels;
 using BusinessLogicLayer.Services.Interaces;
 using DataAccessLayer.Entities.GameStoreSQLEntities;
-using DataAccessLayer.StoreContext;
 using DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
 using GameStore.Shared.Enums;
 using GameStore.Shared.Exceptions;
@@ -11,10 +10,10 @@ namespace BusinessLogicLayer.Services;
 
 public class OrderService : IOrderService
 {
-    private readonly IUnitOfWork<GameStoreContext> _unitOfWork;
+    private readonly ISqlServerUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
 
-    public OrderService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapper)
+    public OrderService(ISqlServerUnitOfWork unitOfWork, IMapper mapper)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
@@ -39,7 +38,7 @@ public class OrderService : IOrderService
     public async Task<IEnumerable<OrderGameModel>> GetOrderDetailsAsync(Guid orderId)
     {
         var order = await _unitOfWork.OrderRepository.GetOrderWithGamesAsync(orderId) ?? throw new NotFoundException("Order not found");
-        var orderGames = order.OrderGames;
+        var orderGames = order.OrderDetails;
         return _mapper.Map<IEnumerable<OrderGameModel>>(orderGames);
     }
 
@@ -48,7 +47,7 @@ public class OrderService : IOrderService
         var order = await _unitOfWork.OrderRepository.GetActiveCartAsync(userId);
         IEnumerable<OrderGameModel> cartGames = order == null
             ? []
-            : _mapper.Map<IEnumerable<OrderGameModel>>(order.OrderGames);
+            : _mapper.Map<IEnumerable<OrderGameModel>>(order.OrderDetails);
 
         return cartGames;
     }
@@ -57,7 +56,7 @@ public class OrderService : IOrderService
     {
         var game = await _unitOfWork.GameRepository.GetGameByKeyAsync(gameKey) ?? throw new NotFoundException("Game not found");
 
-        if (game.UnitInStock <= 0)
+        if (game.UnitsInStock <= 0)
         {
             throw new BadRequestException("Game is out of stock");
         }
@@ -71,8 +70,8 @@ public class OrderService : IOrderService
                 Id = Guid.NewGuid(),
                 CustomerId = userId,
                 Status = OrderStatus.Open,
-                Date = DateTime.UtcNow,
-                OrderGames = [],
+                OrderDate = DateTime.UtcNow,
+                OrderDetails = [],
             };
             await _unitOfWork.OrderRepository.AddAsync(order);
         }
@@ -100,7 +99,7 @@ public class OrderService : IOrderService
     {
         var order = await _unitOfWork.OrderRepository.GetOrderWithGamesAsync(orderId) ?? throw new NotFoundException("Order not found");
 
-        if (order.OrderGames.Count == 0)
+        if (order.OrderDetails.Count == 0)
         {
             throw new BadRequestException("Cannot checkout empty order");
         }
@@ -114,14 +113,14 @@ public class OrderService : IOrderService
         var order = await _unitOfWork.OrderRepository.GetOrderWithGamesAsync(orderId) ?? throw new NotFoundException("Order not found");
         order.Status = OrderStatus.Paid;
 
-        foreach (var og in order.OrderGames)
+        foreach (var og in order.OrderDetails)
         {
-            if (og.Game.UnitInStock < og.Quantity)
+            if (og.Product.UnitsInStock < og.Quantity)
             {
-                throw new BadRequestException("Not enough stock for game: " + og.Game.Name);
+                throw new BadRequestException("Not enough stock for game: " + og.Product.ProductName);
             }
 
-            og.Game.UnitInStock -= og.Quantity;
+            og.Product.UnitsInStock -= og.Quantity;
         }
 
         await _unitOfWork.SaveAsync();
@@ -135,13 +134,13 @@ public class OrderService : IOrderService
         await _unitOfWork.SaveAsync();
     }
 
-    private async Task IncreaseGameQuantityAsync(OrderEntity order, GameEntity game)
+    private async Task IncreaseGameQuantityAsync(OrderEntity order, ProductEntity game)
     {
         var orderGame = await _unitOfWork.OrderGameRepository.GetOrderGameAsync(order.Id, game.Id);
 
         if (orderGame != null)
         {
-            if (orderGame.Quantity + 1 > game.UnitInStock)
+            if (orderGame.Quantity + 1 > game.UnitsInStock)
             {
                 throw new BadRequestException("Not enough stock available");
             }
@@ -150,11 +149,11 @@ public class OrderService : IOrderService
         }
         else
         {
-            orderGame = new OrderGameEntity
+            orderGame = new OrderDetailsEntity
             {
                 OrderId = order.Id,
                 ProductId = game.Id,
-                Price = game.Price,
+                UnitPrice = game.UnitPrice,
                 Quantity = 1,
                 Discount = game.Discount,
             };
@@ -162,7 +161,7 @@ public class OrderService : IOrderService
         }
     }
 
-    private async Task DecreaseGameQuantityAsync(OrderGameEntity orderGame, OrderEntity order)
+    private async Task DecreaseGameQuantityAsync(OrderDetailsEntity orderGame, OrderEntity order)
     {
         if (orderGame.Quantity > 1)
         {

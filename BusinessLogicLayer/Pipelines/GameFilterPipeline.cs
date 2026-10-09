@@ -8,7 +8,7 @@ public class GameFilterPipeline(IEnumerable<IGamePipelineStep> steps)
 {
     private readonly IEnumerable<IGamePipelineStep> _steps = steps;
 
-    public IQueryable<GameEntity> Execute(IQueryable<GameEntity> query, GameFilterModel filter)
+    public IQueryable<ProductEntity> Execute(IQueryable<ProductEntity> query, GameFilterModel filter)
     {
         foreach (var step in _steps)
         {

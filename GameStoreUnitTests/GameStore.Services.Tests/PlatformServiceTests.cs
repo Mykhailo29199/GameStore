@@ -4,7 +4,6 @@ using BusinessLogicLayer.Models;
 using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Services;
 using DataAccessLayer.Entities.GameStoreSQLEntities;
-using DataAccessLayer.StoreContext;
 using DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
 using FluentAssertions;
 using GameStore.Shared.Exceptions;
@@ -17,12 +16,12 @@ namespace GameStoreUnitTests.GameStore.Services.Tests;
 public class PlatformServiceTests
 {
     private readonly PlatformService _platformService;
-    private readonly Mock<IUnitOfWork<GameStoreContext>> _unitOfWorkMock;
+    private readonly Mock<ISqlServerUnitOfWork> _unitOfWorkMock;
     private readonly Mock<IMapper> _mapperMock;
 
     public PlatformServiceTests()
     {
-        _unitOfWorkMock = new Mock<IUnitOfWork<GameStoreContext>>();
+        _unitOfWorkMock = new Mock<ISqlServerUnitOfWork>();
         _mapperMock = new Mock<IMapper>();
         _platformService = new PlatformService(_unitOfWorkMock.Object, _mapperMock.Object);
     }
@@ -242,16 +241,16 @@ public class PlatformServiceTests
     public async Task GetGamesByPlatformIdAsync_WhenPlatformExists_ShouldReturnMappedGames()
     {
         // Arrange
-        var gameEntities = new List<GameEntity>
+        var gameEntities = new List<ProductEntity>
     {
-        new() { Id = ExistingGameId, Name = "Game 1", Key = ExistingGameKey },
-        new() { Id = ExistingGameId2, Name = "Game 2", Key = ExistingGameKey2 },
+        new() { Id = ExistingGameId, ProductName = "Game 1", Key = ExistingGameKey },
+        new() { Id = ExistingGameId2, ProductName = "Game 2", Key = ExistingGameKey2 },
     };
 
         var gameModels = gameEntities.Select(g => new GameModel
         {
             Id = g.Id,
-            Name = g.Name,
+            Name = g.ProductName,
             Key = g.Key,
         }).ToList();
 

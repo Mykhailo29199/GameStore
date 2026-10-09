@@ -3,7 +3,6 @@ using System.Net.Http.Json;
 using BusinessLogicLayer.Models.Payment;
 using BusinessLogicLayer.Services.Interaces;
 using DataAccessLayer.Entities.GameStoreSQLEntities;
-using DataAccessLayer.StoreContext;
 using DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
 using GameStore.Shared.Exceptions;
 using GameStore.Shared.FileSystem;
@@ -17,11 +16,11 @@ public class PaymentService : IPaymentService
 {
     private readonly HttpClient _client;
     private readonly IFileSystem _fileSystem;
-    private readonly IUnitOfWork<GameStoreContext> _unitOfWork;
+    private readonly ISqlServerUnitOfWork _unitOfWork;
 
     public PaymentService(
         IHttpClientFactory httpClientFactory,
-        IUnitOfWork<GameStoreContext> unitOfWork,
+        ISqlServerUnitOfWork unitOfWork,
         IFileSystem fileSystem)
     {
         _client = httpClientFactory.CreateClient("PaymentService");
@@ -207,9 +206,9 @@ public class PaymentService : IPaymentService
 
     private static decimal CalculateOrderTotal(OrderEntity order)
     {
-        return order.OrderGames.Sum(og =>
+        return order.OrderDetails.Sum(og =>
         {
-            var price = (decimal)og.Price;
+            var price = (decimal)og.UnitPrice;
             var discount = og.Discount ?? 0;
             var discounted = price * (1 - (discount / 100m));
             return discounted * og.Quantity;

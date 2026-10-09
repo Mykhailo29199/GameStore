@@ -2,9 +2,9 @@
 using System.Net.Http.Json;
 using BusinessLogicLayer.Models.Payment;
 using BusinessLogicLayer.Services.Interaces;
-using DataAccessLayer.Entities;
+using DataAccessLayer.Entities.GameStoreSQLEntities;
 using DataAccessLayer.StoreContext;
-using DataAccessLayer.UnitOfWork;
+using DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
 using GameStore.Shared.Exceptions;
 using GameStore.Shared.FileSystem;
 using GameStore.Shared.Stubs;

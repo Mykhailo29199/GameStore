@@ -1,4 +1,4 @@
-﻿using DataAccessLayer.Entities;
+﻿using DataAccessLayer.Entities.GameStoreSQLEntities;
 
 namespace GameStoreUnitTests.GameStore.Services.Tests;
 

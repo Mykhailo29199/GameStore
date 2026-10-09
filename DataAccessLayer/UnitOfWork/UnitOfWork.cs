@@ -1,6 +1,7 @@
-﻿using DataAccessLayer.Repositories;
-using DataAccessLayer.Repositories.Interfaces;
+﻿using DataAccessLayer.Repositories.Interfaces.SQLInterfaces;
+using DataAccessLayer.Repositories.SQLRepositories;
 using DataAccessLayer.StoreContext;
+using DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
 
 namespace DataAccessLayer.UnitOfWork;
 

@@ -1,4 +1,4 @@
-﻿using DataAccessLayer.Entities;
+﻿using DataAccessLayer.Entities.GameStoreSQLEntities;
 using Microsoft.EntityFrameworkCore;
 
 namespace DataAccessLayer.StoreContext;

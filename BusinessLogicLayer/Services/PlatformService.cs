@@ -2,9 +2,9 @@
 using BusinessLogicLayer.Models;
 using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Services.Interaces;
-using DataAccessLayer.Entities;
+using DataAccessLayer.Entities.GameStoreSQLEntities;
 using DataAccessLayer.StoreContext;
-using DataAccessLayer.UnitOfWork;
+using DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
 using GameStore.Shared.Exceptions;
 
 namespace BusinessLogicLayer.Services;

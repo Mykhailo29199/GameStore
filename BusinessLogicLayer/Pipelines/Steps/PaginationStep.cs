@@ -1,6 +1,6 @@
 ﻿using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Pipelines.Interfaces;
-using DataAccessLayer.Entities;
+using DataAccessLayer.Entities.GameStoreSQLEntities;
 using GameStore.Shared.Enums.FilterOptionsEnums;
 
 namespace BusinessLogicLayer.Pipelines.Steps;

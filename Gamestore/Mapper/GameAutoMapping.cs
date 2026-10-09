@@ -4,7 +4,7 @@ using BusinessLogicLayer.Models.CommentModels;
 using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Models.OrderModels;
 using BusinessLogicLayer.Models.Payment;
-using DataAccessLayer.Entities;
+using DataAccessLayer.Entities.GameStoreSQLEntities;
 using GameStore.Shared.Enums.FilterOptionsEnums;
 using GameStore.Shared.Enums.PaymentEnums;
 using GameStore.Shared.Extensions;

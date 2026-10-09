@@ -1,9 +1,9 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Models.BanModels;
 using BusinessLogicLayer.Services.Interaces;
-using DataAccessLayer.Entities;
+using DataAccessLayer.Entities.GameStoreSQLEntities;
 using DataAccessLayer.StoreContext;
-using DataAccessLayer.UnitOfWork;
+using DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
 using GameStore.Shared.Enums;
 using GameStore.Shared.Exceptions;
 using GameStore.Shared.Extensions;

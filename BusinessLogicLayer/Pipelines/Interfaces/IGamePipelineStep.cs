@@ -1,5 +1,5 @@
 ﻿using BusinessLogicLayer.Models.GameModels;
-using DataAccessLayer.Entities;
+using DataAccessLayer.Entities.GameStoreSQLEntities;
 
 namespace BusinessLogicLayer.Pipelines.Interfaces;
 

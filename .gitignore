@@ -341,3 +341,6 @@ ASALocalRun/
 Gamestore/Invoices/
 
 
+# Front-end build provided by the course: its files are tracked (added with git add -f),
+# the rule stays so that the compiled bundle is skipped by static analysis
+gamestore-ui-app/

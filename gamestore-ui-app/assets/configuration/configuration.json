@@ -37,6 +37,7 @@
   "deletePublisherApiUrl": "/publisher/{id}",
   "updatePublisherApiUrl": "/publisher",
   
+  "historyApiUrl": "orders/history",
   "orderApiUrl": "/orders/{id}",
   "ordersApiUrl": "/orders",
   "orderDetailsApiUrl": "/orders/{id}/details",

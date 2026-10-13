@@ -4,6 +4,6 @@ using DataAccessLayer.StoreContext;
 
 namespace DataAccessLayer.Repositories.SQLRepositories;
 
-public class BanSqlRepository(GameStoreContext context) : GenericSqlRepository<BanEntity>(context), IBanSqlRepository
+public class BanSqlRepository(GameStoreContext context) : GenericSqlRepository<BanEntity, Guid>(context), IBanSqlRepository
 {
 }

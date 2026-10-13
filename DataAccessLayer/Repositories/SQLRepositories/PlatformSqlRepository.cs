@@ -4,6 +4,6 @@ using DataAccessLayer.StoreContext;
 
 namespace DataAccessLayer.Repositories.SQLRepositories;
 
-public class PlatformSqlRepository(GameStoreContext context) : GenericSqlRepository<PlatformEntity>(context), IPlatformSqlRepository
+public class PlatformSqlRepository(GameStoreContext context) : GenericSqlRepository<PlatformEntity, Guid>(context), IPlatformSqlRepository
 {
 }

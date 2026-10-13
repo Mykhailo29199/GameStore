@@ -27,32 +27,91 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
 
     public DbSet<BanEntity> Bans { get; set; }
 
+    // Entities from Northwind Legacy
+    public DbSet<EmployeeEntity> Employees { get; set; }
+
+    public DbSet<TerritoryEntity> Territories { get; set; }
+
+    public DbSet<RegionEntity> Regions { get; set; }
+
+    public DbSet<EmployeeTerritoryEntity> EmployeeTerritories { get; set; }
+
+    public DbSet<ShipperEntity> Shippers { get; set; }
+
+    // 1. ПРАВИЛЬНЕ МІСЦЕ ДЛЯ ПРИГЛУШЕННЯ ЛОГІВ
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        base.OnConfiguring(optionsBuilder);
+
+        optionsBuilder.ConfigureWarnings(w => w.Ignore(
+            Microsoft.EntityFrameworkCore.Diagnostics.CoreEventId.IncompatibleMatchingForeignKeyProperties));
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        // ===================== GameEntity =====================
+        // ===================== ProductEntity =====================
         modelBuilder.Entity<ProductEntity>(entity =>
         {
-            entity.HasKey(g => g.Id);
+            // 1. Первинний ключ
+            entity.HasKey(p => p.Id);
 
-            entity.Property(g => g.Views)
+            // 2. Налаштування властивостей базового класу (ProductBaseEntity)
+            entity.Property(p => p.ProductName)
                 .IsRequired()
-                .HasDefaultValue(0);
+                .HasMaxLength(200);
 
-            entity.Property(g => g.CreatedAt)
+            entity.Property(p => p.Key)
                 .IsRequired()
+                .HasMaxLength(250);
+
+            // ВАЖЛИВО: Якщо в коді UnitPrice це double, використовуємо float в SQL.
+            // Якщо хочете decimal(18,2) в SQL, змініть тип у ProductBaseEntity на decimal.
+            entity.Property(p => p.UnitPrice)
+                .HasColumnType("float")
+                .IsRequired();
+
+            // 3. Налаштування властивостей ProductEntity
+            entity.Property(p => p.Description)
+                .HasMaxLength(3000);
+
+            // Discount тепер double (0.2), тому в SQL це float
+            entity.Property(p => p.Discount)
+                .HasColumnType("float")
+                .HasDefaultValue(0.0);
+
+            entity.Property(p => p.CreatedAt)
                 .HasDefaultValueSql("GETUTCDATE()");
 
-            entity.HasOne(g => g.Supplier)
-                .WithMany(p => p.Products)
-                .HasForeignKey(g => g.SupplierID)
+            // 5. Зв'язок Many-to-Many з Жанрами (Явний мапінг)
+            // Використовуємо .WithOne(), щоб уникнути конфлікту імен "GameGenres"
+            entity.HasMany(p => p.ProductCategories)
+                .WithOne(gg => gg.Product)
+                .HasForeignKey(gg => gg.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(g => g.ProductFile)
-                .WithOne(f => f.Product)
-                .HasForeignKey<ProductFileEntity>(f => f.ProductId)
+            // 6. Зв'язок Many-to-Many з Платформами (Явний мапінг)
+            entity.HasMany(p => p.ProductPlatforms)
+                .WithOne(gp => gp.Product)
+                .HasForeignKey(gp => gp.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // 7. Зв'язок 1:1 (One-to-One) з ProductFile (файлом гри)
+            entity.HasOne(p => p.ProductFile)
+                .WithOne(pf => pf.Product)
+                .HasForeignKey<ProductFileEntity>(pf => pf.ProductId);
+
+            // 8. Зв'язок 1:N (One-to-Many) з Коментарями
+            entity.HasMany(p => p.Comments)
+                .WithOne(c => c.Product)
+                .HasForeignKey(c => c.ProductId);
+
+            // 9. Індекси
+            entity.HasIndex(p => p.Key)
+                .IsUnique();
+
+            entity.HasQueryFilter(p => !p.IsDeleted);
         });
 
         // ===================== GameFileEntity =====================
@@ -61,20 +120,20 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
             entity.HasKey(f => f.ProductId);
         });
 
-        // ===================== GameGenreEntity =====================
+        // ===================== ProductCategoryEntity =====================
         modelBuilder.Entity<ProductCategoryEntity>(entity =>
         {
             entity.HasKey(gg => new { gg.ProductId, gg.CategoryId });
 
-            entity.HasOne(gg => gg.Product)
-                .WithMany(g => g.ProductCategories)
-                .HasForeignKey(gg => gg.ProductId)
-                .OnDelete(DeleteBehavior.Cascade);
-
             entity.HasOne(gg => gg.Category)
-                .WithMany()
-                .HasForeignKey(gg => gg.CategoryId)
-                .OnDelete(DeleteBehavior.Cascade);
+        .WithMany(c => c.ProductCategories) // Тепер EF чітко бачить цю колекцію
+        .HasForeignKey(gg => gg.CategoryId)
+        .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(gg => gg.Product)
+        .WithMany(p => p.ProductCategories)
+        .HasForeignKey(gg => gg.ProductId)
+        .OnDelete(DeleteBehavior.Cascade);
         });
 
         // ===================== GamePlatformEntity =====================
@@ -83,24 +142,27 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
             entity.HasKey(gp => new { gp.ProductId, gp.PlatformId });
 
             entity.HasOne(gp => gp.Product)
-                .WithMany(g => g.ProductPlatforms)
+                .WithMany(g => g.ProductPlatforms) // Вказуємо колекцію в ProductEntity
                 .HasForeignKey(gp => gp.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(gp => gp.Platform)
-                .WithMany()
+                .WithMany(p => p.ProductPlatforms) // Вказуємо колекцію в PlatformEntity
                 .HasForeignKey(gp => gp.PlatformId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // ===================== GenreEntity =====================
+        // ===================== CategoryEntity =====================
         modelBuilder.Entity<CategoryEntity>(entity =>
         {
+            entity.ToTable("Categories"); // ГАРАНТІЯ, що він не шукатиме [Category]
             entity.HasKey(g => g.Id);
+            entity.HasQueryFilter(g => !g.IsDeleted);
 
             entity.HasOne(g => g.ParentGenre)
                 .WithMany(g => g.SubGenres)
-                .HasForeignKey(g => g.ParentCategoryId);
+                .HasForeignKey(g => g.ParentCategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // ===================== PlatformEntity =====================
@@ -108,16 +170,12 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
             .HasIndex(p => p.Type)
             .IsUnique();
 
-        // ===================== PublisherEntity =====================
+        // ===================== SupplierEntity =====================
         modelBuilder.Entity<SupplierEntity>(entity =>
         {
             entity.HasKey(p => p.Id);
-
-            // Зв'язок уже описаний в GameEntity, але дублювання тут не завадить для ясності
-            entity.HasMany(p => p.Products)
-                .WithOne(g => g.Supplier)
-                .HasForeignKey(g => g.SupplierID)
-                .OnDelete(DeleteBehavior.Cascade);
+            entity.ToTable("Suppliers");
+            entity.HasQueryFilter(s => !s.IsDeleted);
         });
 
         // ===================== OrderEntity =====================
@@ -125,26 +183,36 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
         {
             entity.HasKey(o => o.Id);
 
+            entity.Property(o => o.Status);
+
             entity.HasMany(o => o.OrderDetails)
                 .WithOne(og => og.Order)
                 .HasForeignKey(og => og.OrderId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // ===================== OrderGameEntity =====================
+        // ===================== OrderDetailsEntity =====================
         modelBuilder.Entity<OrderDetailsEntity>(entity =>
         {
+            entity.ToTable("OrderDetails"); // Вказуємо назву таблиці з вашої бази
             entity.HasKey(og => new { og.OrderId, og.ProductId });
 
-            entity.HasOne(og => og.Order)
-                .WithMany(o => o.OrderDetails)
-                .HasForeignKey(og => og.OrderId)
-                .OnDelete(DeleteBehavior.Cascade);
+            entity.Property(og => og.UnitPrice)
+                .HasColumnName("Price") // Вказуємо назву колонки "Price" як у SQL
+                .IsRequired();
 
-            entity.HasOne(og => og.Product)
+            entity.Property(og => og.Discount)
+                .HasColumnName("Discount")
+                .IsRequired(false)
+                .HasDefaultValue(0.0); // Якщо в базі NULL, EF підставить 0.0
+
+            entity.HasOne(od => od.Order)
+                .WithMany(o => o.OrderDetails)
+                .HasForeignKey(od => od.OrderId);
+
+            entity.HasOne(od => od.Product)
                 .WithMany()
-                .HasForeignKey(og => og.ProductId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .HasForeignKey(od => od.ProductId);
         });
 
         // ===================== CommentEntity =====================
@@ -174,6 +242,88 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
             entity.HasIndex(b => b.UserName);
             entity.Property(b => b.UserName).IsRequired();
             entity.Property(b => b.ExpireAt).IsRequired(false);
+        });
+
+        // ===================== EmployeeEntity =====================
+        modelBuilder.Entity<EmployeeEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Manager)
+                .WithMany(e => e.Subordinates)
+                .HasForeignKey(e => e.ReportsToId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(e => e.FirstName).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.LastName).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Title).HasMaxLength(100);
+        });
+
+        // ===================== RegionEntity =====================
+        modelBuilder.Entity<RegionEntity>(entity =>
+        {
+            entity.HasKey(r => r.Id);
+
+            entity.Property(r => r.RegionDescription)
+                .HasMaxLength(50)
+                .IsRequired(false);
+        });
+
+        // ===================== ShipperEntity =====================
+        modelBuilder.Entity<ShipperEntity>(entity =>
+        {
+            entity.HasKey(s => s.Id);
+
+            entity.Property(s => s.CompanyName)
+                .HasMaxLength(40)
+                .IsRequired(false);
+
+            entity.Property(s => s.Phone)
+                .HasMaxLength(24)
+                .IsRequired(false);
+        });
+
+        // ===================== CustomerEntity =====================
+        modelBuilder.Entity<CustomerEntity>(entity =>
+        {
+            entity.HasKey(c => c.Id);
+
+            entity.Property(c => c.CompanyName).HasMaxLength(100).IsRequired(false);
+            entity.Property(c => c.ContactName).HasMaxLength(100).IsRequired(false);
+            entity.Property(c => c.Field11).HasMaxLength(50).IsRequired(false);
+        });
+
+        // ===================== TerritoryEntity =====================
+        modelBuilder.Entity<TerritoryEntity>(entity =>
+        {
+            entity.HasKey(t => t.Id);
+
+            entity.Property(t => t.TerritoryDescription)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.HasOne(t => t.RegionId)
+                .WithMany()
+                .HasForeignKey(t => t.RegionGuidId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ===================== EmployeeTerritoryEntity =====================
+        modelBuilder.Entity<EmployeeTerritoryEntity>(entity =>
+        {
+            // Композитний ключ
+            entity.HasKey(et => new { et.EmployeeGuidId, et.TerritoryGuidId });
+
+            // Налаштування зв'язків (Many-to-Many)
+            entity.HasOne(et => et.Employee)
+                .WithMany(e => e.EmployeeTerritories)
+                .HasForeignKey(et => et.EmployeeGuidId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(et => et.Territory)
+                .WithMany(t => t.EmployeeTerritories)
+                .HasForeignKey(et => et.TerritoryGuidId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

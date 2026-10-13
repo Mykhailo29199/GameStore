@@ -2,6 +2,6 @@
 
 namespace DataAccessLayer.Repositories.Interfaces.SQLInterfaces;
 
-public interface IPlatformSqlRepository : ISqlServerGenericRepository<PlatformEntity>
+public interface IPlatformSqlRepository : ISqlServerGenericRepository<PlatformEntity, Guid>
 {
 }

@@ -2,7 +2,7 @@
 
 namespace DataAccessLayer.Repositories.Interfaces.SQLInterfaces;
 
-public interface IProductPlatformSqlRepository : ISqlServerGenericRepository<ProductPlatformEntity>
+public interface IProductPlatformSqlRepository : ISqlServerGenericRepository<ProductPlatformEntity, Guid>
 {
     Task DeleteByGameIdAsync(Guid actualGameId);
 

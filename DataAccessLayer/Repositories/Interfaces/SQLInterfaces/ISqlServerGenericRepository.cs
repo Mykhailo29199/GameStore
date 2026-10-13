@@ -1,14 +1,9 @@
-﻿using System.Linq.Expressions;
+﻿namespace DataAccessLayer.Repositories.Interfaces.SQLInterfaces;
 
-namespace DataAccessLayer.Repositories.Interfaces.SQLInterfaces;
-
-public interface ISqlServerGenericRepository<T>
+public interface ISqlServerGenericRepository<T, TId> : ICommonReadGenericRepository<T, TId>
     where T : class
+    where TId : notnull
 {
-    Task<IEnumerable<T>> GetAllAsync();
-
-    Task<T?> GetByIdAsync(Guid id);
-
     Task AddAsync(T entity);
 
     Task AddRangeAsync(IEnumerable<T> entities);
@@ -17,9 +12,5 @@ public interface ISqlServerGenericRepository<T>
 
     Task DeleteAsync(T entity);
 
-    Task<bool> CheckIfExistAsync(Guid id);
-
-    Task<List<T>> FindAsync(Expression<Func<T, bool>> predicate);
-
-    Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate);
+    IQueryable<T> GetAllIncludingDeleted();
 }

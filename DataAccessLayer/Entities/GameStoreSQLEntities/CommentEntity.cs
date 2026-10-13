@@ -1,9 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DataAccessLayer.Entities.GameStoreSQLEntities;
 
-[Table("CommentEntity")]
 public class CommentEntity
 {
     [Key]

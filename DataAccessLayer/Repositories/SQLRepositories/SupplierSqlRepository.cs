@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DataAccessLayer.Repositories.SQLRepositories;
 
-public class SupplierSqlRepository(GameStoreContext context) : GenericSqlRepository<SupplierEntity>(context), ISupplierSqlRepository
+public class SupplierSqlRepository(GameStoreContext context) : GenericSqlRepository<SupplierEntity, Guid>(context), ISupplierSqlRepository
 {
     private readonly DbSet<SupplierEntity> _dbSet = context.Set<SupplierEntity>();
 

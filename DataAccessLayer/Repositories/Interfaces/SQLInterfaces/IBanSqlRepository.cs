@@ -2,6 +2,6 @@
 
 namespace DataAccessLayer.Repositories.Interfaces.SQLInterfaces;
 
-public interface IBanSqlRepository : ISqlServerGenericRepository<BanEntity>
+public interface IBanSqlRepository : ISqlServerGenericRepository<BanEntity, Guid>
 {
 }

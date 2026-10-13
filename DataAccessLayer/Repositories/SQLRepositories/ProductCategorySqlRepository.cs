@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DataAccessLayer.Repositories.SQLRepositories;
 
-public class ProductCategorySqlRepository(GameStoreContext context) : GenericSqlRepository<ProductCategoryEntity>(context), IProductCategorySqlRepository
+public class ProductCategorySqlRepository(GameStoreContext context) : GenericSqlRepository<ProductCategoryEntity, Guid>(context), IProductCategorySqlRepository
 {
     private readonly DbSet<ProductCategoryEntity> _dbSet = context.Set<ProductCategoryEntity>();
 
@@ -19,7 +19,7 @@ public class ProductCategorySqlRepository(GameStoreContext context) : GenericSql
     {
         return await _dbSet
             .Where(gg => gg.CategoryId == genreId)
-            .Select(gg => gg.Product!)
+            .Select(gg => gg.Product)
             .ToListAsync();
     }
 

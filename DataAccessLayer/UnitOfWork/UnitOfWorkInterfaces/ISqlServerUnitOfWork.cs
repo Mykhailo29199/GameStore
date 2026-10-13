@@ -3,7 +3,7 @@ using DataAccessLayer.StoreContext;
 
 namespace DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
 
-public interface ISqlServerUnitOfWork : IDisposable
+public interface ISqlServerUnitOfWork : IUnitOfWorkBase<GameStoreContext>
 {
     IProductSqlRepository GameRepository { get; }
 
@@ -26,14 +26,4 @@ public interface ISqlServerUnitOfWork : IDisposable
     ICommentSqlRepository CommentRepository { get; }
 
     IBanSqlRepository BanRepository { get; }
-
-    GameStoreContext Context { get; }
-
-    Task CreateTransactionAsync();
-
-    Task CommitAsync();
-
-    Task RollbackAsync();
-
-    Task SaveAsync();
 }

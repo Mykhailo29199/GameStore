@@ -1,50 +1,35 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using DataAccessLayer.Entities.CommonEntities;
 
 namespace DataAccessLayer.Entities.GameStoreSQLEntities;
 
-public class ProductEntity
+[Table("Products")]
+public class ProductEntity : ProductBaseEntity
 {
     [Key]
-    [Required]
-    public Guid Id { get; set; }
-
-    [Required]
-    [MaxLength(200)]
-    public string ProductName { get; set; }
-
-    [Required]
-    [MaxLength(250)]
-    public string Key { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     [MaxLength(3000)]
     public string? Description { get; set; }
 
-    [Required]
-    [Range(0.01, double.MaxValue)]
-    public double UnitPrice { get; set; }
-
-    [Required]
-    [Range(0, int.MaxValue)]
-    public int UnitsInStock { get; set; }
-
-    [Required]
-    [Range(0, 100)]
-    public int Discount { get; set; }
-
-    [Required]
-    public Guid SupplierID { get; set; }
+    public double Discount { get; set; }
 
     public int Views { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    public Guid SupplierID { get; set; }
+
+    public bool IsDeleted { get; set; }
+
     public SupplierEntity Supplier { get; set; }
 
-    public ICollection<ProductCategoryEntity> ProductCategories { get; set; }
+    public ICollection<ProductCategoryEntity> ProductCategories { get; set; } = new List<ProductCategoryEntity>();
 
-    public ICollection<ProductPlatformEntity> ProductPlatforms { get; set; }
+    public ICollection<ProductPlatformEntity> ProductPlatforms { get; set; } = new List<ProductPlatformEntity>();
 
     public ProductFileEntity ProductFile { get; set; }
 
-    public ICollection<CommentEntity> Comments { get; set; }
+    public ICollection<CommentEntity> Comments { get; set; } = new List<CommentEntity>();
 }

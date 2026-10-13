@@ -1,12 +1,12 @@
 ﻿using System.Linq.Expressions;
 using DataAccessLayer.Repositories.Interfaces.SQLInterfaces;
-using DataAccessLayer.StoreContext;
 using Microsoft.EntityFrameworkCore;
 
 namespace DataAccessLayer.Repositories.SQLRepositories;
 
-public class GenericSqlRepository<T>(GameStoreContext context) : ISqlServerGenericRepository<T>
+public class GenericSqlRepository<T, TId>(DbContext context) : ISqlServerGenericRepository<T, TId>
     where T : class
+    where TId : notnull
 {
     private readonly DbSet<T> _dbSet = context.Set<T>();
 
@@ -20,7 +20,7 @@ public class GenericSqlRepository<T>(GameStoreContext context) : ISqlServerGener
         await _dbSet.AddRangeAsync(entities);
     }
 
-    public async Task<bool> CheckIfExistAsync(Guid id)
+    public async Task<bool> CheckIfExistAsync(TId id)
     {
         return await GetByIdAsync(id) != null;
     }
@@ -35,9 +35,9 @@ public class GenericSqlRepository<T>(GameStoreContext context) : ISqlServerGener
         return await _dbSet.ToListAsync();
     }
 
-    public async Task<T?> GetByIdAsync(Guid id)
+    public async Task<T?> GetByIdAsync(TId id)
     {
-        return await _dbSet.FindAsync(id);
+        return await _dbSet.FindAsync([id]);
     }
 
     public async Task UpdateAsync(T entity)
@@ -54,5 +54,15 @@ public class GenericSqlRepository<T>(GameStoreContext context) : ISqlServerGener
     public async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate)
     {
         return await _dbSet.FirstOrDefaultAsync(predicate);
+    }
+
+    public IQueryable<T> GetAll()
+    {
+        return _dbSet.AsNoTracking();
+    }
+
+    public IQueryable<T> GetAllIncludingDeleted()
+    {
+        return _dbSet.IgnoreQueryFilters().AsNoTracking();
     }
 }

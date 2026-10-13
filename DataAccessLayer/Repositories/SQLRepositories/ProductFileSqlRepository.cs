@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DataAccessLayer.Repositories.SQLRepositories;
 
-public class ProductFileSqlRepository(GameStoreContext context) : GenericSqlRepository<ProductFileEntity>(context), IProductFileSqlRepository
+public class ProductFileSqlRepository(GameStoreContext context) : GenericSqlRepository<ProductFileEntity, Guid>(context), IProductFileSqlRepository
 {
     private readonly DbSet<ProductFileEntity> _dbSet = context.Set<ProductFileEntity>();
 

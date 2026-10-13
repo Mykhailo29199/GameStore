@@ -209,9 +209,11 @@ public class PaymentService : IPaymentService
         return order.OrderDetails.Sum(og =>
         {
             var price = (decimal)og.UnitPrice;
-            var discount = og.Discount ?? 0;
-            var discounted = price * (1 - (discount / 100m));
-            return discounted * og.Quantity;
+            var discount = (decimal)(og.Discount ?? 0);
+
+            var discountedPrice = price * (1 - discount);
+
+            return discountedPrice * og.Quantity;
         });
     }
 }

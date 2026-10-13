@@ -10,12 +10,13 @@ public class SqlServerUnitOfWork : ISqlServerUnitOfWork
     private bool _disposed;
 
     private IProductSqlRepository? _gameRepository;
+
     private IPlatformSqlRepository? _platformRepository;
     private ICategorySqlRepository? _genreRepository;
     private IProductCategorySqlRepository? _gameGenreRepository;
     private IProductPlatformSqlRepository? _gamePlatformRepository;
     private IProductFileSqlRepository? _gameFileRepository;
-    private ISupplierSqlRepository? _publisherRepository;
+    private ISupplierSqlRepository? _supplierRepository;
     private IOrderSqlRepository? _orderRepository;
     private IOrderDetailsSqlRepository? _orderGameRepository;
     private ICommentSqlRepository? _commentRepository;
@@ -31,6 +32,7 @@ public class SqlServerUnitOfWork : ISqlServerUnitOfWork
     public IProductSqlRepository GameRepository =>
         _gameRepository ??= new ProductSqlRepository(Context);
 
+    // Замініть авто-властивість на стрілочний вираз з ініціалізацією:
     public IPlatformSqlRepository PlatformRepository =>
         _platformRepository ??= new PlatformSqlRepository(Context);
 
@@ -47,7 +49,7 @@ public class SqlServerUnitOfWork : ISqlServerUnitOfWork
         _gameFileRepository ??= new ProductFileSqlRepository(Context);
 
     public ISupplierSqlRepository SupplierRepository =>
-        _publisherRepository ??= new SupplierSqlRepository(Context);
+        _supplierRepository ??= new SupplierSqlRepository(Context);
 
     public IOrderSqlRepository OrderRepository =>
         _orderRepository ??= new OrderSqlRepository(Context);

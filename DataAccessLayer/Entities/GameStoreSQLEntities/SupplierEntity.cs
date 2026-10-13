@@ -1,22 +1,17 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+using DataAccessLayer.Entities.CommonEntities;
 
 namespace DataAccessLayer.Entities.GameStoreSQLEntities;
 
-[Table("PublisherEntity")]
-public class SupplierEntity
+public class SupplierEntity : SupplierBaseEntity
 {
     [Key]
     [Required]
-    public Guid Id { get; set; }
-
-    [Required]
-    [MaxLength(200)]
-    public string CompanyName { get; set; }
-
-    public string? HomePage { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     public string? Description { get; set; }
+
+    public bool IsDeleted { get; set; }
 
     public ICollection<ProductEntity> Products { get; set; } = new List<ProductEntity>();
 }

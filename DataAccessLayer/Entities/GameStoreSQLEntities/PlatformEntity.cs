@@ -11,4 +11,6 @@ public class PlatformEntity
     [Required]
     [MaxLength(200)]
     public string Type { get; set; }
+
+    public ICollection<ProductPlatformEntity> ProductPlatforms { get; set; } = new List<ProductPlatformEntity>();
 }

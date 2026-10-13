@@ -2,7 +2,7 @@
 
 namespace DataAccessLayer.Repositories.Interfaces.SQLInterfaces;
 
-public interface ISupplierSqlRepository : ISqlServerGenericRepository<SupplierEntity>
+public interface ISupplierSqlRepository : ISqlServerGenericRepository<SupplierEntity, Guid>
 {
     Task<IList<ProductEntity>> GetProductsByPublisherNameAsync(string publisherName);
 

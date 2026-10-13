@@ -4,6 +4,6 @@ using DataAccessLayer.StoreContext;
 
 namespace DataAccessLayer.Repositories.SQLRepositories;
 
-public class CommentSqlRepository(GameStoreContext context) : GenericSqlRepository<CommentEntity>(context), ICommentSqlRepository
+public class CommentSqlRepository(GameStoreContext context) : GenericSqlRepository<CommentEntity, Guid>(context), ICommentSqlRepository
 {
 }

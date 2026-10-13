@@ -2,7 +2,7 @@
 
 namespace DataAccessLayer.Repositories.Interfaces.SQLInterfaces;
 
-public interface IOrderDetailsSqlRepository : ISqlServerGenericRepository<OrderDetailsEntity>
+public interface IOrderDetailsSqlRepository : ISqlServerGenericRepository<OrderDetailsEntity, Guid>
 {
     Task<OrderDetailsEntity?> GetOrderGameAsync(Guid orderId, Guid productId);
 

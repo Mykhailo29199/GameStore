@@ -2,7 +2,7 @@
 
 namespace DataAccessLayer.Repositories.Interfaces.SQLInterfaces;
 
-public interface IProductSqlRepository : ISqlServerGenericRepository<ProductEntity>
+public interface IProductSqlRepository : ISqlServerGenericRepository<ProductEntity, Guid>
 {
     Task<ProductEntity> GetFullGame(Guid id);
 

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DataAccessLayer.Repositories.SQLRepositories;
 
-public class OrderDetailsSqlRepository : GenericSqlRepository<OrderDetailsEntity>, IOrderDetailsSqlRepository
+public class OrderDetailsSqlRepository : GenericSqlRepository<OrderDetailsEntity, Guid>, IOrderDetailsSqlRepository
 {
     private readonly GameStoreContext _context;
 

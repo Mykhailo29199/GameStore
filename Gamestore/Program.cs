@@ -1,9 +1,15 @@
+using BusinessLogicLayer.Catalog;
+using BusinessLogicLayer.Catalog.Interfaces;
 using BusinessLogicLayer.Pipelines;
 using BusinessLogicLayer.Pipelines.Interfaces;
 using BusinessLogicLayer.Pipelines.Steps;
 using BusinessLogicLayer.Services;
 using BusinessLogicLayer.Services.Interaces;
+using DataAccessLayer.Logging;
+using DataAccessLayer.Mongo;
+using DataAccessLayer.Repositories.Interfaces.MongoDBInterfaces;
 using DataAccessLayer.Repositories.Interfaces.SQLInterfaces;
+using DataAccessLayer.Repositories.MongoDBRepositories;
 using DataAccessLayer.Repositories.SQLRepositories;
 using DataAccessLayer.StoreContext;
 using DataAccessLayer.UnitOfWork;
@@ -15,6 +21,11 @@ using Gamestore.WebAPI.Mapper;
 using Gamestore.WebAPI.Middlewares;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
+using MongoDB.Driver;
+using IOrderDetailsSqlRepository = DataAccessLayer.Repositories.Interfaces.SQLInterfaces.IOrderDetailsSqlRepository;
+using ISupplierSqlRepository = DataAccessLayer.Repositories.Interfaces.SQLInterfaces.ISupplierSqlRepository;
+using OrderDetailsSqlRepository = DataAccessLayer.Repositories.SQLRepositories.OrderDetailsSqlRepository;
+using OrderSqlRepository = DataAccessLayer.Repositories.SQLRepositories.OrderSqlRepository;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,13 +49,13 @@ builder.Services.AddHttpClient("PaymentService", (sp, client) =>
     client.BaseAddress = new Uri(options.BaseUrl);
 });
 
-builder.Services.AddScoped<IFileSystem, FileSystem>();
-builder.Services.AddScoped<IFileLogWriter, FileLogWriter>();
-
-builder.Services.AddScoped<IFileSystem, FileSystem>();
-builder.Services.AddScoped<IFileLogWriter, FileLogWriter>();
-
 builder.Services.AddScoped<ISqlServerUnitOfWork, SqlServerUnitOfWork>();
+
+builder.Services.AddScoped<IMongoDBUnitOfWork, MongoDBUnitOfWork>();
+
+builder.Services.AddScoped<IFileSystem, FileSystem>();
+builder.Services.AddScoped<IFileLogWriter, FileLogWriter>();
+
 builder.Services.AddScoped<IProductSqlRepository, ProductSqlRepository>();
 builder.Services.AddScoped<IPlatformSqlRepository, PlatformSqlRepository>();
 builder.Services.AddScoped<ICategorySqlRepository, CategorySqlRepository>();
@@ -57,6 +68,14 @@ builder.Services.AddScoped<IOrderDetailsSqlRepository, OrderDetailsSqlRepository
 builder.Services.AddScoped<ICommentSqlRepository, CommentSqlRepository>();
 builder.Services.AddScoped<IBanSqlRepository, BanSqlRepository>();
 
+builder.Services.AddScoped<IEntityChangeLogRepository, EntityChangeLogRepository>();
+builder.Services.AddScoped<IEntityChangeLogger, EntityChangeLogger>();
+builder.Services.AddScoped<EntityChangeLoggingInterceptor>();
+
+builder.Services.AddScoped<ICategoryCatalog, CategoryCatalog>();
+builder.Services.AddScoped<ISupplierCatalog, SupplierCatalog>();
+builder.Services.AddScoped<IProductCatalog, ProductCatalog>();
+
 builder.Services.AddScoped<IGameService, GameService>();
 builder.Services.AddScoped<IGenreService, GenreService>();
 builder.Services.AddScoped<IPlatformService, PlatformService>();
@@ -65,6 +84,7 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IBanService, BanService>();
+builder.Services.AddScoped<IShipperService, ShipperService>();
 
 builder.Services.AddScoped<IGamePipelineStep, GenreFilterStep>();
 builder.Services.AddScoped<IGamePipelineStep, PlatformFilterStep>();
@@ -81,8 +101,28 @@ builder.Logging.ClearProviders();
 
 builder.Logging.AddProvider(new FileLoggerProvider());
 
-builder.Services.AddDbContext<GameStoreContext>(options =>
-  options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// 1. Отримуємо назву бази та рядок підключення з appsettings.json
+var mongoConnectionString = builder.Configuration.GetConnectionString("MongoDbConnection");
+var mongoDatabaseName = builder.Configuration.GetConnectionString("MongoDatabaseName"); // Додайте цей ключ в appsettings
+
+// Northwind data is damaged, so tolerant serialization must be configured before the first query.
+NorthwindMongoConfiguration.Configure();
+
+builder.Services.AddSingleton<IMongoClient>(sp =>
+    new MongoClient(mongoConnectionString));
+
+builder.Services.AddSingleton(sp =>
+{
+    var client = sp.GetRequiredService<IMongoClient>();
+    return client.GetDatabase(mongoDatabaseName ?? "Northwind");
+});
+
+// SQL Server context. Every saved change is logged into the Northwind database.
+builder.Services.AddDbContext<GameStoreContext>((sp, options) =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")).LogTo(Console.WriteLine)
+        .AddInterceptors(sp.GetRequiredService<EntityChangeLoggingInterceptor>())
+        .EnableSensitiveDataLogging()
+        .EnableDetailedErrors());
 
 builder.Services.AddCors(options =>
 {
@@ -116,33 +156,42 @@ app.UseMiddleware<GlobalExceptionMiddleware>();
 
 app.UseMiddleware<RequestResponseLoggingMiddleware>();
 
-//app.UseMiddleware<TotalGamesCountMiddleware>();
-
-// Path to Angular build (outside solution project)
+// Path to Angular build (outside solution project).
+// The build is not stored in the repository, so the API must also start when the folder is missing.
 var angularPath = Path.Combine(
     Directory.GetCurrentDirectory(),
     "..",
     "gamestore-ui-app");
 
-// Serve default files (index.html)
-app.UseDefaultFiles(new DefaultFilesOptions
-{
-    FileProvider = new PhysicalFileProvider(angularPath),
-});
+var angularFiles = Directory.Exists(angularPath)
+    ? new PhysicalFileProvider(angularPath)
+    : null;
 
-// Serve static files (js, css, assets)
-app.UseStaticFiles(new StaticFileOptions
+if (angularFiles is not null)
 {
-    FileProvider = new PhysicalFileProvider(angularPath),
-});
+    // Serve default files (index.html)
+    app.UseDefaultFiles(new DefaultFilesOptions
+    {
+        FileProvider = angularFiles,
+    });
+
+    // Serve static files (js, css, assets)
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = angularFiles,
+    });
+}
 
 app.UseAuthorization();
 
 app.MapControllers();
 
-app.MapFallbackToFile("index.html", new StaticFileOptions
+if (angularFiles is not null)
 {
-    FileProvider = new PhysicalFileProvider(angularPath),
-});
+    app.MapFallbackToFile("index.html", new StaticFileOptions
+    {
+        FileProvider = angularFiles,
+    });
+}
 
 app.Run();

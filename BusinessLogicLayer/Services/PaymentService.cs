@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
+using BusinessLogicLayer.Catalog.Interfaces;
 using BusinessLogicLayer.Models.Payment;
 using BusinessLogicLayer.Services.Interaces;
 using DataAccessLayer.Entities.GameStoreSQLEntities;
@@ -17,15 +18,18 @@ public class PaymentService : IPaymentService
     private readonly HttpClient _client;
     private readonly IFileSystem _fileSystem;
     private readonly ISqlServerUnitOfWork _unitOfWork;
+    private readonly IProductCatalog _productCatalog;
 
     public PaymentService(
         IHttpClientFactory httpClientFactory,
         ISqlServerUnitOfWork unitOfWork,
-        IFileSystem fileSystem)
+        IFileSystem fileSystem,
+        IProductCatalog productCatalog)
     {
         _client = httpClientFactory.CreateClient("PaymentService");
         _unitOfWork = unitOfWork;
         _fileSystem = fileSystem;
+        _productCatalog = productCatalog;
     }
 
     public IEnumerable<PaymentMethodResponseModel> GetPaymentMethods()
@@ -184,7 +188,26 @@ public class PaymentService : IPaymentService
     private async Task SetOrderStatusAsync(OrderEntity order, OrderStatus status)
     {
         order.Status = status;
+
+        if (status == OrderStatus.Paid)
+        {
+            await RecalculateUnitsInStockAsync(order);
+        }
+
         await _unitOfWork.SaveAsync();
+    }
+
+    private async Task RecalculateUnitsInStockAsync(OrderEntity order)
+    {
+        foreach (var orderDetails in order.OrderDetails)
+        {
+            var product = await _unitOfWork.GameRepository.GetByIdAsync(orderDetails.ProductId);
+
+            if (product is not null)
+            {
+                await _productCatalog.DecreaseUnitsInStockAsync(product, orderDetails.Quantity);
+            }
+        }
     }
 
     // Helpers

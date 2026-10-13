@@ -1,5 +1,6 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 using AutoMapper;
+using BusinessLogicLayer.Catalog.Interfaces;
 using BusinessLogicLayer.Models;
 using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Pipelines;
@@ -10,13 +11,19 @@ using GameStore.Shared.Enums.FilterOptionsEnums;
 using GameStore.Shared.Exceptions;
 using GameStore.Shared.Extensions;
 using GameStore.Shared.FileSystem;
-using Microsoft.EntityFrameworkCore;
 using CultureInfo = System.Globalization.CultureInfo;
 using PublishDateOptions = GameStore.Shared.Enums.FilterOptionsEnums.PublishDateOptions;
 
 namespace BusinessLogicLayer.Services;
 
-public class GameService(ISqlServerUnitOfWork unitOfWork, IMapper mapper, IFileSystem fileSystem, GameFilterPipeline pipeline) : IGameService
+public class GameService(
+    ISqlServerUnitOfWork unitOfWork,
+    IMapper mapper,
+    IFileSystem fileSystem,
+    GameFilterPipeline pipeline,
+    IProductCatalog productCatalog,
+    ICategoryCatalog categoryCatalog,
+    ISupplierCatalog supplierCatalog) : IGameService
 {
     private readonly ISqlServerUnitOfWork _unitOfWork = unitOfWork;
     private readonly IMapper _mapper = mapper;
@@ -27,98 +34,100 @@ public class GameService(ISqlServerUnitOfWork unitOfWork, IMapper mapper, IFileS
     {
         gameModel.Key = await GenerateUniqueGameKeyAsync(gameModel.Key, gameModel.Name);
 
-        var allPlatforms = await _unitOfWork.PlatformRepository.GetAllAsync();
-
-        foreach (var platformId in gameModel.Platforms)
-        {
-            if (!allPlatforms.Any(p => p.Id == platformId))
-            {
-                throw new NotFoundException("Platform", platformId);
-            }
-        }
-
-        var allGenres = await _unitOfWork.GenreRepository.GetAllAsync();
-
-        foreach (var genreId in gameModel.Genres)
-        {
-            if (!allGenres.Any(g => g.Id == genreId))
-            {
-                throw new NotFoundException("Genre", genreId);
-            }
-        }
-
-        _ = await _unitOfWork.SupplierRepository.GetByIdAsync(gameModel.Publisher)
-            ?? throw new NotFoundException($"Publisher with ID '{gameModel.Publisher}' was not found.");
+        await ValidatePlatformsAsync(gameModel.Platforms);
+        await EnsureGenresInGameStoreAsync(gameModel.Genres);
+        var publisher = await EnsurePublisherInGameStoreAsync(gameModel.Publisher);
 
         ProductEntity gameEntity = _mapper.Map<ProductEntity>(gameModel);
+        gameEntity.SupplierID = publisher.Id;
+
         await _unitOfWork.GameRepository.AddAsync(gameEntity);
         await _unitOfWork.SaveAsync();
     }
 
     public async Task<GameModel> GetGameByKeyAsync(string key)
     {
-        var gameEntity = await _unitOfWork.GameRepository.GetGameByKeyAsync(key)
+        await productCatalog.IncreaseViewsAsync(key);
+
+        var gameEntity = await productCatalog.GetByKeyAsync(key)
             ?? throw new NotFoundException($"Game with Key '{key}' was not found.");
 
-        gameEntity.Views++;
-
-        await _unitOfWork.GameRepository.UpdateAsync(gameEntity);
-        await _unitOfWork.SaveAsync();
-
-        var resultGameEntity = _mapper.Map<GameModel>(gameEntity);
-
-        return resultGameEntity;
+        return _mapper.Map<GameModel>(gameEntity);
     }
 
     public async Task<GameModel> GetGameByIdAsync(Guid gameId)
     {
-        var gameEntity = await _unitOfWork.GameRepository.GetByIdAsync(gameId);
+        var gameEntity = await productCatalog.GetByIdAsync(gameId);
 
         return gameEntity != null
             ? _mapper.Map<GameModel>(gameEntity)
             : throw new NotFoundException($"Game with Id '{gameId}' was not found.");
     }
 
+    /// <summary>
+    /// A Northwind game is copied to the Game Store database and the copy is updated; Northwind data stays untouched.
+    /// </summary>
     public async Task UpdateGameAsync(GameModel gameModel)
     {
-        ProductEntity existingGame = await _unitOfWork.GameRepository.GetFullGame(gameModel.Id)
+        var currentGame = await productCatalog.GetByIdAsync(gameModel.Id)
             ?? throw new NotFoundException($"Game with Id `{gameModel.Id}` was not found.");
 
-        existingGame.Key = await GenerateUniqueGameKeyAsync(gameModel.Key, gameModel.Name);
-        var allGenres = await _unitOfWork.GenreRepository.GetAllAsync();
+        await ValidatePlatformsAsync(gameModel.Platforms);
 
-        if (gameModel.Genres.Any(genreId => !allGenres.Any(g => g.Id == genreId)))
-        {
-            throw new NotFoundException("One or more genres were not found.");
-        }
+        var existingGame = await productCatalog.EnsureInGameStoreAsync(currentGame.Key);
 
-        var allPlatforms = await _unitOfWork.PlatformRepository.GetAllAsync();
+        // The key maps a game to its Northwind product, so it cannot be changed for Northwind games.
+        gameModel.Key = await productCatalog.HasNorthwindCounterpartAsync(existingGame)
+            || string.Equals(gameModel.Key, existingGame.Key, StringComparison.Ordinal)
+            ? existingGame.Key
+            : await GenerateUniqueGameKeyAsync(gameModel.Key, gameModel.Name);
 
-        if (!gameModel.Platforms.All(platformId => allPlatforms.Any(p => p.Id == platformId)))
-        {
-            throw new NotFoundException("One or more platforms were not found.");
-        }
+        await EnsureGenresInGameStoreAsync(gameModel.Genres);
+        var publisher = await EnsurePublisherInGameStoreAsync(gameModel.Publisher);
 
-        _ = await _unitOfWork.SupplierRepository.GetByIdAsync(gameModel.Publisher)
-        ?? throw new NotFoundException($"Publisher with Id `{gameModel.Publisher}` was not found.");
+        await UpdateGenresAsync(existingGame, gameModel.Genres);
+        await UpdatePlatformsAsync(existingGame, gameModel.Platforms);
 
-        _mapper.Map(gameModel, existingGame);
-        await _unitOfWork.GameRepository.UpdateAsync(existingGame);
+        existingGame.ProductName = gameModel.Name;
+        existingGame.Key = gameModel.Key;
+        existingGame.Description = gameModel.Description;
+        existingGame.UnitPrice = gameModel.Price;
+        existingGame.UnitsInStock = gameModel.UnitInStock;
+        existingGame.Discount = gameModel.Discount;
+        existingGame.SupplierID = publisher.Id;
+
         await _unitOfWork.SaveAsync();
     }
 
+    /// <summary>
+    /// Games that exist in Northwind are soft-deleted in the Game Store database, so the Northwind original stays hidden.
+    /// </summary>
     public async Task DeleteGameAsync(string key)
     {
-        var gameEntity = await _unitOfWork.GameRepository.GetGameByKeyAsync(key)
+        var gameEntity = await productCatalog.GetByKeyAsync(key)
             ?? throw new NotFoundException($"Game with Key '{key}' was not found.");
 
-        await _unitOfWork.GameRepository.DeleteAsync(gameEntity);
+        var sqlGame = await _unitOfWork.GameRepository.GetGameByKeyAsync(key);
+
+        if (sqlGame is null)
+        {
+            await productCatalog.MarkNorthwindProductDeletedAsync(gameEntity);
+        }
+        else if (await productCatalog.HasNorthwindCounterpartAsync(sqlGame))
+        {
+            sqlGame.IsDeleted = true;
+        }
+        else
+        {
+            await _unitOfWork.GameRepository.DeleteAsync(sqlGame);
+        }
+
         await _unitOfWork.SaveAsync();
     }
 
     public async Task<string> GetGameFilePathAsync(string gameKey)
     {
-        if (await _unitOfWork.GameRepository.GetGameByKeyAsync(gameKey) == null)
+        if (await productCatalog.GetByKeyAsync(gameKey) == null)
         {
             throw new NotFoundException($"Game with Key '{gameKey}' was not found.");
         }
@@ -137,13 +146,18 @@ public class GameService(ISqlServerUnitOfWork unitOfWork, IMapper mapper, IFileS
 
     public async Task<IList<GameModel>> GetAllGamesAsync()
     {
-        var gameEntities = await _unitOfWork.GameRepository.GetAllAsync();
+        var gameEntities = await productCatalog.GetAllAsync();
         return _mapper.Map<IList<GameModel>>(gameEntities);
     }
 
     public async Task<IList<GenreModel>> GetGenresByGameKeyAsync(string key)
     {
-        var genres = await _unitOfWork.GameRepository.GetGenresByGameKeyAsync(key);
+        var game = await productCatalog.GetByKeyAsync(key);
+
+        var genres = game?.ProductCategories
+            .Where(pc => pc.Category is not null)
+            .Select(pc => pc.Category)
+            .ToList() ?? [];
 
         return _mapper.Map<IList<GenreModel>>(genres);
     }
@@ -157,18 +171,19 @@ public class GameService(ISqlServerUnitOfWork unitOfWork, IMapper mapper, IFileS
 
     public async Task<PublisherModel> GetPublisherByGameKeyAsync(string key)
     {
-        var publisher = await _unitOfWork.GameRepository.GetSupplierByGameKeyAsync(key)
+        var game = await productCatalog.GetByKeyAsync(key);
+
+        var publisher = (game is null ? null : game.Supplier ?? await supplierCatalog.GetByIdAsync(game.SupplierID))
             ?? throw new NotFoundException($"Game with Key '{key}' was not found or has no publisher.");
 
-        var resultModel = _mapper.Map<PublisherModel>(publisher);
-        return resultModel;
+        return _mapper.Map<PublisherModel>(publisher);
     }
 
     public async Task<int> GetTotalGamesCountAsync()
     {
-        var games = await _unitOfWork.GameRepository.GetAllAsync();
+        var games = await productCatalog.GetAllAsync();
 
-        return games.Count();
+        return games.Count;
     }
 
     public List<string> GetPaginationOptions()
@@ -188,13 +203,11 @@ public class GameService(ISqlServerUnitOfWork unitOfWork, IMapper mapper, IFileS
 
     public async Task<FilteredGamesResponseModel> GetFilteredGamesAsync(GameFilterModel filter)
     {
-        var query = _unitOfWork.GameRepository.GetQueryable();
+        var allGames = await productCatalog.GetAllAsync();
 
-        int totalCount = await query.CountAsync();
+        int totalCount = allGames.Count;
 
-        query = _pipeline.Execute(query, filter);
-
-        var games = await query.ToListAsync();
+        var games = _pipeline.Execute(allGames.AsQueryable(), filter).ToList();
 
         return new FilteredGamesResponseModel
         {
@@ -220,12 +233,68 @@ public class GameService(ISqlServerUnitOfWork unitOfWork, IMapper mapper, IFileS
         string baseKey = gameKey;
         int counter = 1;
 
-        while (await _unitOfWork.GameRepository.GetGameByKeyAsync(gameKey) != null)
+        while (await productCatalog.KeyExistsAsync(gameKey))
         {
             gameKey = $"{baseKey}-{counter}";
             counter++;
         }
 
         return gameKey;
+    }
+
+    private async Task ValidatePlatformsAsync(IEnumerable<Guid> platformIds)
+    {
+        var allPlatforms = await _unitOfWork.PlatformRepository.GetAllAsync();
+
+        foreach (var platformId in platformIds)
+        {
+            if (!allPlatforms.Any(p => p.Id == platformId))
+            {
+                throw new NotFoundException("Platform", platformId);
+            }
+        }
+    }
+
+    private async Task EnsureGenresInGameStoreAsync(IEnumerable<Guid> genreIds)
+    {
+        foreach (var genreId in genreIds)
+        {
+            _ = await categoryCatalog.GetByIdAsync(genreId)
+                ?? throw new NotFoundException("Genre", genreId);
+
+            await categoryCatalog.EnsureInGameStoreAsync(genreId);
+        }
+    }
+
+    private async Task<SupplierEntity> EnsurePublisherInGameStoreAsync(Guid publisherId)
+    {
+        _ = await supplierCatalog.GetByIdAsync(publisherId)
+            ?? throw new NotFoundException($"Publisher with ID '{publisherId}' was not found.");
+
+        return await supplierCatalog.EnsureInGameStoreAsync(publisherId);
+    }
+
+    private async Task UpdateGenresAsync(ProductEntity game, List<Guid> genreIds)
+    {
+        var existing = await _unitOfWork.GameGenreRepository.GetByGameIdAsync(game.Id);
+
+        await _unitOfWork.GameGenreRepository.DeleteRangeAsync(existing.Where(pc => !genreIds.Contains(pc.CategoryId)));
+
+        foreach (var genreId in genreIds.Distinct().Where(id => existing.All(pc => pc.CategoryId != id)))
+        {
+            await _unitOfWork.GameGenreRepository.AddAsync(new ProductCategoryEntity { ProductId = game.Id, CategoryId = genreId });
+        }
+    }
+
+    private async Task UpdatePlatformsAsync(ProductEntity game, List<Guid> platformIds)
+    {
+        var existing = await _unitOfWork.GamePlatformRepository.GetByGameIdAsync(game.Id);
+
+        await _unitOfWork.GamePlatformRepository.DeleteRangeAsync(existing.Where(pp => !platformIds.Contains(pp.PlatformId)));
+
+        foreach (var platformId in platformIds.Distinct().Where(id => existing.All(pp => pp.PlatformId != id)))
+        {
+            await _unitOfWork.GamePlatformRepository.AddAsync(new ProductPlatformEntity { ProductId = game.Id, PlatformId = platformId });
+        }
     }
 }

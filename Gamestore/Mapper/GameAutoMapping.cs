@@ -5,6 +5,8 @@ using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Models.OrderModels;
 using BusinessLogicLayer.Models.Payment;
 using DataAccessLayer.Entities.GameStoreSQLEntities;
+using DataAccessLayer.Mongo;
+using GameStore.Shared.Enums;
 using GameStore.Shared.Enums.FilterOptionsEnums;
 using GameStore.Shared.Enums.PaymentEnums;
 using GameStore.Shared.Extensions;
@@ -34,6 +36,7 @@ public class GameAutoMapping : Profile
                    .ForMember(dest => dest.UnitPrice, opt => opt.MapFrom(src => src.Price))
                    .ForMember(dest => dest.UnitsInStock, opt => opt.MapFrom(src => src.UnitInStock))
                    .ForMember(dest => dest.Discount, opt => opt.MapFrom(src => src.Discount))
+
                    .ForMember(dest => dest.SupplierID, opt => opt.MapFrom(src => src.Publisher))
                    .ForMember(dest => dest.ProductCategories, opt => opt.MapFrom(src =>
                src.Genres.Select(gid => new ProductCategoryEntity { CategoryId = gid })))
@@ -42,15 +45,24 @@ public class GameAutoMapping : Profile
                .ForMember(dest => dest.Supplier, opt => opt.Ignore());
 
         CreateMap<ProductEntity, GameModel>()
-    .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.ProductName))
-    .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.UnitPrice))
-    .ForMember(dest => dest.UnitInStock, opt => opt.MapFrom(src => src.UnitsInStock))
-    .ForMember(dest => dest.Genres, opt => opt.MapFrom(src =>
-    src.ProductCategories != null ? src.ProductCategories.Select(gg => gg.CategoryId) : new List<Guid>()))
-    .ForMember(dest => dest.Platforms, opt => opt.MapFrom(src =>
-    src.ProductPlatforms != null ? src.ProductPlatforms.Select(gp => gp.PlatformId) : new List<Guid>()))
-    .ForMember(dest => dest.Publisher, opt => opt.MapFrom(src => src.SupplierID))
-    ;
+     .ForMember(
+         dest => dest.Name,
+         opt => opt.MapFrom(src => src.ProductName))
+     .ForMember(
+         dest => dest.Price,
+         opt => opt.MapFrom(src => src.UnitPrice))
+     .ForMember(
+         dest => dest.UnitInStock,
+         opt => opt.MapFrom(src => src.UnitsInStock))
+     .ForMember(
+         dest => dest.Genres,
+         opt => opt.MapFrom(src => src.ProductCategories.Select(pc => pc.CategoryId)))
+     .ForMember(
+         dest => dest.Platforms,
+         opt => opt.MapFrom(src => src.ProductPlatforms.Select(pp => pp.PlatformId)))
+     .ForMember(
+         dest => dest.Publisher,
+         opt => opt.MapFrom(src => src.SupplierID));
 
         CreateMap<GameWithIdDTO, GameModel>()
             .IncludeBase<GameDTO, GameModel>()
@@ -146,42 +158,36 @@ public class GameAutoMapping : Profile
             .ForMember(dest => dest.Cvv, opt => opt.MapFrom(src => src.Cvv2))
             .ForMember(dest => dest.TotalAmount, opt => opt.Ignore());
 
-        // OrderEntity->OrderModel
-        CreateMap<OrderEntity, OrderModel>()
-            .ForMember(dest => dest.Date, opt => opt.MapFrom(src => src.OrderDate))
-            .ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.OrderDetails));
+        // Mongo → Model
+        CreateMap<DataAccessLayer.Entities.NorthwindMDBEntities.OrderMongoDBEntity, OrderModel>()
+            .ForMember(d => d.Id, opt => opt.MapFrom(s => MongoIdConverter.ToGuid(s.InternalId).ToString()))
+            .ForMember(d => d.CustomerId, opt => opt.MapFrom(s => s.CustomerID ?? string.Empty))
+            .ForMember(d => d.Date, opt => opt.MapFrom(s => s.OrderDate))
+            .ForMember(d => d.Status, opt => opt.MapFrom(_ => OrderStatus.Paid));
 
-        // OrderGameEntity -> OrderGameModel
+        // SQL → Model
+        CreateMap<OrderEntity, OrderModel>()
+            .ForMember(d => d.Id, opt => opt.MapFrom(s => s.Id.ToString())) // Guid → string
+            .ForMember(d => d.CustomerId, opt => opt.MapFrom(s => s.CustomerId.ToString()))
+            .ForMember(d => d.Date, opt => opt.MapFrom(s => s.OrderDate))
+            .ForMember(d => d.Status, opt => opt.MapFrom(s => s.Status));
+
+        // Model → DTO
+        CreateMap<OrderModel, OrderDTO>()
+            .ForMember(d => d.Date, opt => opt.MapFrom(s => s.Date ?? DateTime.MinValue));
+
         CreateMap<OrderDetailsEntity, OrderGameModel>()
-            .ForMember(dest => dest.OrderId, opt => opt.MapFrom(src => src.OrderId))
-            .ForMember(dest => dest.ProductId, opt => opt.MapFrom(src => src.ProductId))
             .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.UnitPrice))
-            .ForMember(dest => dest.Quantity, opt => opt.MapFrom(src => src.Quantity))
-            .ForMember(dest => dest.Discount, opt => opt.MapFrom(src => src.Discount))
+            .ForMember(dest => dest.Discount, opt => opt.MapFrom(src => src.Discount.HasValue ? (int?)Math.Round(src.Discount.Value) : null))
             .ForMember(dest => dest.GameName, opt => opt.MapFrom(src => src.Product != null ? src.Product.ProductName : string.Empty));
 
-        CreateMap<OrderModel, OrderEntity>()
-            .ForMember(dest => dest.OrderDate, opt => opt.MapFrom(src => src.Date))
-            .ForMember(dest => dest.OrderDetails, opt => opt.MapFrom(src => src.Items));
-
-        CreateMap<OrderGameModel, OrderDetailsEntity>()
-            .ForMember(dest => dest.OrderId, opt => opt.MapFrom(src => src.OrderId))
-            .ForMember(dest => dest.ProductId, opt => opt.MapFrom(src => src.ProductId))
-            .ForMember(dest => dest.UnitPrice, opt => opt.MapFrom(src => src.Price))
-            .ForMember(dest => dest.Quantity, opt => opt.MapFrom(src => src.Quantity))
-            .ForMember(dest => dest.Discount, opt => opt.MapFrom(src => src.Discount));
-
-        // OrderModel <-> OrderDTO
-        CreateMap<OrderModel, OrderDTO>();
-        CreateMap<OrderDTO, OrderModel>();
-
         CreateMap<OrderGameModel, OrderGameDTO>()
-    .ForMember(
-        dest => dest.Price,
-        opt => opt.MapFrom(src =>
-            src.Quantity *
-            src.Price *
-            (1 - ((src.Discount ?? 0) / 100.0))));
+        .ForMember(
+            dest => dest.Price,
+            opt => opt.MapFrom(src =>
+                src.Quantity *
+                src.Price *
+                (1 - ((src.Discount ?? 0) / 100.0))));
 
         // Request
         CreateMap<PaymentRequestDTO, PaymentRequestModel>()
@@ -257,9 +263,6 @@ public class GameAutoMapping : Profile
              ? PublishDateOptions.AllTime
              : src.DatePublishing.ToEnum<PublishDateOptions>()));
 
-        // ================================
-        // ResultModel -> ResultDto
-        // ================================
         CreateMap<FilteredGamesResponseModel, FilteredGamesResponseDTO>()
             .ForMember(dest => dest.Games, opt => opt.MapFrom(src => src.Games));
     }

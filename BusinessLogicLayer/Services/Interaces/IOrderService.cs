@@ -15,4 +15,6 @@ public interface IOrderService
     Task<OrderModel?> GetOrderByIdAsync(Guid orderId);
 
     Task<IEnumerable<OrderGameModel>> GetCartAsync(Guid userId);
+
+    Task<IEnumerable<OrderModel>> GetOrdersHistoryAsync(DateTime? startDate = null, DateTime? endDate = null);
 }

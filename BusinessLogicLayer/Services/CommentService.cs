@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using BusinessLogicLayer.Catalog.Interfaces;
 using BusinessLogicLayer.Models.CommentModels;
 using BusinessLogicLayer.Services.Interaces;
 using DataAccessLayer.Entities.GameStoreSQLEntities;
@@ -8,7 +9,7 @@ using GameStore.Shared.Exceptions;
 
 namespace BusinessLogicLayer.Services;
 
-public class CommentService(ISqlServerUnitOfWork unitOfWork, IMapper mapper) : ICommentService
+public class CommentService(ISqlServerUnitOfWork unitOfWork, IMapper mapper, IProductCatalog productCatalog) : ICommentService
 {
     private readonly ISqlServerUnitOfWork _unitOfWork = unitOfWork;
     private readonly IMapper _mapper = mapper;
@@ -17,8 +18,7 @@ public class CommentService(ISqlServerUnitOfWork unitOfWork, IMapper mapper) : I
 
     public async Task AddCommentAsync(string gameKey, AddCommentModel model)
     {
-        var game = await _unitOfWork.GameRepository
-            .FirstOrDefaultAsync(g => g.Key == gameKey)
+        _ = await productCatalog.GetByKeyAsync(gameKey)
             ?? throw new NotFoundException("Game not found");
 
         var ban = await _unitOfWork.BanRepository.FirstOrDefaultAsync(b =>
@@ -54,6 +54,9 @@ public class CommentService(ISqlServerUnitOfWork unitOfWork, IMapper mapper) : I
             }
         }
 
+        // Commenting a Northwind game copies it to the Game Store database, Northwind stays untouched.
+        var game = await productCatalog.EnsureInGameStoreAsync(gameKey);
+
         var entity = _mapper.Map<CommentEntity>(model);
         entity.Id = Guid.NewGuid();
         entity.ProductId = game.Id;
@@ -65,8 +68,7 @@ public class CommentService(ISqlServerUnitOfWork unitOfWork, IMapper mapper) : I
 
     public async Task<List<CommentModel>> GetGameCommentsAsync(string gameKey)
     {
-        var game = await _unitOfWork.GameRepository
-            .FirstOrDefaultAsync(g => g.Key == gameKey)
+        var game = await productCatalog.GetByKeyAsync(gameKey)
             ?? throw new NotFoundException("Game not found");
 
         var entities = await _unitOfWork.CommentRepository

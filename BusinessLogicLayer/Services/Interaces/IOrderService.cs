@@ -17,4 +17,12 @@ public interface IOrderService
     Task<IEnumerable<OrderGameModel>> GetCartAsync(Guid userId);
 
     Task<IEnumerable<OrderModel>> GetOrdersHistoryAsync(DateTime? startDate = null, DateTime? endDate = null);
+
+    Task UpdateOrderDetailQuantityAsync(Guid orderDetailId, int count);
+
+    Task DeleteOrderDetailAsync(Guid orderDetailId);
+
+    Task ShipOrderAsync(Guid orderId);
+
+    Task AddGameToOrderAsync(Guid orderId, string gameKey);
 }

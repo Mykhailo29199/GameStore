@@ -4,9 +4,11 @@ using BusinessLogicLayer.Catalog.Interfaces;
 using BusinessLogicLayer.Models;
 using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Pipelines;
+using BusinessLogicLayer.Security;
 using BusinessLogicLayer.Services.Interaces;
 using DataAccessLayer.Entities.GameStoreSQLEntities;
 using DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
+using GameStore.Shared.Authorization;
 using GameStore.Shared.Enums.FilterOptionsEnums;
 using GameStore.Shared.Exceptions;
 using GameStore.Shared.Extensions;
@@ -22,12 +24,15 @@ public class GameService(
     IMapper mapper,
     IFileSystem fileSystem,
     GameFilterPipeline pipeline,
-    IStoreCatalog catalog) : IGameService
+    IStoreCatalog catalog,
+    ICurrentUser currentUser) : IGameService
 {
     private readonly ISqlServerUnitOfWork _unitOfWork = unitOfWork;
     private readonly IMapper _mapper = mapper;
     private readonly IFileSystem _fileSystem = fileSystem;
     private readonly GameFilterPipeline _pipeline = pipeline;
+
+    private bool CanSeeDeletedGames => currentUser.HasPermission(Permissions.ViewDeletedGames);
 
     public async Task CreateGameAsync(GameModel gameModel)
     {
@@ -49,7 +54,7 @@ public class GameService(
         await catalog.Products.IncreaseViewsAsync(key);
         await _unitOfWork.SaveAsync();
 
-        var gameEntity = await catalog.Products.GetByKeyAsync(key)
+        var gameEntity = await catalog.Products.GetByKeyAsync(key, CanSeeDeletedGames)
             ?? throw new NotFoundException($"Game with Key '{key}' was not found.");
 
         return _mapper.Map<GameModel>(gameEntity);
@@ -57,7 +62,7 @@ public class GameService(
 
     public async Task<GameModel> GetGameByIdAsync(Guid gameId)
     {
-        var gameEntity = await catalog.Products.GetByIdAsync(gameId);
+        var gameEntity = await catalog.Products.GetByIdAsync(gameId, CanSeeDeletedGames);
 
         return gameEntity != null
             ? _mapper.Map<GameModel>(gameEntity)
@@ -69,12 +74,17 @@ public class GameService(
     /// </summary>
     public async Task UpdateGameAsync(GameModel gameModel)
     {
-        var currentGame = await catalog.Products.GetByIdAsync(gameModel.Id)
+        var currentGame = await catalog.Products.GetByIdAsync(gameModel.Id, includeDeleted: true)
             ?? throw new NotFoundException($"Game with Id `{gameModel.Id}` was not found.");
+
+        if (currentGame.IsDeleted && !currentUser.HasPermission(Permissions.UpdateDeletedGame))
+        {
+            throw new ForbiddenException("Deleted games can be edited only by an administrator.");
+        }
 
         await ValidatePlatformsAsync(gameModel.Platforms);
 
-        var existingGame = await catalog.Products.EnsureInGameStoreAsync(currentGame.Key);
+        var existingGame = await catalog.Products.EnsureInGameStoreAsync(currentGame.Key, includeDeleted: true);
 
         // The key maps a game to its Northwind product, so it cannot be changed for Northwind games.
         gameModel.Key = await catalog.Products.HasNorthwindCounterpartAsync(existingGame)
@@ -101,7 +111,7 @@ public class GameService(
     }
 
     /// <summary>
-    /// Games that exist in Northwind are soft-deleted in the Game Store database, so the Northwind original stays hidden.
+    /// Games are soft-deleted: administrators can still see and edit them, and a deleted Northwind game stays hidden.
     /// </summary>
     public async Task DeleteGameAsync(string key)
     {
@@ -114,13 +124,9 @@ public class GameService(
         {
             await catalog.Products.MarkNorthwindProductDeletedAsync(gameEntity);
         }
-        else if (await catalog.Products.HasNorthwindCounterpartAsync(sqlGame))
-        {
-            sqlGame.IsDeleted = true;
-        }
         else
         {
-            await _unitOfWork.ProductRepository.DeleteAsync(sqlGame);
+            sqlGame.IsDeleted = true;
         }
 
         await _unitOfWork.SaveAsync();
@@ -147,13 +153,13 @@ public class GameService(
 
     public async Task<IList<GameModel>> GetAllGamesAsync()
     {
-        var gameEntities = await catalog.Products.GetAllAsync();
+        var gameEntities = await catalog.Products.GetAllAsync(CanSeeDeletedGames);
         return _mapper.Map<IList<GameModel>>(gameEntities);
     }
 
     public async Task<IList<GenreModel>> GetGenresByGameKeyAsync(string key)
     {
-        var game = await catalog.Products.GetByKeyAsync(key);
+        var game = await catalog.Products.GetByKeyAsync(key, CanSeeDeletedGames);
 
         var genres = game?.ProductCategories
             .Where(pc => pc.Category is not null)
@@ -172,7 +178,7 @@ public class GameService(
 
     public async Task<PublisherModel> GetPublisherByGameKeyAsync(string key)
     {
-        var game = await catalog.Products.GetByKeyAsync(key);
+        var game = await catalog.Products.GetByKeyAsync(key, CanSeeDeletedGames);
 
         var publisher = (game is null ? null : game.Supplier ?? await catalog.Suppliers.GetByIdAsync(game.SupplierID))
             ?? throw new NotFoundException($"Game with Key '{key}' was not found or has no publisher.");
@@ -204,7 +210,7 @@ public class GameService(
 
     public async Task<FilteredGamesResponseModel> GetFilteredGamesAsync(GameFilterModel filter)
     {
-        var sqlGames = _pipeline.Filter(_unitOfWork.ProductRepository.GetQueryable().AsNoTracking(), filter);
+        var sqlGames = _pipeline.Filter(_unitOfWork.ProductRepository.GetQueryable(CanSeeDeletedGames).AsNoTracking(), filter);
         var sqlCount = await sqlGames.CountAsync();
 
         // Only the games that can reach the requested page are read from SQL; the page is cut after the merge.

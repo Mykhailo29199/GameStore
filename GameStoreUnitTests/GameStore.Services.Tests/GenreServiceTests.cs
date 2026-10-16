@@ -482,7 +482,7 @@ public class GenreServiceTests
             ProductCategories = [new ProductCategoryEntity { CategoryId = AnotherExistingGenreId }],
         };
 
-        _productCatalogMock.Setup(x => x.GetAllAsync())
+        _productCatalogMock.Setup(x => x.GetAllAsync(It.IsAny<bool>()))
             .ReturnsAsync([gameStoreGame, northwindGame, otherGenreGame]);
 
         List<GameModel> gameModels =

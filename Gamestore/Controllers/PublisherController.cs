@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Models;
 using BusinessLogicLayer.Services.Interaces;
+using GameStore.Shared.Authorization;
 using Gamestore.WebAPI.DTOs.PublisherDTO;
+using Gamestore.WebAPI.Security;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Gamestore.WebAPI.Controllers;
@@ -12,6 +14,8 @@ public class PublisherController(IPublisherService publisherService, IMapper map
 {
     private readonly IPublisherService _publisherService = publisherService;
     private readonly IMapper _mapper = mapper;
+
+    [HasPermission(Permissions.AddPublisher)]
 
     [HttpPost("publisher")]
     public async Task<IActionResult> CreatePublisherAsync([FromBody] CreatePublisherDTO requestPostDTO)
@@ -40,6 +44,8 @@ public class PublisherController(IPublisherService publisherService, IMapper map
         return Ok(responseGetDTOs);
     }
 
+    [HasPermission(Permissions.UpdatePublisher)]
+
     [HttpPut("publisher")]
     public async Task<IActionResult> UpdatePublisherAsync([FromBody] UpdatePublisherDTO requestPutDTO)
     {
@@ -48,6 +54,8 @@ public class PublisherController(IPublisherService publisherService, IMapper map
 
         return NoContent();
     }
+
+    [HasPermission(Permissions.DeletePublisher)]
 
     [HttpDelete("publisher/{publisherId}")]
     public async Task<IActionResult> DeletePublisherAsync([FromRoute] Guid publisherId)

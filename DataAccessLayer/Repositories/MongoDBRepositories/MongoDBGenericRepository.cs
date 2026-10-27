@@ -49,6 +49,18 @@ public class MongoDBGenericRepository<T>(
         return await Collection.AsQueryable().Where(predicate).ToListAsync();
     }
 
+    public async Task<List<T>> FindAsync(IEnumerable<Expression<Func<T, bool>>> predicates)
+    {
+        var query = Collection.AsQueryable();
+
+        foreach (var predicate in predicates)
+        {
+            query = query.Where(predicate);
+        }
+
+        return await query.ToListAsync();
+    }
+
     public async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate)
     {
         return await Collection.AsQueryable().Where(predicate).FirstOrDefaultAsync();

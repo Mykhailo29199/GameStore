@@ -1,10 +1,15 @@
+using System.Globalization;
+using System.Linq.Expressions;
 using System.Text.RegularExpressions;
 using BusinessLogicLayer.Catalog.Interfaces;
+using BusinessLogicLayer.Models.GameModels;
+using BusinessLogicLayer.Pipelines.Steps;
 using DataAccessLayer.Entities.GameStoreSQLEntities;
 using DataAccessLayer.Mongo;
 using DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
 using GameStore.Shared.Exceptions;
 using Microsoft.EntityFrameworkCore;
+using MongoDB.Bson;
 using Northwind = DataAccessLayer.Entities.NorthwindMDBEntities;
 
 namespace BusinessLogicLayer.Catalog;
@@ -30,6 +35,34 @@ public partial class ProductCatalog(
             await categoryCatalog.ResolveNorthwindAsync());
 
         return sqlProducts.Concat(northwindOnly).ToList();
+    }
+
+    public async Task<List<ProductEntity>> GetNorthwindOnlyAsync(GameFilterModel filter)
+    {
+        // Northwind products have no platforms.
+        if (filter.Platforms?.Count > 0)
+        {
+            return [];
+        }
+
+        var suppliers = await supplierCatalog.ResolveNorthwindAsync();
+        var categories = await categoryCatalog.ResolveNorthwindAsync();
+
+        var documents = await mongoUnitOfWork.ProductRepository.FindAsync(GetNorthwindConditions(filter, suppliers, categories));
+
+        var (sqlProducts, related) = await NorthwindResolver.LoadRelatedAsync<ProductEntity, Northwind.ProductEntity>(
+            documents,
+            p => p.InternalId,
+            p => p.Key,
+            mongoUnitOfWork.ProductRepository.GetByIdsOrKeysAsync,
+            FindSqlProductsAsync);
+
+        // A product is converted from its own document, so the filter gives the same result before and after the merge.
+        var ids = documents.Select(d => MongoIdConverter.ToGuid(d.InternalId)).ToHashSet();
+
+        return Resolve(sqlProducts, related, suppliers, categories)
+            .Where(p => ids.Contains(p.Id))
+            .ToList();
     }
 
     public async Task<ProductEntity?> GetByKeyAsync(string key)
@@ -181,6 +214,67 @@ public partial class ProductCatalog(
         // A product without a game key cannot be opened; keys are assigned when the application starts.
         return NorthwindResolver.Resolve(sqlProductsIncludingDeleted, withPublisher, options).NorthwindOnly
             .Where(p => !string.IsNullOrWhiteSpace(p.Key))
+            .ToList();
+    }
+
+    /// <summary>
+    /// Translates the game filter into conditions on Northwind documents, so Mongo returns only matching products.
+    /// Genres and publishers are matched through the numeric Northwind ids of the effective entities.
+    /// </summary>
+    private static List<Expression<Func<Northwind.ProductEntity, bool>>> GetNorthwindConditions(
+        GameFilterModel filter,
+        NorthwindResolution<SupplierEntity> suppliers,
+        NorthwindResolution<CategoryEntity> categories)
+    {
+        var supplierIds = GetLegacyIds(suppliers, s => s.Id, filter.Publishers);
+        var conditions = new List<Expression<Func<Northwind.ProductEntity, bool>>> { p => supplierIds.Contains(p.SupplierID) };
+
+        if (filter.Genres?.Count > 0)
+        {
+            var categoryIds = GetLegacyIds(categories, c => c.Id, filter.Genres);
+            conditions.Add(p => categoryIds.Contains(p.CategoryID));
+        }
+
+        if (filter.MinPrice.HasValue)
+        {
+            var minPrice = filter.MinPrice.Value;
+            conditions.Add(p => p.UnitPrice >= minPrice);
+        }
+
+        if (filter.MaxPrice.HasValue)
+        {
+            var maxPrice = filter.MaxPrice.Value;
+            conditions.Add(p => p.UnitPrice <= maxPrice);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.Name))
+        {
+            // Mongo translates a regular expression, not a string comparison that ignores case.
+            var name = new Regex(Regex.Escape(filter.Name.Trim()), RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
+            conditions.Add(p => name.IsMatch(p.ProductName));
+        }
+
+        // The creation date of a Northwind product is the time stored in its ObjectId, with a precision of one second.
+        var fromDate = DateFilterStep.GetFromDate(filter.DatePublishing);
+
+        if (fromDate > DateTime.UnixEpoch)
+        {
+            var fromSeconds = (int)Math.Ceiling((fromDate - DateTime.UnixEpoch).TotalSeconds);
+            var minId = ObjectId.Parse(fromSeconds.ToString("x8", CultureInfo.InvariantCulture) + new string('0', 16));
+            conditions.Add(p => p.InternalId >= minId);
+        }
+
+        return conditions;
+    }
+
+    /// <summary>
+    /// Returns the numeric Northwind ids that resolve to the given entities, or to any entity when no ids are given.
+    /// </summary>
+    private static List<int?> GetLegacyIds<T>(NorthwindResolution<T> resolution, Func<T, Guid> getId, List<Guid>? ids)
+    {
+        return resolution.ByLegacyId
+            .Where(pair => ids is not { Count: > 0 } || ids.Contains(getId(pair.Value)))
+            .Select(pair => (int?)pair.Key)
             .ToList();
     }
 

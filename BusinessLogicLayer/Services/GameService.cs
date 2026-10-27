@@ -11,6 +11,7 @@ using GameStore.Shared.Enums.FilterOptionsEnums;
 using GameStore.Shared.Exceptions;
 using GameStore.Shared.Extensions;
 using GameStore.Shared.FileSystem;
+using Microsoft.EntityFrameworkCore;
 using CultureInfo = System.Globalization.CultureInfo;
 using PublishDateOptions = GameStore.Shared.Enums.FilterOptionsEnums.PublishDateOptions;
 
@@ -203,11 +204,16 @@ public class GameService(
 
     public async Task<FilteredGamesResponseModel> GetFilteredGamesAsync(GameFilterModel filter)
     {
-        var allGames = await productCatalog.GetAllAsync();
+        var sqlGames = _pipeline.Filter(_unitOfWork.GameRepository.GetQueryable().AsNoTracking(), filter);
+        var sqlCount = await sqlGames.CountAsync();
 
-        int totalCount = allGames.Count;
+        // Only the games that can reach the requested page are read from SQL; the page is cut after the merge.
+        var sqlCandidates = await _pipeline.Sort(sqlGames, filter).Take(GetCandidateCount(filter)).ToListAsync();
+        var northwindGames = await productCatalog.GetNorthwindOnlyAsync(filter);
 
-        var games = _pipeline.Execute(allGames.AsQueryable(), filter).ToList();
+        var merged = _pipeline.Sort(sqlCandidates.Concat(northwindGames).AsQueryable(), filter);
+        var games = _pipeline.Paginate(merged, filter).ToList();
+        var totalCount = sqlCount + northwindGames.Count;
 
         return new FilteredGamesResponseModel
         {
@@ -217,6 +223,16 @@ public class GameService(
              ? 1
              : (int)Math.Ceiling(totalCount / (double)filter.PageSize),
         };
+    }
+
+    private static int GetCandidateCount(GameFilterModel filter)
+    {
+        if (filter.PageSize == (int)PaginationOptions.All)
+        {
+            return int.MaxValue;
+        }
+
+        return (int)Math.Min((long)Math.Max(filter.Page, 1) * filter.PageSize, int.MaxValue);
     }
 
     private async Task<string> GenerateUniqueGameKeyAsync(string gameKey, string gameName)

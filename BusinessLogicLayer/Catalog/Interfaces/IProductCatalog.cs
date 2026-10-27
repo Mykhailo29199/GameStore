@@ -1,3 +1,4 @@
+using BusinessLogicLayer.Models.GameModels;
 using DataAccessLayer.Entities.GameStoreSQLEntities;
 
 namespace BusinessLogicLayer.Catalog.Interfaces;
@@ -8,6 +9,12 @@ namespace BusinessLogicLayer.Catalog.Interfaces;
 public interface IProductCatalog
 {
     Task<List<ProductEntity>> GetAllAsync();
+
+    /// <summary>
+    /// Returns the Northwind-only products that match the filter. Filtering runs in Northwind; sorting and paging are left
+    /// to the caller, which merges these products with the Game Store ones.
+    /// </summary>
+    Task<List<ProductEntity>> GetNorthwindOnlyAsync(GameFilterModel filter);
 
     Task<ProductEntity?> GetByKeyAsync(string key);
 

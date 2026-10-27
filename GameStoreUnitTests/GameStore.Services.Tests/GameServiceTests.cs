@@ -3,6 +3,7 @@ using BusinessLogicLayer.Catalog.Interfaces;
 using BusinessLogicLayer.Models;
 using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Pipelines;
+using BusinessLogicLayer.Pipelines.Steps;
 using BusinessLogicLayer.Services;
 using DataAccessLayer.Entities.GameStoreSQLEntities;
 using DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
@@ -44,7 +45,7 @@ public class GameServiceTests
             _unitOfWorkMock.Object,
             _mapperMock.Object,
             _fileSystemMock.Object,
-            new GameFilterPipeline([]),
+            new GameFilterPipeline([], new SortingStep(), new PaginationStep()),
             _productCatalogMock.Object,
             _categoryCatalogMock.Object,
             _supplierCatalogMock.Object);
@@ -337,32 +338,62 @@ public class GameServiceTests
     public async Task GetFilteredGamesAsync_ShouldReturnGamesFromBothDatabases()
     {
         // Arrange
-        List<ProductEntity> games =
-        [
-            new ProductEntity { Id = ExistingGameId, ProductName = "Game Store Game", Key = ExistingGameKey },
-            new ProductEntity { Id = ExistingGameId2, ProductName = "Chai", Key = NorthwindGameKey },
-        ];
-
-        List<GameModel> mappedGames =
-        [
-            new GameModel { Id = ExistingGameId, Key = ExistingGameKey },
-            new GameModel { Id = ExistingGameId2, Key = NorthwindGameKey },
-        ];
-
-        _productCatalogMock.Setup(x => x.GetAllAsync()).ReturnsAsync(games);
-        _mapperMock.Setup(x => x.Map<List<GameModel>>(It.Is<List<ProductEntity>>(l => l.Count == 2)))
-            .Returns(mappedGames);
+        var service = CreateServiceWithGames(
+            [CreateGame("Game Store Game", ExistingGameKey, views: 2)],
+            [CreateGame("Chai", NorthwindGameKey, views: 1)]);
 
         // Act
-        var result = await _gameService.GetFilteredGamesAsync(new GameFilterModel
+        var result = await service.GetFilteredGamesAsync(new GameFilterModel
         {
             Page = 1,
             PageSize = (int)PaginationOptions.All,
         });
 
         // Assert
-        Assert.Equal(mappedGames, result.Games);
+        Assert.Equal([ExistingGameKey, NorthwindGameKey], result.Games.Select(g => g.Key));
         Assert.Equal(1, result.TotalPages);
+    }
+
+    [Fact]
+    public async Task GetFilteredGamesAsync_ShouldCountPagesAfterFiltering()
+    {
+        // Arrange
+        var service = CreateServiceWithGames(
+            [CreateGame("Racing", "racing", views: 3), CreateGame("Chess", "chess", views: 2), CreateGame("Golf", "golf", views: 1)],
+            [CreateGame("Racing Tea", NorthwindGameKey, views: 0)]);
+
+        // Act
+        var result = await service.GetFilteredGamesAsync(new GameFilterModel
+        {
+            Name = "Racing",
+            Page = 1,
+            PageSize = 1,
+        });
+
+        // Assert
+        Assert.Equal(["racing"], result.Games.Select(g => g.Key));
+        Assert.Equal(2, result.TotalPages);
+    }
+
+    [Fact]
+    public async Task GetFilteredGamesAsync_ShouldSortAndPageGamesOfBothDatabasesTogether()
+    {
+        // Arrange
+        var service = CreateServiceWithGames(
+            [CreateGame("First", "first", views: 10), CreateGame("Third", "third", views: 5)],
+            [CreateGame("Second", NorthwindGameKey, views: 7)]);
+
+        // Act
+        var result = await service.GetFilteredGamesAsync(new GameFilterModel
+        {
+            Sort = SortingOptions.MostPopular,
+            Page = 2,
+            PageSize = 1,
+        });
+
+        // Assert
+        Assert.Equal([NorthwindGameKey], result.Games.Select(g => g.Key));
+        Assert.Equal(3, result.TotalPages);
     }
 
     [Fact]
@@ -425,6 +456,31 @@ public class GameServiceTests
             Platforms = platforms?.ToList() ?? [],
             Genres = genres?.ToList() ?? [],
         };
+    }
+
+    private static ProductEntity CreateGame(string name, string key, int views)
+    {
+        return new ProductEntity { Id = Guid.NewGuid(), ProductName = name, Key = key, Views = views };
+    }
+
+    /// <summary>
+    /// Creates a service with real filter, sorting and paging steps over the given Game Store and Northwind games.
+    /// </summary>
+    private GameService CreateServiceWithGames(List<ProductEntity> gameStoreGames, List<ProductEntity> northwindGames)
+    {
+        _unitOfWorkMock.Setup(x => x.GameRepository.GetQueryable()).Returns(new AsyncQueryable<ProductEntity>(gameStoreGames));
+        _productCatalogMock.Setup(x => x.GetNorthwindOnlyAsync(It.IsAny<GameFilterModel>())).ReturnsAsync(northwindGames);
+        _mapperMock.Setup(x => x.Map<List<GameModel>>(It.IsAny<List<ProductEntity>>()))
+            .Returns((object games) => ((List<ProductEntity>)games).Select(g => new GameModel { Key = g.Key }).ToList());
+
+        return new GameService(
+            _unitOfWorkMock.Object,
+            _mapperMock.Object,
+            _fileSystemMock.Object,
+            new GameFilterPipeline([new NameFilterStep()], new SortingStep(), new PaginationStep()),
+            _productCatalogMock.Object,
+            _categoryCatalogMock.Object,
+            _supplierCatalogMock.Object);
     }
 
     private void SetupExistingReferences(SupplierEntity publisher)

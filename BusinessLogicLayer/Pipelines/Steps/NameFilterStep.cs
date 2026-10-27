@@ -11,7 +11,9 @@ public class NameFilterStep : IGamePipelineStep
         if (!string.IsNullOrWhiteSpace(filter?.Name))
         {
             var name = filter.Name.Trim();
-            query = query.Where(g => g.ProductName.Contains(name, StringComparison.OrdinalIgnoreCase));
+
+            // The default SQL Server collation ignores case.
+            query = query.Where(g => g.ProductName.Contains(name));
         }
 
         return query;

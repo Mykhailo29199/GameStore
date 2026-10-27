@@ -8,11 +8,11 @@ namespace BusinessLogicLayer.Pipelines.Steps;
 
 public class DateFilterStep : IGamePipelineStep
 {
-    public IQueryable<ProductEntity> Filter(IQueryable<ProductEntity> query, GameFilterModel filter)
+    public static DateTime GetFromDate(PublishDateOptions? option)
     {
         var now = DateTime.UtcNow;
 
-        DateTime fromDate = filter.DatePublishing switch
+        return option switch
         {
             PublishDateOptions.Last24Hours => now.AddDays(-1),
             PublishDateOptions.LastWeek => now.AddDays(-7),
@@ -21,6 +21,11 @@ public class DateFilterStep : IGamePipelineStep
             PublishDateOptions.AllTime => DateTime.MinValue,
             _ => throw new BadRequestException("Invalid date publishing option"),
         };
+    }
+
+    public IQueryable<ProductEntity> Filter(IQueryable<ProductEntity> query, GameFilterModel filter)
+    {
+        var fromDate = GetFromDate(filter.DatePublishing);
 
         return query.Where(g => g.CreatedAt >= fromDate);
     }

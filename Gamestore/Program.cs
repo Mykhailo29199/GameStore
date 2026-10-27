@@ -92,8 +92,8 @@ builder.Services.AddScoped<IGamePipelineStep, PublisherFilterStep>();
 builder.Services.AddScoped<IGamePipelineStep, PriceFilterStep>();
 builder.Services.AddScoped<IGamePipelineStep, NameFilterStep>();
 builder.Services.AddScoped<IGamePipelineStep, DateFilterStep>();
-builder.Services.AddScoped<IGamePipelineStep, SortingStep>();
-builder.Services.AddScoped<IGamePipelineStep, PaginationStep>();
+builder.Services.AddScoped<SortingStep>();
+builder.Services.AddScoped<PaginationStep>();
 
 builder.Services.AddScoped<GameFilterPipeline>();
 

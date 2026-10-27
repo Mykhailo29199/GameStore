@@ -49,6 +49,7 @@ public class GameService(
     public async Task<GameModel> GetGameByKeyAsync(string key)
     {
         await productCatalog.IncreaseViewsAsync(key);
+        await _unitOfWork.SaveAsync();
 
         var gameEntity = await productCatalog.GetByKeyAsync(key)
             ?? throw new NotFoundException($"Game with Key '{key}' was not found.");
@@ -86,8 +87,8 @@ public class GameService(
         await EnsureGenresInGameStoreAsync(gameModel.Genres);
         var publisher = await EnsurePublisherInGameStoreAsync(gameModel.Publisher);
 
-        await UpdateGenresAsync(existingGame, gameModel.Genres);
-        await UpdatePlatformsAsync(existingGame, gameModel.Platforms);
+        UpdateGenres(existingGame, gameModel.Genres);
+        UpdatePlatforms(existingGame, gameModel.Platforms);
 
         existingGame.ProductName = gameModel.Name;
         existingGame.Key = gameModel.Key;
@@ -98,6 +99,7 @@ public class GameService(
         existingGame.SupplierID = publisher.Id;
 
         await _unitOfWork.SaveAsync();
+        await productCatalog.SyncUnitsInStockAsync([existingGame]);
     }
 
     /// <summary>
@@ -290,27 +292,30 @@ public class GameService(
         return await supplierCatalog.EnsureInGameStoreAsync(publisherId);
     }
 
-    private async Task UpdateGenresAsync(ProductEntity game, List<Guid> genreIds)
+    // The links are changed through the tracked game, so a copy of a Northwind game that is not saved yet works the same way.
+    private static void UpdateGenres(ProductEntity game, List<Guid> genreIds)
     {
-        var existing = await _unitOfWork.GameGenreRepository.GetByGameIdAsync(game.Id);
-
-        await _unitOfWork.GameGenreRepository.DeleteRangeAsync(existing.Where(pc => !genreIds.Contains(pc.CategoryId)));
-
-        foreach (var genreId in genreIds.Distinct().Where(id => existing.All(pc => pc.CategoryId != id)))
+        foreach (var removed in game.ProductCategories.Where(pc => !genreIds.Contains(pc.CategoryId)).ToList())
         {
-            await _unitOfWork.GameGenreRepository.AddAsync(new ProductCategoryEntity { ProductId = game.Id, CategoryId = genreId });
+            game.ProductCategories.Remove(removed);
+        }
+
+        foreach (var genreId in genreIds.Distinct().Where(id => game.ProductCategories.All(pc => pc.CategoryId != id)).ToList())
+        {
+            game.ProductCategories.Add(new ProductCategoryEntity { ProductId = game.Id, CategoryId = genreId });
         }
     }
 
-    private async Task UpdatePlatformsAsync(ProductEntity game, List<Guid> platformIds)
+    private static void UpdatePlatforms(ProductEntity game, List<Guid> platformIds)
     {
-        var existing = await _unitOfWork.GamePlatformRepository.GetByGameIdAsync(game.Id);
-
-        await _unitOfWork.GamePlatformRepository.DeleteRangeAsync(existing.Where(pp => !platformIds.Contains(pp.PlatformId)));
-
-        foreach (var platformId in platformIds.Distinct().Where(id => existing.All(pp => pp.PlatformId != id)))
+        foreach (var removed in game.ProductPlatforms.Where(pp => !platformIds.Contains(pp.PlatformId)).ToList())
         {
-            await _unitOfWork.GamePlatformRepository.AddAsync(new ProductPlatformEntity { ProductId = game.Id, PlatformId = platformId });
+            game.ProductPlatforms.Remove(removed);
+        }
+
+        foreach (var platformId in platformIds.Distinct().Where(id => game.ProductPlatforms.All(pp => pp.PlatformId != id)).ToList())
+        {
+            game.ProductPlatforms.Add(new ProductPlatformEntity { ProductId = game.Id, PlatformId = platformId });
         }
     }
 }

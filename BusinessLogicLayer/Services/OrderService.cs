@@ -125,24 +125,6 @@ public class OrderService(
         await _sqlUnitOfWork.SaveAsync();
     }
 
-    public async Task CompletePaymentAsync(Guid orderId)
-    {
-        var order = await _sqlUnitOfWork.OrderRepository.GetOrderWithGamesAsync(orderId) ?? throw new NotFoundException("Order not found");
-        order.Status = OrderStatus.Paid;
-
-        foreach (var og in order.OrderDetails)
-        {
-            if (og.Product.UnitsInStock < og.Quantity)
-            {
-                throw new BadRequestException("Not enough stock for game: " + og.Product.ProductName);
-            }
-
-            await productCatalog.DecreaseUnitsInStockAsync(og.Product, og.Quantity);
-        }
-
-        await _sqlUnitOfWork.SaveAsync();
-    }
-
     public async Task CancelOrderAsync(Guid orderId)
     {
         var order = await _sqlUnitOfWork.OrderRepository.GetOrderWithGamesAsync(orderId) ?? throw new NotFoundException("Order not found");

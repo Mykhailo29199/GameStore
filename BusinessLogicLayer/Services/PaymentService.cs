@@ -64,6 +64,10 @@ public class PaymentService : IPaymentService
         ValidateRequest(request);
 
         var order = await GetActiveOrderAsync();
+
+        // Stock is checked before any money is taken.
+        await GetProductsInStockAsync(order);
+
         var total = CalculateOrderTotal(order);
 
         return request.Method switch
@@ -189,25 +193,51 @@ public class PaymentService : IPaymentService
     {
         order.Status = status;
 
-        if (status == OrderStatus.Paid)
-        {
-            await RecalculateUnitsInStockAsync(order);
-        }
+        var soldProducts = status == OrderStatus.Paid ? await TakeUnitsFromStockAsync(order) : [];
 
         await _unitOfWork.SaveAsync();
+
+        // Northwind gets the saved value only after the Game Store database is saved, so a failed save changes nothing there.
+        await _productCatalog.SyncUnitsInStockAsync(soldProducts);
     }
 
-    private async Task RecalculateUnitsInStockAsync(OrderEntity order)
+    private async Task<List<ProductEntity>> TakeUnitsFromStockAsync(OrderEntity order)
     {
+        var products = await GetProductsInStockAsync(order);
+
+        foreach (var (product, quantity) in products)
+        {
+            product.UnitsInStock -= quantity;
+        }
+
+        return products.Select(p => p.Product).ToList();
+    }
+
+    /// <summary>
+    /// Returns the ordered games with their quantities. Throws when a game has fewer units in stock than ordered.
+    /// </summary>
+    private async Task<List<(ProductEntity Product, int Quantity)>> GetProductsInStockAsync(OrderEntity order)
+    {
+        var products = new List<(ProductEntity Product, int Quantity)>();
+
         foreach (var orderDetails in order.OrderDetails)
         {
             var product = await _unitOfWork.GameRepository.GetByIdAsync(orderDetails.ProductId);
 
-            if (product is not null)
+            if (product is null)
             {
-                await _productCatalog.DecreaseUnitsInStockAsync(product, orderDetails.Quantity);
+                continue;
             }
+
+            if (product.UnitsInStock < orderDetails.Quantity)
+            {
+                throw new BadRequestException($"Not enough units in stock for game '{product.ProductName}'.");
+            }
+
+            products.Add((product, orderDetails.Quantity));
         }
+
+        return products;
     }
 
     // Helpers

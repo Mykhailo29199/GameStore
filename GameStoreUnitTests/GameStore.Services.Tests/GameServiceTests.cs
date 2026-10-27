@@ -210,7 +210,10 @@ public class GameServiceTests
         gameModel.Price = 42;
 
         var northwindGame = new ProductEntity { Id = ExistingGameId, Key = NorthwindGameKey };
+
+        // The copy is not saved yet and keeps the genre it had in Northwind.
         var gameStoreCopy = new ProductEntity { Id = ExistingGameId, Key = NorthwindGameKey, ProductName = "Chai" };
+        gameStoreCopy.ProductCategories.Add(new ProductCategoryEntity { ProductId = ExistingGameId, CategoryId = Guid.NewGuid() });
 
         _productCatalogMock.Setup(x => x.GetByIdAsync(ExistingGameId)).ReturnsAsync(northwindGame);
         _productCatalogMock.Setup(x => x.EnsureInGameStoreAsync(NorthwindGameKey)).ReturnsAsync(gameStoreCopy);
@@ -225,8 +228,8 @@ public class GameServiceTests
         Assert.Equal("Updated Name", gameStoreCopy.ProductName);
         Assert.Equal(42, gameStoreCopy.UnitPrice);
         Assert.Equal(ExistingPublisherId, gameStoreCopy.SupplierID);
-        _unitOfWorkMock.Verify(x => x.GameGenreRepository.AddAsync(It.IsAny<ProductCategoryEntity>()), Times.Exactly(2));
-        _unitOfWorkMock.Verify(x => x.GamePlatformRepository.AddAsync(It.IsAny<ProductPlatformEntity>()), Times.Exactly(2));
+        Assert.Equal(ExistingGenreIds.Order(), gameStoreCopy.ProductCategories.Select(pc => pc.CategoryId).Order());
+        Assert.Equal(ExistingPlatformIds.Order(), gameStoreCopy.ProductPlatforms.Select(pp => pp.PlatformId).Order());
         _unitOfWorkMock.Verify(x => x.SaveAsync(), Times.Once);
     }
 

@@ -96,10 +96,7 @@ public partial class ProductCatalog(
         var northwindProduct = await GetNorthwindOnlyAsync(await mongoUnitOfWork.ProductRepository.GetByKeyAsync(key))
             ?? throw new NotFoundException($"Game with Key '{key}' was not found.");
 
-        await AddGameStoreCopyAsync(northwindProduct, isDeleted: false);
-        await sqlUnitOfWork.SaveAsync();
-
-        return await sqlUnitOfWork.GameRepository.GetFullGame(northwindProduct.Id);
+        return await AddGameStoreCopyAsync(northwindProduct, isDeleted: false);
     }
 
     public async Task MarkNorthwindProductDeletedAsync(ProductEntity product)
@@ -129,7 +126,6 @@ public partial class ProductCatalog(
         if (sqlProduct is not null)
         {
             sqlProduct.Views++;
-            await sqlUnitOfWork.SaveAsync();
             return;
         }
 
@@ -141,21 +137,20 @@ public partial class ProductCatalog(
         }
     }
 
-    public async Task DecreaseUnitsInStockAsync(ProductEntity product, int quantity)
+    public async Task SyncUnitsInStockAsync(IReadOnlyCollection<ProductEntity> products)
     {
-        var northwindProduct = await mongoUnitOfWork.ProductRepository.GetByKeyAsync(product.Key);
-
-        var currentUnits = northwindProduct is null
-            ? product.UnitsInStock
-            : Math.Min(product.UnitsInStock, northwindProduct.UnitsInStock);
-
-        var unitsInStock = Math.Max(currentUnits - quantity, 0);
-
-        product.UnitsInStock = unitsInStock;
-
-        if (northwindProduct is not null)
+        if (products.Count == 0)
         {
-            await mongoUnitOfWork.ProductRepository.SetUnitsInStockAsync(northwindProduct.InternalId, unitsInStock);
+            return;
+        }
+
+        var unitsByKey = products.ToDictionary(p => p.Key, p => p.UnitsInStock);
+        var keys = unitsByKey.Keys.ToList();
+        var documents = await mongoUnitOfWork.ProductRepository.FindAsync(p => keys.Contains(p.Key));
+
+        foreach (var document in documents.Where(d => d.UnitsInStock != unitsByKey[d.Key]))
+        {
+            await mongoUnitOfWork.ProductRepository.SetUnitsInStockAsync(document.InternalId, unitsByKey[document.Key]);
         }
     }
 
@@ -343,7 +338,10 @@ public partial class ProductCatalog(
             .ToListAsync();
     }
 
-    private async Task AddGameStoreCopyAsync(ProductEntity product, bool isDeleted)
+    /// <summary>
+    /// Adds a tracked Game Store copy of a Northwind product with its publisher and genres. The caller saves changes.
+    /// </summary>
+    private async Task<ProductEntity> AddGameStoreCopyAsync(ProductEntity product, bool isDeleted)
     {
         var supplier = await supplierCatalog.EnsureInGameStoreAsync(product.SupplierID);
 
@@ -379,6 +377,8 @@ public partial class ProductCatalog(
         }
 
         await sqlUnitOfWork.GameRepository.AddAsync(copy);
+
+        return copy;
     }
 
     /// <summary>

@@ -17,6 +17,11 @@ public class ProductMongoDBRepository(IMongoDatabase database, IEntityChangeLogg
             .FirstOrDefaultAsync();
     }
 
+    public async Task<List<ProductEntity>> GetByIdsOrKeysAsync(IEnumerable<ObjectId> ids, IReadOnlyCollection<string> keys)
+    {
+        return await Collection.Find(IdOrNameFilter(p => p.Key, ids, keys)).ToListAsync();
+    }
+
     public async Task SetGameKeyAsync(ObjectId id, string key)
     {
         var filter = Builders<ProductEntity>.Filter.Eq(p => p.InternalId, id);

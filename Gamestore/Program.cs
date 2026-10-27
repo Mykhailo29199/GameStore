@@ -140,6 +140,12 @@ builder.Services.AddMemoryCache();
 
 var app = builder.Build();
 
+// Northwind products get their game keys once at startup, so GET requests never write into Northwind.
+using (var scope = app.Services.CreateScope())
+{
+    await scope.ServiceProvider.GetRequiredService<IProductCatalog>().AssignMissingGameKeysAsync();
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

@@ -189,7 +189,8 @@ public class OrderService(
         }
 
         var details = await mongoUnitOfWork.OrderDetailsRepository.GetByOrderIdAsync(northwindOrderId.Value);
-        var products = (await mongoUnitOfWork.ProductRepository.GetAllAsync())
+        var productIds = details.Select(d => d.ProductID).Where(id => id.HasValue).Distinct().ToList();
+        var products = (await mongoUnitOfWork.ProductRepository.FindAsync(p => productIds.Contains(p.ProductID)))
             .Where(p => p.ProductID.HasValue)
             .GroupBy(p => p.ProductID!.Value)
             .ToDictionary(g => g.Key, g => g.First());

@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using System.Text.RegularExpressions;
 using DataAccessLayer.Logging;
 using DataAccessLayer.Repositories.Interfaces.MongoDBInterfaces;
 using MongoDB.Bson;
@@ -118,6 +119,28 @@ public class MongoDBGenericRepository<T>(
     protected static FilterDefinition<T> IdFilter(BsonValue id)
     {
         return Builders<T>.Filter.Eq(IdField, id);
+    }
+
+    /// <summary>
+    /// Matches documents with one of the ids or one of the names. Names are compared ignoring case and surrounding spaces,
+    /// the same way duplicates are detected.
+    /// </summary>
+    protected static FilterDefinition<T> IdOrNameFilter(
+        Expression<Func<T, object>> nameField,
+        IEnumerable<ObjectId> ids,
+        IReadOnlyCollection<string> names)
+    {
+        var builder = Builders<T>.Filter;
+        var filter = builder.In(IdField, ids);
+
+        if (names.Count == 0)
+        {
+            return filter;
+        }
+
+        var alternatives = string.Join('|', names.Select(name => Regex.Escape(name.Trim())));
+
+        return filter | builder.Regex(nameField, new BsonRegularExpression($@"^\s*(?:{alternatives})\s*$", "i"));
     }
 
     private Task LogAsync(string action, BsonDocument? oldVersion, BsonDocument? newVersion)

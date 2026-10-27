@@ -20,37 +20,35 @@ public partial class ProductCatalog(
     public async Task<List<ProductEntity>> GetAllAsync()
     {
         var sqlProducts = await sqlUnitOfWork.GameRepository.GetQueryable().AsNoTracking().ToListAsync();
-        var northwindProducts = await ResolveNorthwindAsync();
+        var sqlProductsIncludingDeleted = await sqlUnitOfWork.GameRepository.GetAllIncludingDeleted().ToListAsync();
+        var northwindProducts = await mongoUnitOfWork.ProductRepository.GetAllAsync();
 
-        return sqlProducts.Concat(northwindProducts).ToList();
+        var northwindOnly = Resolve(
+            sqlProductsIncludingDeleted,
+            northwindProducts,
+            await supplierCatalog.ResolveNorthwindAsync(),
+            await categoryCatalog.ResolveNorthwindAsync());
+
+        return sqlProducts.Concat(northwindOnly).ToList();
     }
 
     public async Task<ProductEntity?> GetByKeyAsync(string key)
     {
         var sqlProduct = await sqlUnitOfWork.GameRepository.GetQueryable().FirstOrDefaultAsync(p => p.Key == key);
 
-        if (sqlProduct is not null)
-        {
-            return sqlProduct;
-        }
-
-        var northwindProducts = await ResolveNorthwindAsync();
-
-        return northwindProducts.FirstOrDefault(p => p.Key == key);
+        return sqlProduct ?? await GetNorthwindOnlyAsync(await mongoUnitOfWork.ProductRepository.GetByKeyAsync(key));
     }
 
     public async Task<ProductEntity?> GetByIdAsync(Guid id)
     {
         var sqlProduct = await sqlUnitOfWork.GameRepository.GetFullGame(id);
 
-        if (sqlProduct is not null || !MongoIdConverter.TryGetObjectId(id, out _))
+        if (sqlProduct is not null || !MongoIdConverter.TryGetObjectId(id, out var objectId))
         {
             return sqlProduct;
         }
 
-        var northwindProducts = await ResolveNorthwindAsync();
-
-        return northwindProducts.FirstOrDefault(p => p.Id == id);
+        return await GetNorthwindOnlyAsync(await mongoUnitOfWork.ProductRepository.GetByIdAsync(objectId));
     }
 
     public async Task<ProductEntity> EnsureInGameStoreAsync(string key)
@@ -62,7 +60,7 @@ public partial class ProductCatalog(
             return sqlProduct;
         }
 
-        var northwindProduct = (await ResolveNorthwindAsync()).FirstOrDefault(p => p.Key == key)
+        var northwindProduct = await GetNorthwindOnlyAsync(await mongoUnitOfWork.ProductRepository.GetByKeyAsync(key))
             ?? throw new NotFoundException($"Game with Key '{key}' was not found.");
 
         await AddGameStoreCopyAsync(northwindProduct, isDeleted: false);
@@ -102,7 +100,7 @@ public partial class ProductCatalog(
             return;
         }
 
-        var northwindProduct = (await ResolveNorthwindAsync()).FirstOrDefault(p => p.Key == key);
+        var northwindProduct = await GetNorthwindOnlyAsync(await mongoUnitOfWork.ProductRepository.GetByKeyAsync(key));
 
         if (northwindProduct is not null && MongoIdConverter.TryGetObjectId(northwindProduct.Id, out var objectId))
         {
@@ -126,6 +124,64 @@ public partial class ProductCatalog(
         {
             await mongoUnitOfWork.ProductRepository.SetUnitsInStockAsync(northwindProduct.InternalId, unitsInStock);
         }
+    }
+
+    /// <summary>
+    /// The game key field in Northwind is managed only by the Game Store: every product gets a unique one.
+    /// </summary>
+    public async Task AssignMissingGameKeysAsync()
+    {
+        var northwindProducts = (await mongoUnitOfWork.ProductRepository.GetAllAsync()).ToList();
+        var withoutKey = northwindProducts.Where(p => string.IsNullOrWhiteSpace(p.Key)).ToList();
+
+        if (withoutKey.Count == 0)
+        {
+            return;
+        }
+
+        var sqlKeys = await sqlUnitOfWork.GameRepository.GetAllIncludingDeleted().Select(p => p.Key).ToListAsync();
+        var usedKeys = sqlKeys
+            .Concat(northwindProducts.Select(p => p.Key))
+            .Where(k => !string.IsNullOrWhiteSpace(k))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var product in withoutKey)
+        {
+            product.Key = CreateNorthwindKey(product, usedKeys);
+            usedKeys.Add(product.Key);
+
+            await mongoUnitOfWork.ProductRepository.SetGameKeyAsync(product.InternalId, product.Key);
+        }
+    }
+
+    private static List<ProductEntity> Resolve(
+        IEnumerable<ProductEntity> sqlProductsIncludingDeleted,
+        IEnumerable<Northwind.ProductEntity> northwindProducts,
+        NorthwindResolution<SupplierEntity> suppliers,
+        NorthwindResolution<CategoryEntity> categories)
+    {
+        // Products without a valid publisher (damaged or deleted) cannot be shown or bought, so they take no part in the merge.
+        var withPublisher = new List<NorthwindProduct>();
+
+        foreach (var product in northwindProducts)
+        {
+            if (Lookup(suppliers, product.SupplierID) is { } supplier)
+            {
+                withPublisher.Add(new NorthwindProduct(product, supplier));
+            }
+        }
+
+        var options = new NorthwindResolverOptions<ProductEntity, NorthwindProduct>(
+            p => NorthwindEntityConverter.ToProduct(p.Document, p.Supplier, Lookup(categories, p.Document.CategoryID)),
+            p => p.Document.ProductID,
+            p => p.Id,
+            p => p.Key,
+            p => p.IsDeleted);
+
+        // A product without a game key cannot be opened; keys are assigned when the application starts.
+        return NorthwindResolver.Resolve(sqlProductsIncludingDeleted, withPublisher, options).NorthwindOnly
+            .Where(p => !string.IsNullOrWhiteSpace(p.Key))
+            .ToList();
     }
 
     private static T? Lookup<T>(NorthwindResolution<T> resolution, int? legacyId)
@@ -154,53 +210,43 @@ public partial class ProductCatalog(
     [GeneratedRegex(@"[^\p{L}0-9]+")]
     private static partial Regex NonKeyCharacters();
 
-    private async Task<List<ProductEntity>> ResolveNorthwindAsync()
+    /// <summary>
+    /// Resolves one Northwind product, reading only the records that decide whether it is shown.
+    /// </summary>
+    private async Task<ProductEntity?> GetNorthwindOnlyAsync(Northwind.ProductEntity? document)
     {
-        var sqlProducts = await sqlUnitOfWork.GameRepository.GetAllIncludingDeleted().ToListAsync();
-        var northwindProducts = (await mongoUnitOfWork.ProductRepository.GetAllAsync()).ToList();
+        if (document is null)
+        {
+            return null;
+        }
 
-        await AssignMissingGameKeysAsync(northwindProducts, sqlProducts);
-
-        var suppliers = await supplierCatalog.ResolveNorthwindAsync();
-        var categories = await categoryCatalog.ResolveNorthwindAsync();
-
-        var options = new NorthwindResolverOptions<ProductEntity, Northwind.ProductEntity>(
-            p => NorthwindEntityConverter.ToProduct(p, Lookup(suppliers, p.SupplierID), Lookup(categories, p.CategoryID)),
-            p => p.ProductID,
-            p => p.Id,
+        var (sqlProducts, related) = await NorthwindResolver.LoadRelatedAsync<ProductEntity, Northwind.ProductEntity>(
+            [document],
+            p => p.InternalId,
             p => p.Key,
-            p => p.IsDeleted);
+            mongoUnitOfWork.ProductRepository.GetByIdsOrKeysAsync,
+            FindSqlProductsAsync);
 
-        // Products without a valid publisher (damaged or deleted) cannot be shown or bought.
-        return NorthwindResolver.Resolve(sqlProducts, northwindProducts, options).NorthwindOnly
-            .Where(p => p.Supplier is not null)
-            .ToList();
+        var supplierIds = related.Select(p => p.SupplierID).OfType<int>().Distinct().ToList();
+        var categoryIds = related.Select(p => p.CategoryID).OfType<int>().Distinct().ToList();
+
+        var northwindOnly = Resolve(
+            sqlProducts,
+            related,
+            await supplierCatalog.ResolveNorthwindAsync(supplierIds),
+            await categoryCatalog.ResolveNorthwindAsync(categoryIds));
+
+        var id = MongoIdConverter.ToGuid(document.InternalId);
+
+        return northwindOnly.FirstOrDefault(p => p.Id == id);
     }
 
-    /// <summary>
-    /// The game key field in Northwind is managed only by the Game Store: every product gets a unique one.
-    /// </summary>
-    private async Task AssignMissingGameKeysAsync(List<Northwind.ProductEntity> northwindProducts, List<ProductEntity> sqlProducts)
+    private async Task<List<ProductEntity>> FindSqlProductsAsync(List<Guid> ids, List<string> keys)
     {
-        var withoutKey = northwindProducts.Where(p => string.IsNullOrWhiteSpace(p.Key)).ToList();
-
-        if (withoutKey.Count == 0)
-        {
-            return;
-        }
-
-        var usedKeys = sqlProducts.Select(p => p.Key)
-            .Concat(northwindProducts.Select(p => p.Key))
-            .Where(k => !string.IsNullOrWhiteSpace(k))
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var product in withoutKey)
-        {
-            product.Key = CreateNorthwindKey(product, usedKeys);
-            usedKeys.Add(product.Key);
-
-            await mongoUnitOfWork.ProductRepository.SetGameKeyAsync(product.InternalId, product.Key);
-        }
+        // Products are matched by game key. The default SQL Server collation ignores case, as the duplicate check does.
+        return await sqlUnitOfWork.GameRepository.GetAllIncludingDeleted()
+            .Where(p => ids.Contains(p.Id) || keys.Contains(p.Key.Trim()))
+            .ToListAsync();
     }
 
     private async Task AddGameStoreCopyAsync(ProductEntity product, bool isDeleted)
@@ -240,4 +286,9 @@ public partial class ProductCatalog(
 
         await sqlUnitOfWork.GameRepository.AddAsync(copy);
     }
+
+    /// <summary>
+    /// A Northwind product together with its resolved publisher.
+    /// </summary>
+    private sealed record NorthwindProduct(Northwind.ProductEntity Document, SupplierEntity Supplier);
 }

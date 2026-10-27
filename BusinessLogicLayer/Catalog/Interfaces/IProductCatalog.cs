@@ -34,4 +34,10 @@ public interface IProductCatalog
     /// Recalculates units in stock after a payment and synchronizes the value in both databases. The caller saves changes.
     /// </summary>
     Task DecreaseUnitsInStockAsync(ProductEntity product, int quantity);
+
+    /// <summary>
+    /// Gives a unique game key to every Northwind product that has none. Runs once when the application starts,
+    /// so reading the catalog never writes into Northwind.
+    /// </summary>
+    Task AssignMissingGameKeysAsync();
 }

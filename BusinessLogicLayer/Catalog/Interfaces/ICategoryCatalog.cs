@@ -19,4 +19,9 @@ public interface ICategoryCatalog
     Task<bool> HasNorthwindCounterpartAsync(CategoryEntity category);
 
     Task<NorthwindResolution<CategoryEntity>> ResolveNorthwindAsync();
+
+    /// <summary>
+    /// Resolves only the Northwind categories with the given numeric ids, reading just the records that decide their duplicates.
+    /// </summary>
+    Task<NorthwindResolution<CategoryEntity>> ResolveNorthwindAsync(IReadOnlyCollection<int> legacyIds);
 }

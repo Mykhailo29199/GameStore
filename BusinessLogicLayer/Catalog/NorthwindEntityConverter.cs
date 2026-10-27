@@ -44,7 +44,7 @@ public static class NorthwindEntityConverter
 
     public static ProductEntity ToProduct(
         Northwind.ProductEntity product,
-        SupplierEntity? supplier,
+        SupplierEntity supplier,
         CategoryEntity? category)
     {
         var id = MongoIdConverter.ToGuid(product.InternalId);
@@ -63,8 +63,8 @@ public static class NorthwindEntityConverter
             Discontinued = product.Discontinued,
             Views = product.Views ?? 0,
             CreatedAt = product.InternalId.CreationTime,
-            SupplierID = supplier?.Id ?? Guid.Empty,
-            Supplier = supplier!,
+            SupplierID = supplier.Id,
+            Supplier = supplier,
         };
 
         if (category is not null)

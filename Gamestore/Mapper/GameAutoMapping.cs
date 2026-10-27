@@ -160,21 +160,20 @@ public class GameAutoMapping : Profile
 
         // Mongo → Model
         CreateMap<DataAccessLayer.Entities.NorthwindMDBEntities.OrderMongoDBEntity, OrderModel>()
-            .ForMember(d => d.Id, opt => opt.MapFrom(s => MongoIdConverter.ToGuid(s.InternalId).ToString()))
+            .ForMember(d => d.Id, opt => opt.MapFrom(s => MongoIdConverter.ToGuid(s.InternalId)))
             .ForMember(d => d.CustomerId, opt => opt.MapFrom(s => s.CustomerID ?? string.Empty))
             .ForMember(d => d.Date, opt => opt.MapFrom(s => s.OrderDate))
             .ForMember(d => d.Status, opt => opt.MapFrom(_ => OrderStatus.Paid));
 
         // SQL → Model
         CreateMap<OrderEntity, OrderModel>()
-            .ForMember(d => d.Id, opt => opt.MapFrom(s => s.Id.ToString())) // Guid → string
+            .ForMember(d => d.Id, opt => opt.MapFrom(s => s.Id))
             .ForMember(d => d.CustomerId, opt => opt.MapFrom(s => s.CustomerId.ToString()))
             .ForMember(d => d.Date, opt => opt.MapFrom(s => s.OrderDate))
             .ForMember(d => d.Status, opt => opt.MapFrom(s => s.Status));
 
         // Model → DTO
-        CreateMap<OrderModel, OrderDTO>()
-            .ForMember(d => d.Date, opt => opt.MapFrom(s => s.Date ?? DateTime.MinValue));
+        CreateMap<OrderModel, OrderDTO>();
 
         CreateMap<OrderDetailsEntity, OrderGameModel>()
             .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.UnitPrice))

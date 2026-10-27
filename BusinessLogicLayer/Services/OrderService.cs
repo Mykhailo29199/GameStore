@@ -156,15 +156,16 @@ public class OrderService(
     /// </summary>
     public async Task<IEnumerable<OrderModel>> GetOrdersHistoryAsync(DateTime? startDate = null, DateTime? endDate = null)
     {
-        var sqlOrders = await _sqlUnitOfWork.OrderRepository.FindAsync(o => o.Status != OrderStatus.Open);
-
-        var filteredSqlOrders = sqlOrders.Where(o =>
+        // Open carts and orders still waiting for payment are not part of the history.
+        var sqlOrders = await _sqlUnitOfWork.OrderRepository.FindAsync(o =>
+            o.Status != OrderStatus.Open &&
+            o.Status != OrderStatus.Checkout &&
             (!startDate.HasValue || o.OrderDate >= startDate.Value) &&
             (!endDate.HasValue || o.OrderDate < endDate.Value));
 
         var northwindOrders = await mongoUnitOfWork.OrderRepository.GetByDateRangeAsync(startDate, endDate);
 
-        var sqlModels = _mapper.Map<IEnumerable<OrderModel>>(filteredSqlOrders);
+        var sqlModels = _mapper.Map<IEnumerable<OrderModel>>(sqlOrders);
         var northwindModels = _mapper.Map<IEnumerable<OrderModel>>(northwindOrders);
 
         return sqlModels

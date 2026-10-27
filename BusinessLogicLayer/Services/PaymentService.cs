@@ -260,6 +260,6 @@ public class PaymentService : IPaymentService
     private static decimal CalculateOrderTotal(OrderEntity order)
     {
         return OrderTotalCalculator.Total(
-            order.OrderDetails.Select(og => ((decimal)og.UnitPrice, og.Quantity, og.Discount)));
+            order.OrderDetails.Select(og => (og.UnitPrice, og.Quantity, og.Discount)));
     }
 }

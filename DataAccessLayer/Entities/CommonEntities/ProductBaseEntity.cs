@@ -16,7 +16,7 @@ public abstract class ProductBaseEntity
 
     [Required]
     [Range(0.01, double.MaxValue)]
-    public double UnitPrice { get; set; }
+    public decimal UnitPrice { get; set; }
 
     [Required]
     [Range(0, int.MaxValue)]

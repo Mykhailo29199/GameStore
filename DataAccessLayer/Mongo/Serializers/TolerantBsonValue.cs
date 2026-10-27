@@ -36,6 +36,29 @@ internal static class TolerantBsonValue
         };
     }
 
+    /// <summary>
+    /// Returns null for null, undefined and values that cannot be read as a decimal number.
+    /// </summary>
+    public static decimal? ToDecimal(BsonValue value)
+    {
+        if (value.IsString)
+        {
+            return decimal.TryParse(value.AsString, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsed)
+                ? parsed
+                : null;
+        }
+
+        if (value.IsDecimal128)
+        {
+            return Decimal128.ToDecimal(value.AsDecimal128);
+        }
+
+        // A double is converted with 15 significant digits, so a price stored as 19.45 stays 19.45.
+        var number = ToDouble(value);
+
+        return number is >= (double)decimal.MinValue and <= (double)decimal.MaxValue ? (decimal)number.Value : null;
+    }
+
     private static double? ParseDouble(string text)
     {
         return double.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsed)

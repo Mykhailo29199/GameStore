@@ -12,7 +12,7 @@ public abstract class OrderBaseEntity
 
     public int? ShipVia { get; set; }
 
-    public double? Freight { get; set; }
+    public decimal? Freight { get; set; }
 
     [MaxLength(200)]
     public string? ShipName { get; set; }
@@ -22,6 +22,4 @@ public abstract class OrderBaseEntity
     public string? ShipPostalCode { get; set; }
 
     public string? ShipCountry { get; set; }
-
-    public string? Field14 { get; set; }
 }

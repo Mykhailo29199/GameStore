@@ -69,6 +69,37 @@ public class TolerantSerializersTests
     }
 
     [Fact]
+    public void DecimalSerializers_ShouldReadMoneyStoredWithAnyNumericType()
+    {
+        Assert.Equal(19.45m, Deserialize(new TolerantNullableDecimalSerializer(), new BsonDouble(19.45)));
+        Assert.Equal(10.50m, Deserialize(new TolerantNullableDecimalSerializer(), new BsonString("10.50")));
+        Assert.Equal(18m, Deserialize(new TolerantNullableDecimalSerializer(), new BsonInt32(18)));
+        Assert.Equal(7.5m, Deserialize(new TolerantNullableDecimalSerializer(), new BsonDecimal128(7.5m)));
+        Assert.Null(Deserialize(new TolerantNullableDecimalSerializer(), new BsonString("free")));
+        Assert.Null(Deserialize(new TolerantNullableDecimalSerializer(), new BsonDouble(double.MaxValue)));
+        Assert.Equal(0, Deserialize(new TolerantDecimalSerializer(), BsonNull.Value));
+    }
+
+    [Fact]
+    public void DecimalSerializer_ShouldWriteTheDoubleNorthwindStores()
+    {
+        // Arrange
+        var document = new BsonDocument();
+
+        // Act
+        using (var writer = new BsonDocumentWriter(document))
+        {
+            writer.WriteStartDocument();
+            writer.WriteName("value");
+            new TolerantDecimalSerializer().Serialize(BsonSerializationContext.CreateRoot(writer), 19.45m);
+            writer.WriteEndDocument();
+        }
+
+        // Assert
+        Assert.Equal(new BsonDouble(19.45), document["value"]);
+    }
+
+    [Fact]
     public void NullableDateTimeSerializer_ShouldReadDatesAndDateStrings()
     {
         var serializer = new TolerantNullableDateTimeSerializer();

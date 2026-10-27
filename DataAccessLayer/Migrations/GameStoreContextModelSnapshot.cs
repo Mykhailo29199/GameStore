@@ -274,8 +274,9 @@ namespace DataAccessLayer.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
 
-                    b.Property<double>("UnitPrice")
-                        .HasColumnType("float")
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)")
                         .HasColumnName("Price");
 
                     b.HasKey("OrderId", "ProductId");
@@ -294,11 +295,9 @@ namespace DataAccessLayer.Migrations
                     b.Property<Guid>("CustomerId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Field14")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<double?>("Freight")
-                        .HasColumnType("float");
+                    b.Property<decimal?>("Freight")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime?>("OrderDate")
                         .HasColumnType("datetime2");
@@ -428,8 +427,9 @@ namespace DataAccessLayer.Migrations
                     b.Property<Guid>("SupplierID")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<double>("UnitPrice")
-                        .HasColumnType("float");
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("UnitsInStock")
                         .HasColumnType("int");

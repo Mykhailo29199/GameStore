@@ -50,6 +50,8 @@ public static class NorthwindMongoConfiguration
             [typeof(int?)] = new TolerantNullableInt32Serializer(),
             [typeof(double)] = new TolerantDoubleSerializer(),
             [typeof(double?)] = new TolerantNullableDoubleSerializer(),
+            [typeof(decimal)] = new TolerantDecimalSerializer(),
+            [typeof(decimal?)] = new TolerantNullableDecimalSerializer(),
             [typeof(DateTime)] = new TolerantDateTimeSerializer(),
             [typeof(DateTime?)] = new TolerantNullableDateTimeSerializer(),
         };

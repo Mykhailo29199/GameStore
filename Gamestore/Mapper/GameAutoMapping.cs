@@ -4,6 +4,7 @@ using BusinessLogicLayer.Models.CommentModels;
 using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Models.OrderModels;
 using BusinessLogicLayer.Models.Payment;
+using BusinessLogicLayer.Services;
 using DataAccessLayer.Entities.GameStoreSQLEntities;
 using DataAccessLayer.Mongo;
 using GameStore.Shared.Enums;
@@ -183,10 +184,7 @@ public class GameAutoMapping : Profile
         CreateMap<OrderGameModel, OrderGameDTO>()
         .ForMember(
             dest => dest.Price,
-            opt => opt.MapFrom(src =>
-                src.Quantity *
-                src.Price *
-                (1 - ((src.Discount ?? 0) / 100.0))));
+            opt => opt.MapFrom(src => OrderTotalCalculator.LineTotal(src.Price, src.Quantity, src.Discount)));
 
         // Request
         CreateMap<PaymentRequestDTO, PaymentRequestModel>()

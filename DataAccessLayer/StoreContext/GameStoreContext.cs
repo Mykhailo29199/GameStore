@@ -5,6 +5,10 @@ namespace DataAccessLayer.StoreContext;
 
 public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbContext(options)
 {
+    // Money is stored as decimal(18, 2), so prices and totals have no floating-point rounding errors.
+    private const int MoneyPrecision = 18;
+    private const int MoneyScale = 2;
+
     public DbSet<ProductEntity> Products { get; set; }
 
     public DbSet<ProductCategoryEntity> ProductCategories { get; set; }
@@ -66,10 +70,8 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
                 .IsRequired()
                 .HasMaxLength(250);
 
-            // ВАЖЛИВО: Якщо в коді UnitPrice це double, використовуємо float в SQL.
-            // Якщо хочете decimal(18,2) в SQL, змініть тип у ProductBaseEntity на decimal.
             entity.Property(p => p.UnitPrice)
-                .HasColumnType("float")
+                .HasPrecision(MoneyPrecision, MoneyScale)
                 .IsRequired();
 
             // 3. Налаштування властивостей ProductEntity
@@ -183,6 +185,9 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
         {
             entity.HasKey(o => o.Id);
 
+            entity.Property(o => o.Freight)
+                .HasPrecision(MoneyPrecision, MoneyScale);
+
             entity.Property(o => o.Status);
 
             entity.HasMany(o => o.OrderDetails)
@@ -199,6 +204,7 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
 
             entity.Property(og => og.UnitPrice)
                 .HasColumnName("Price") // Вказуємо назву колонки "Price" як у SQL
+                .HasPrecision(MoneyPrecision, MoneyScale)
                 .IsRequired();
 
             entity.Property(og => og.Discount)

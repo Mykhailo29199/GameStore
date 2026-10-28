@@ -81,7 +81,11 @@ public class MongoDBGenericRepository<T>(
         var oldDocument = oldVersion.ToBsonDocument();
         var newVersion = await Collection.Find(IdFilter(oldDocument[IdField])).FirstOrDefaultAsync();
 
-        await LogAsync(EntityChange.UpdateAction, oldDocument, newVersion?.ToBsonDocument());
+        var change = newVersion is null
+            ? new EntityChange(EntityChange.NorthwindDatabase, EntityChange.UpdateAction, EntityType, oldDocument, null)
+            : EntityChange.Update(EntityChange.NorthwindDatabase, EntityType, oldDocument, newVersion.ToBsonDocument(), [IdField]);
+
+        await changeLogger.LogAsync([change]);
 
         return newVersion;
     }
@@ -157,11 +161,11 @@ public class MongoDBGenericRepository<T>(
 
     private Task LogAsync(string action, BsonDocument? oldVersion, BsonDocument? newVersion)
     {
-        return changeLogger.LogAsync(new EntityChange(
+        return changeLogger.LogAsync([new EntityChange(
             EntityChange.NorthwindDatabase,
             action,
             EntityType,
             oldVersion,
-            newVersion));
+            newVersion)]);
     }
 }

@@ -6,7 +6,7 @@ using MongoDB.Bson;
 namespace DataAccessLayer.Logging;
 
 /// <summary>
-/// Captures every entity change saved to the Game Store SQL database and writes it to the change log.
+/// Captures every entity change saved to the Game Store SQL database and writes the changes of one save to the change log together.
 /// </summary>
 public class EntityChangeLoggingInterceptor(IEntityChangeLogger changeLogger) : SaveChangesInterceptor
 {
@@ -29,7 +29,7 @@ public class EntityChangeLoggingInterceptor(IEntityChangeLogger changeLogger) : 
 
     public override int SavedChanges(SaveChangesCompletedEventData eventData, int result)
     {
-        FlushAsync().GetAwaiter().GetResult();
+        changeLogger.Log(TakePendingChanges());
         return base.SavedChanges(eventData, result);
     }
 
@@ -38,7 +38,7 @@ public class EntityChangeLoggingInterceptor(IEntityChangeLogger changeLogger) : 
         int result,
         CancellationToken cancellationToken = default)
     {
-        await FlushAsync();
+        await changeLogger.LogAsync(TakePendingChanges());
         return await base.SavedChangesAsync(eventData, result, cancellationToken);
     }
 
@@ -94,6 +94,18 @@ public class EntityChangeLoggingInterceptor(IEntityChangeLogger changeLogger) : 
             newVersion);
     }
 
+    private static EntityChange CreateUpdate(EntityEntry entry)
+    {
+        var keyFields = entry.Metadata.FindPrimaryKey()?.Properties.Select(p => p.Name).ToList() ?? [];
+
+        return EntityChange.Update(
+            EntityChange.GameStoreDatabase,
+            entry.Metadata.ClrType.Name,
+            ToDocument(entry.OriginalValues),
+            ToDocument(entry.CurrentValues),
+            keyFields);
+    }
+
     private void CaptureChanges(DbContext? context)
     {
         if (context is null)
@@ -106,7 +118,7 @@ public class EntityChangeLoggingInterceptor(IEntityChangeLogger changeLogger) : 
             var change = entry.State switch
             {
                 EntityState.Added => CreateChange(entry, EntityChange.CreateAction, null, ToDocument(entry.CurrentValues)),
-                EntityState.Modified => CreateChange(entry, EntityChange.UpdateAction, ToDocument(entry.OriginalValues), ToDocument(entry.CurrentValues)),
+                EntityState.Modified => CreateUpdate(entry),
                 EntityState.Deleted => CreateChange(entry, EntityChange.DeleteAction, ToDocument(entry.OriginalValues), null),
                 EntityState.Detached or EntityState.Unchanged => null,
                 _ => null,
@@ -119,14 +131,11 @@ public class EntityChangeLoggingInterceptor(IEntityChangeLogger changeLogger) : 
         }
     }
 
-    private async Task FlushAsync()
+    private List<EntityChange> TakePendingChanges()
     {
         var changes = _pendingChanges.ToList();
         _pendingChanges.Clear();
 
-        foreach (var change in changes)
-        {
-            await changeLogger.LogAsync(change);
-        }
+        return changes;
     }
 }

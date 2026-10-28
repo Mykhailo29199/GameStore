@@ -24,8 +24,8 @@ public partial class ProductCatalog(
 
     public async Task<List<ProductEntity>> GetAllAsync()
     {
-        var sqlProducts = await sqlUnitOfWork.GameRepository.GetQueryable().AsNoTracking().ToListAsync();
-        var sqlProductsIncludingDeleted = await sqlUnitOfWork.GameRepository.GetAllIncludingDeleted().ToListAsync();
+        var sqlProducts = await sqlUnitOfWork.ProductRepository.GetQueryable().AsNoTracking().ToListAsync();
+        var sqlProductsIncludingDeleted = await sqlUnitOfWork.ProductRepository.GetAllIncludingDeleted().ToListAsync();
         var northwindProducts = await mongoUnitOfWork.ProductRepository.GetAllAsync();
 
         var northwindOnly = Resolve(
@@ -50,7 +50,7 @@ public partial class ProductCatalog(
 
         var documents = await mongoUnitOfWork.ProductRepository.FindAsync(GetNorthwindConditions(filter, suppliers, categories));
 
-        var (sqlProducts, related) = await NorthwindResolver.LoadRelatedAsync<ProductEntity, Northwind.ProductEntity>(
+        var (sqlProducts, related) = await NorthwindResolver.LoadRelatedAsync(
             documents,
             p => p.InternalId,
             p => p.Key,
@@ -67,14 +67,14 @@ public partial class ProductCatalog(
 
     public async Task<ProductEntity?> GetByKeyAsync(string key)
     {
-        var sqlProduct = await sqlUnitOfWork.GameRepository.GetQueryable().FirstOrDefaultAsync(p => p.Key == key);
+        var sqlProduct = await sqlUnitOfWork.ProductRepository.GetQueryable().FirstOrDefaultAsync(p => p.Key == key);
 
         return sqlProduct ?? await GetNorthwindOnlyAsync(await mongoUnitOfWork.ProductRepository.GetByKeyAsync(key));
     }
 
     public async Task<ProductEntity?> GetByIdAsync(Guid id)
     {
-        var sqlProduct = await sqlUnitOfWork.GameRepository.GetFullGame(id);
+        var sqlProduct = await sqlUnitOfWork.ProductRepository.GetFullGame(id);
 
         if (sqlProduct is not null || !MongoIdConverter.TryGetObjectId(id, out var objectId))
         {
@@ -86,7 +86,7 @@ public partial class ProductCatalog(
 
     public async Task<ProductEntity> EnsureInGameStoreAsync(string key)
     {
-        var sqlProduct = await sqlUnitOfWork.GameRepository.GetQueryable().FirstOrDefaultAsync(p => p.Key == key);
+        var sqlProduct = await sqlUnitOfWork.ProductRepository.GetQueryable().FirstOrDefaultAsync(p => p.Key == key);
 
         if (sqlProduct is not null)
         {
@@ -106,7 +106,7 @@ public partial class ProductCatalog(
 
     public async Task<bool> KeyExistsAsync(string key)
     {
-        var existsInGameStore = await sqlUnitOfWork.GameRepository.GetAllIncludingDeleted().AnyAsync(p => p.Key == key);
+        var existsInGameStore = await sqlUnitOfWork.ProductRepository.GetAllIncludingDeleted().AnyAsync(p => p.Key == key);
 
         return existsInGameStore || await mongoUnitOfWork.ProductRepository.GetByKeyAsync(key) is not null;
     }
@@ -121,7 +121,7 @@ public partial class ProductCatalog(
 
     public async Task IncreaseViewsAsync(string key)
     {
-        var sqlProduct = await sqlUnitOfWork.GameRepository.GetGameByKeyAsync(key);
+        var sqlProduct = await sqlUnitOfWork.ProductRepository.GetGameByKeyAsync(key);
 
         if (sqlProduct is not null)
         {
@@ -167,7 +167,7 @@ public partial class ProductCatalog(
             return;
         }
 
-        var sqlKeys = await sqlUnitOfWork.GameRepository.GetAllIncludingDeleted().Select(p => p.Key).ToListAsync();
+        var sqlKeys = await sqlUnitOfWork.ProductRepository.GetAllIncludingDeleted().Select(p => p.Key).ToListAsync();
         var usedKeys = sqlKeys
             .Concat(northwindProducts.Select(p => p.Key))
             .Where(k => !string.IsNullOrWhiteSpace(k))
@@ -309,7 +309,7 @@ public partial class ProductCatalog(
             return null;
         }
 
-        var (sqlProducts, related) = await NorthwindResolver.LoadRelatedAsync<ProductEntity, Northwind.ProductEntity>(
+        var (sqlProducts, related) = await NorthwindResolver.LoadRelatedAsync(
             [document],
             p => p.InternalId,
             p => p.Key,
@@ -333,7 +333,7 @@ public partial class ProductCatalog(
     private async Task<List<ProductEntity>> FindSqlProductsAsync(List<Guid> ids, List<string> keys)
     {
         // Products are matched by game key. The default SQL Server collation ignores case, as the duplicate check does.
-        return await sqlUnitOfWork.GameRepository.GetAllIncludingDeleted()
+        return await sqlUnitOfWork.ProductRepository.GetAllIncludingDeleted()
             .Where(p => ids.Contains(p.Id) || keys.Contains(p.Key.Trim()))
             .ToListAsync();
     }
@@ -376,7 +376,7 @@ public partial class ProductCatalog(
             });
         }
 
-        await sqlUnitOfWork.GameRepository.AddAsync(copy);
+        await sqlUnitOfWork.ProductRepository.AddAsync(copy);
 
         return copy;
     }

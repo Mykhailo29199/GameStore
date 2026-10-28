@@ -27,15 +27,14 @@ public class PlatformServiceTests
     }
 
     [Fact]
-    public async Task CreatePlatformAsync_WhenPlatformTypeExists_ThrowsArgumentException()
+    public async Task CreatePlatformAsync_WhenPlatformTypeExists_ThrowsBadRequestException()
     {
         // Arrange
-        _unitOfWorkMock.Setup(uow => uow.PlatformRepository
-                   .FindAsync(It.IsAny<Expression<Func<PlatformEntity, bool>>>()))
+        _unitOfWorkMock.Setup(uow => uow.PlatformRepository.FindAsync(It.IsAny<Expression<Func<PlatformEntity, bool>>>()))
             .ReturnsAsync(new List<PlatformEntity> { ExistingPlatform1 });
 
         // Act
-        var exception = await Assert.ThrowsAsync<ArgumentException>(
+        var exception = await Assert.ThrowsAsync<BadRequestException>(
             () => _platformService.CreatePlatformAsync(ExistingPlatform1.Type));
 
         exception.Message.Should().Be($"Platform with type '{ExistingPlatform1.Type}' already exists.");
@@ -50,8 +49,7 @@ public class PlatformServiceTests
         // Arrange
         var newPlatformType = "PlayStation";
 
-        _unitOfWorkMock.Setup(uow => uow.PlatformRepository
-                   .FindAsync(It.IsAny<Expression<Func<PlatformEntity, bool>>>()))
+        _unitOfWorkMock.Setup(uow => uow.PlatformRepository.FindAsync(It.IsAny<Expression<Func<PlatformEntity, bool>>>()))
             .ReturnsAsync(new List<PlatformEntity>());
 
         _mapperMock.Setup(m => m.Map<PlatformEntity>(It.IsAny<PlatformModel>()))
@@ -257,7 +255,7 @@ public class PlatformServiceTests
         _unitOfWorkMock.Setup(uow => uow.PlatformRepository.GetByIdAsync(ExistingPlatformId))
             .ReturnsAsync(ExistingPlatform1);
 
-        _unitOfWorkMock.Setup(uow => uow.GamePlatformRepository.GetGamesByPlatformIdAsync(ExistingPlatform1.Id))
+        _unitOfWorkMock.Setup(uow => uow.ProductPlatformRepository.GetGamesByPlatformIdAsync(ExistingPlatform1.Id))
             .ReturnsAsync(gameEntities);
 
         _mapperMock.Setup(m => m.Map<List<GameModel>>(gameEntities))

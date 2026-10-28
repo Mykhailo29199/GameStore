@@ -39,6 +39,22 @@ public class GenreServiceTests
 
     #region CreateGenreAsync
     [Fact]
+    public async Task CreateGenreAsync_WhenGenreIsItsOwnParent_ShouldThrowABadRequestException()
+    {
+        // Arrange
+        var genre = ExistingGenres.First();
+        GenreModel genreModel = CreateGenreModel(id: genre.Id, name: "New genre", parentGenreId: genre.Id);
+
+        _categoryCatalogMock.Setup(x => x.GetByIdAsync(genre.Id)).ReturnsAsync(genre);
+
+        // Act
+        var exception = await Assert.ThrowsAsync<BadRequestException>(() => _genreService.CreateGenreAsync(genreModel));
+
+        // Assert
+        Assert.Equal("A genre cannot be its own parent.", exception.Message);
+    }
+
+    [Fact]
     public async Task CreateGenreAsync_WhenParentGenreDoesNotExist_ShouldThrowANotFoundException()
     {
         // Arrange
@@ -106,7 +122,7 @@ public class GenreServiceTests
             Times.Once);
 
         _unitOfWorkMock.Verify(
-            u => u.GenreRepository.AddAsync(genreEntity),
+            u => u.CategoryRepository.AddAsync(genreEntity),
             Times.Once);
 
         _unitOfWorkMock.Verify(
@@ -231,7 +247,7 @@ public class GenreServiceTests
             .ReturnsAsync(ExistingGenre1);
 
         _unitOfWorkMock
-            .Setup(x => x.GenreRepository.FindAsync(
+            .Setup(x => x.CategoryRepository.FindAsync(
                 It.IsAny<Expression<Func<CategoryEntity, bool>>>()))
             .ReturnsAsync(genreEntities);
 
@@ -368,7 +384,7 @@ public class GenreServiceTests
             .ReturnsAsync(false);
 
         _unitOfWorkMock
-            .Setup(x => x.GenreRepository.GetWithSubGenresAsync(ExistingGenreId))
+            .Setup(x => x.CategoryRepository.GetWithSubGenresAsync(ExistingGenreId))
             .ReturnsAsync(ExistingGenre1);
 
         // Act
@@ -376,7 +392,7 @@ public class GenreServiceTests
 
         // Assert
         _unitOfWorkMock.Verify(
-            x => x.GenreRepository.DeleteAsync(ExistingGenre1),
+            x => x.CategoryRepository.DeleteAsync(ExistingGenre1),
             Times.Once);
 
         _unitOfWorkMock.Verify(
@@ -409,7 +425,7 @@ public class GenreServiceTests
         Assert.True(gameStoreCopy.IsDeleted);
 
         _unitOfWorkMock.Verify(
-            x => x.GenreRepository.DeleteAsync(It.IsAny<CategoryEntity>()),
+            x => x.CategoryRepository.DeleteAsync(It.IsAny<CategoryEntity>()),
             Times.Never);
 
         _unitOfWorkMock.Verify(

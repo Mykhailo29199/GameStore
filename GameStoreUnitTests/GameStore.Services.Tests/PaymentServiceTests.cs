@@ -25,7 +25,7 @@ public class PaymentServiceTests
         var httpClientFactoryMock = new Mock<IHttpClientFactory>();
         httpClientFactoryMock.Setup(x => x.CreateClient(It.IsAny<string>())).Returns(new HttpClient());
 
-        _unitOfWorkMock.Setup(x => x.GameRepository.GetByIdAsync(_game.Id)).ReturnsAsync(_game);
+        _unitOfWorkMock.Setup(x => x.ProductRepository.GetByIdAsync(_game.Id)).ReturnsAsync(_game);
 
         _paymentService = new PaymentService(
             httpClientFactoryMock.Object,

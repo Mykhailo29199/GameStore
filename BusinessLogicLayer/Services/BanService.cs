@@ -17,9 +17,9 @@ public class BanService(ISqlServerUnitOfWork unitOfWork, IMapper mapper) : IBanS
     public List<string> GetBanDurations()
     {
         return Enum.GetValues(typeof(BanDurationOption))
-         .Cast<BanDurationOption>()
-         .Select(d => d.GetDescription())
-         .ToList();
+            .Cast<BanDurationOption>()
+            .Select(d => d.GetDescription())
+            .ToList();
     }
 
     public async Task BanUserAsync(BanModel model)

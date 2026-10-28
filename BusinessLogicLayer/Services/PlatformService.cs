@@ -21,7 +21,7 @@ public class PlatformService(ISqlServerUnitOfWork unitOfWork, IMapper mapper) : 
 
         if (existType is not null)
         {
-            throw new ArgumentException($"Platform with type '{platformType}' already exists.");
+            throw new BadRequestException($"Platform with type '{platformType}' already exists.");
         }
 
         var platformModel = new PlatformModel
@@ -81,7 +81,7 @@ public class PlatformService(ISqlServerUnitOfWork unitOfWork, IMapper mapper) : 
         _ = await _unitOfWork.PlatformRepository.GetByIdAsync(platformId)
             ?? throw new NotFoundException($"Platform with id '{platformId}' does not exist.");
 
-        var gameEntities = await _unitOfWork.GamePlatformRepository.GetGamesByPlatformIdAsync(platformId);
+        var gameEntities = await _unitOfWork.ProductPlatformRepository.GetGamesByPlatformIdAsync(platformId);
 
         var gameModels = _mapper.Map<List<GameModel>>(gameEntities);
 

@@ -42,7 +42,7 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
 
     public DbSet<ShipperEntity> Shippers { get; set; }
 
-    // 1. ПРАВИЛЬНЕ МІСЦЕ ДЛЯ ПРИГЛУШЕННЯ ЛОГІВ
+    // The Northwind int ids kept next to the Guid keys look like foreign keys of another type, so EF Core's warning about them is ignored.
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         base.OnConfiguring(optionsBuilder);
@@ -58,10 +58,8 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
         // ===================== ProductEntity =====================
         modelBuilder.Entity<ProductEntity>(entity =>
         {
-            // 1. Первинний ключ
             entity.HasKey(p => p.Id);
 
-            // 2. Налаштування властивостей базового класу (ProductBaseEntity)
             entity.Property(p => p.ProductName)
                 .IsRequired()
                 .HasMaxLength(200);
@@ -74,11 +72,9 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
                 .HasPrecision(MoneyPrecision, MoneyScale)
                 .IsRequired();
 
-            // 3. Налаштування властивостей ProductEntity
             entity.Property(p => p.Description)
                 .HasMaxLength(3000);
 
-            // Discount тепер double (0.2), тому в SQL це float
             entity.Property(p => p.Discount)
                 .HasColumnType("float")
                 .HasDefaultValue(0.0);
@@ -86,37 +82,32 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
             entity.Property(p => p.CreatedAt)
                 .HasDefaultValueSql("GETUTCDATE()");
 
-            // 5. Зв'язок Many-to-Many з Жанрами (Явний мапінг)
-            // Використовуємо .WithOne(), щоб уникнути конфлікту імен "GameGenres"
+            // Genres and platforms are linked through explicit join entities.
             entity.HasMany(p => p.ProductCategories)
                 .WithOne(gg => gg.Product)
                 .HasForeignKey(gg => gg.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // 6. Зв'язок Many-to-Many з Платформами (Явний мапінг)
             entity.HasMany(p => p.ProductPlatforms)
                 .WithOne(gp => gp.Product)
                 .HasForeignKey(gp => gp.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // 7. Зв'язок 1:1 (One-to-One) з ProductFile (файлом гри)
             entity.HasOne(p => p.ProductFile)
                 .WithOne(pf => pf.Product)
                 .HasForeignKey<ProductFileEntity>(pf => pf.ProductId);
 
-            // 8. Зв'язок 1:N (One-to-Many) з Коментарями
             entity.HasMany(p => p.Comments)
                 .WithOne(c => c.Product)
                 .HasForeignKey(c => c.ProductId);
 
-            // 9. Індекси
             entity.HasIndex(p => p.Key)
                 .IsUnique();
 
             entity.HasQueryFilter(p => !p.IsDeleted);
         });
 
-        // ===================== GameFileEntity =====================
+        // ===================== ProductFileEntity =====================
         modelBuilder.Entity<ProductFileEntity>(entity =>
         {
             entity.HasKey(f => f.ProductId);
@@ -128,28 +119,28 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
             entity.HasKey(gg => new { gg.ProductId, gg.CategoryId });
 
             entity.HasOne(gg => gg.Category)
-        .WithMany(c => c.ProductCategories) // Тепер EF чітко бачить цю колекцію
-        .HasForeignKey(gg => gg.CategoryId)
-        .OnDelete(DeleteBehavior.Cascade);
+                .WithMany(c => c.ProductCategories)
+                .HasForeignKey(gg => gg.CategoryId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(gg => gg.Product)
-        .WithMany(p => p.ProductCategories)
-        .HasForeignKey(gg => gg.ProductId)
-        .OnDelete(DeleteBehavior.Cascade);
+                .WithMany(p => p.ProductCategories)
+                .HasForeignKey(gg => gg.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // ===================== GamePlatformEntity =====================
+        // ===================== ProductPlatformEntity =====================
         modelBuilder.Entity<ProductPlatformEntity>(entity =>
         {
             entity.HasKey(gp => new { gp.ProductId, gp.PlatformId });
 
             entity.HasOne(gp => gp.Product)
-                .WithMany(g => g.ProductPlatforms) // Вказуємо колекцію в ProductEntity
+                .WithMany(g => g.ProductPlatforms)
                 .HasForeignKey(gp => gp.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(gp => gp.Platform)
-                .WithMany(p => p.ProductPlatforms) // Вказуємо колекцію в PlatformEntity
+                .WithMany(p => p.ProductPlatforms)
                 .HasForeignKey(gp => gp.PlatformId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
@@ -157,7 +148,7 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
         // ===================== CategoryEntity =====================
         modelBuilder.Entity<CategoryEntity>(entity =>
         {
-            entity.ToTable("Categories"); // ГАРАНТІЯ, що він не шукатиме [Category]
+            entity.ToTable("Categories");
             entity.HasKey(g => g.Id);
             entity.HasQueryFilter(g => !g.IsDeleted);
 
@@ -199,18 +190,18 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
         // ===================== OrderDetailsEntity =====================
         modelBuilder.Entity<OrderDetailsEntity>(entity =>
         {
-            entity.ToTable("OrderDetails"); // Вказуємо назву таблиці з вашої бази
+            entity.ToTable("OrderDetails");
             entity.HasKey(og => new { og.OrderId, og.ProductId });
 
             entity.Property(og => og.UnitPrice)
-                .HasColumnName("Price") // Вказуємо назву колонки "Price" як у SQL
+                .HasColumnName("Price")
                 .HasPrecision(MoneyPrecision, MoneyScale)
                 .IsRequired();
 
             entity.Property(og => og.Discount)
                 .HasColumnName("Discount")
                 .IsRequired(false)
-                .HasDefaultValue(0.0); // Якщо в базі NULL, EF підставить 0.0
+                .HasDefaultValue(0.0);
 
             entity.HasOne(od => od.Order)
                 .WithMany(o => o.OrderDetails)
@@ -317,10 +308,8 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
         // ===================== EmployeeTerritoryEntity =====================
         modelBuilder.Entity<EmployeeTerritoryEntity>(entity =>
         {
-            // Композитний ключ
             entity.HasKey(et => new { et.EmployeeGuidId, et.TerritoryGuidId });
 
-            // Налаштування зв'язків (Many-to-Many)
             entity.HasOne(et => et.Employee)
                 .WithMany(e => e.EmployeeTerritories)
                 .HasForeignKey(et => et.EmployeeGuidId)

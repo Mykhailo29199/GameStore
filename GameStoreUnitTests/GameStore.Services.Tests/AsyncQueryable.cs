@@ -52,14 +52,14 @@ internal sealed class AsyncQueryable<T> : EnumerableQuery<T>, IAsyncEnumerable<T
             var resultType = typeof(TResult).GetGenericArguments()[0];
 
             var result = typeof(IQueryProvider)
-                .GetMethod(nameof(IQueryProvider.Execute), 1, [typeof(Expression)])!
+                .GetMethod(nameof(IQueryProvider.Execute), 1, [typeof(Expression)])
                 .MakeGenericMethod(resultType)
                 .Invoke(inner, [expression]);
 
             return (TResult)typeof(Task)
-                .GetMethod(nameof(Task.FromResult))!
+                .GetMethod(nameof(Task.FromResult))
                 .MakeGenericMethod(resultType)
-                .Invoke(null, [result])!;
+                .Invoke(null, [result]);
         }
     }
 

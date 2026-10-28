@@ -107,7 +107,7 @@ public class SupplierCatalog(ISqlServerUnitOfWork sqlUnitOfWork, IMongoDBUnitOfW
 
     private async Task<NorthwindResolution<SupplierEntity>> ResolveSubsetAsync(List<Northwind.SupplierEntity> documents)
     {
-        var (sqlSuppliers, related) = await NorthwindResolver.LoadRelatedAsync<SupplierEntity, Northwind.SupplierEntity>(
+        var (sqlSuppliers, related) = await NorthwindResolver.LoadRelatedAsync(
             documents,
             s => s.InternalId,
             s => s.CompanyName,

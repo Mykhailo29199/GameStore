@@ -101,9 +101,9 @@ builder.Logging.ClearProviders();
 
 builder.Logging.AddProvider(new FileLoggerProvider());
 
-// 1. Отримуємо назву бази та рядок підключення з appsettings.json
+// Northwind MongoDB connection; the database name can be overridden for temporary databases.
 var mongoConnectionString = builder.Configuration.GetConnectionString("MongoDbConnection");
-var mongoDatabaseName = builder.Configuration.GetConnectionString("MongoDatabaseName"); // Додайте цей ключ в appsettings
+var mongoDatabaseName = builder.Configuration.GetConnectionString("MongoDatabaseName");
 
 // Northwind data is damaged, so tolerant serialization must be configured before the first query.
 NorthwindMongoConfiguration.Configure();
@@ -135,13 +135,13 @@ builder.Services.AddDbContext<GameStoreContext>((sp, options) =>
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
-     {
-         policy
-             .AllowAnyOrigin()
-             .AllowAnyMethod()
-             .AllowAnyHeader()
-             .WithExposedHeaders("x-total-numbers-of-games");
-     });
+    {
+        policy
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .WithExposedHeaders("x-total-numbers-of-games");
+    });
 });
 
 builder.Services.AddMemoryCache();

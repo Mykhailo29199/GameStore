@@ -9,16 +9,16 @@ public class SqlServerUnitOfWork : ISqlServerUnitOfWork
 {
     private bool _disposed;
 
-    private IProductSqlRepository? _gameRepository;
+    private IProductSqlRepository? _productRepository;
 
     private IPlatformSqlRepository? _platformRepository;
-    private ICategorySqlRepository? _genreRepository;
-    private IProductCategorySqlRepository? _gameGenreRepository;
-    private IProductPlatformSqlRepository? _gamePlatformRepository;
-    private IProductFileSqlRepository? _gameFileRepository;
+    private ICategorySqlRepository? _categoryRepository;
+    private IProductCategorySqlRepository? _productCategoryRepository;
+    private IProductPlatformSqlRepository? _productPlatformRepository;
+    private IProductFileSqlRepository? _productFileRepository;
     private ISupplierSqlRepository? _supplierRepository;
     private IOrderSqlRepository? _orderRepository;
-    private IOrderDetailsSqlRepository? _orderGameRepository;
+    private IOrderDetailsSqlRepository? _orderDetailsRepository;
     private ICommentSqlRepository? _commentRepository;
     private IBanSqlRepository? _banRepository;
 
@@ -29,24 +29,23 @@ public class SqlServerUnitOfWork : ISqlServerUnitOfWork
 
     public GameStoreContext Context { get; }
 
-    public IProductSqlRepository GameRepository =>
-        _gameRepository ??= new ProductSqlRepository(Context);
+    public IProductSqlRepository ProductRepository =>
+        _productRepository ??= new ProductSqlRepository(Context);
 
-    // Замініть авто-властивість на стрілочний вираз з ініціалізацією:
     public IPlatformSqlRepository PlatformRepository =>
         _platformRepository ??= new PlatformSqlRepository(Context);
 
-    public ICategorySqlRepository GenreRepository =>
-        _genreRepository ??= new CategorySqlRepository(Context);
+    public ICategorySqlRepository CategoryRepository =>
+        _categoryRepository ??= new CategorySqlRepository(Context);
 
-    public IProductCategorySqlRepository GameGenreRepository =>
-        _gameGenreRepository ??= new ProductCategorySqlRepository(Context);
+    public IProductCategorySqlRepository ProductCategoryRepository =>
+        _productCategoryRepository ??= new ProductCategorySqlRepository(Context);
 
-    public IProductPlatformSqlRepository GamePlatformRepository =>
-        _gamePlatformRepository ??= new ProductPlatformSqlRepository(Context);
+    public IProductPlatformSqlRepository ProductPlatformRepository =>
+        _productPlatformRepository ??= new ProductPlatformSqlRepository(Context);
 
-    public IProductFileSqlRepository GameFileRepository =>
-        _gameFileRepository ??= new ProductFileSqlRepository(Context);
+    public IProductFileSqlRepository ProductFileRepository =>
+        _productFileRepository ??= new ProductFileSqlRepository(Context);
 
     public ISupplierSqlRepository SupplierRepository =>
         _supplierRepository ??= new SupplierSqlRepository(Context);
@@ -54,8 +53,8 @@ public class SqlServerUnitOfWork : ISqlServerUnitOfWork
     public IOrderSqlRepository OrderRepository =>
         _orderRepository ??= new OrderSqlRepository(Context);
 
-    public IOrderDetailsSqlRepository OrderGameRepository =>
-        _orderGameRepository ??= new OrderDetailsSqlRepository(Context);
+    public IOrderDetailsSqlRepository OrderDetailsRepository =>
+        _orderDetailsRepository ??= new OrderDetailsSqlRepository(Context);
 
     public ICommentSqlRepository CommentRepository =>
         _commentRepository ??= new CommentSqlRepository(Context);

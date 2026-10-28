@@ -105,9 +105,9 @@ public class OrderService(
             throw new BadRequestException("Guest cart not supported in this implementation");
         }
 
-        var game = await _sqlUnitOfWork.GameRepository.GetGameByKeyAsync(gameKey) ?? throw new NotFoundException("Game not found");
+        var game = await _sqlUnitOfWork.ProductRepository.GetGameByKeyAsync(gameKey) ?? throw new NotFoundException("Game not found");
         var order = await _sqlUnitOfWork.OrderRepository.GetActiveCartAsync(userId) ?? throw new NotFoundException("Active cart not found");
-        var orderGame = await _sqlUnitOfWork.OrderGameRepository.GetOrderGameAsync(order.Id, game.Id) ?? throw new NotFoundException("Game not found in order");
+        var orderGame = await _sqlUnitOfWork.OrderDetailsRepository.GetOrderGameAsync(order.Id, game.Id) ?? throw new NotFoundException("Game not found in order");
 
         await DecreaseGameQuantityAsync(orderGame, order);
     }
@@ -195,7 +195,7 @@ public class OrderService(
 
     private async Task IncreaseGameQuantityAsync(OrderEntity order, ProductEntity game)
     {
-        var orderGame = await _sqlUnitOfWork.OrderGameRepository.GetOrderGameAsync(order.Id, game.Id);
+        var orderGame = await _sqlUnitOfWork.OrderDetailsRepository.GetOrderGameAsync(order.Id, game.Id);
 
         if (orderGame != null)
         {
@@ -216,7 +216,7 @@ public class OrderService(
                 Quantity = 1,
                 Discount = game.Discount,
             };
-            await _sqlUnitOfWork.OrderGameRepository.AddAsync(orderGame);
+            await _sqlUnitOfWork.OrderDetailsRepository.AddAsync(orderGame);
         }
     }
 
@@ -228,9 +228,9 @@ public class OrderService(
         }
         else
         {
-            await _sqlUnitOfWork.OrderGameRepository.DeleteAsync(orderGame);
+            await _sqlUnitOfWork.OrderDetailsRepository.DeleteAsync(orderGame);
 
-            var remainingGames = await _sqlUnitOfWork.OrderGameRepository.GetOrderGamesAsync(order.Id);
+            var remainingGames = await _sqlUnitOfWork.OrderDetailsRepository.GetOrderGamesAsync(order.Id);
             if (remainingGames.Count == 0)
             {
                 await _sqlUnitOfWork.OrderRepository.DeleteAsync(order);

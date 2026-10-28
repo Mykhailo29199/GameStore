@@ -34,29 +34,27 @@ public class PaymentService : IPaymentService
 
     public IEnumerable<PaymentMethodResponseModel> GetPaymentMethods()
     {
-        var paymentMethods = new List<PaymentMethodResponseModel>
-    {
-        new PaymentMethodResponseModel
-        {
-            ImageUrl = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
-            Title = "Bank",
-            Description = "Payment via bank account. You will receive a PDF invoice for payment.",
-        },
-        new PaymentMethodResponseModel
-        {
-            ImageUrl = "https://green-api.volia.com/media/6407a7b23eb69_ibox.jpg",
-            Title = "IBox terminal",
-            Description = "Payment via the IBox self-service terminal.",
-        },
-        new PaymentMethodResponseModel
-        {
-            ImageUrl = "https://cdn-icons-png.flaticon.com/512/349/349221.png",
-            Title = "Visa",
-            Description = "Payment by Visa bank card.",
-        },
-    };
-
-        return paymentMethods;
+        return
+        [
+            new PaymentMethodResponseModel
+            {
+                ImageUrl = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
+                Title = "Bank",
+                Description = "Payment via bank account. You will receive a PDF invoice for payment.",
+            },
+            new PaymentMethodResponseModel
+            {
+                ImageUrl = "https://green-api.volia.com/media/6407a7b23eb69_ibox.jpg",
+                Title = "IBox terminal",
+                Description = "Payment via the IBox self-service terminal.",
+            },
+            new PaymentMethodResponseModel
+            {
+                ImageUrl = "https://cdn-icons-png.flaticon.com/512/349/349221.png",
+                Title = "Visa",
+                Description = "Payment by Visa bank card.",
+            },
+        ];
     }
 
     public async Task<PaymentResponseModel> ProcessPayment(PaymentRequestModel request)
@@ -159,8 +157,8 @@ public class PaymentService : IPaymentService
     // Core infra logic
 
     private async Task<HttpResponseMessage> ExecuteHttpPayment(
-     OrderEntity order,
-     Func<Task<HttpResponseMessage>> httpCall)
+        OrderEntity order,
+        Func<Task<HttpResponseMessage>> httpCall)
     {
         await SetOrderStatusAsync(order, OrderStatus.Checkout);
         var result = await httpCall();
@@ -222,7 +220,7 @@ public class PaymentService : IPaymentService
 
         foreach (var orderDetails in order.OrderDetails)
         {
-            var product = await _unitOfWork.GameRepository.GetByIdAsync(orderDetails.ProductId);
+            var product = await _unitOfWork.ProductRepository.GetByIdAsync(orderDetails.ProductId);
 
             if (product is null)
             {
@@ -252,9 +250,8 @@ public class PaymentService : IPaymentService
 
     private async Task<OrderEntity> GetActiveOrderAsync()
     {
-        return await _unitOfWork.OrderRepository
-                   .GetActiveCartAsync(CustomerStub.StubCustomerId)
-               ?? throw new NotFoundException("Active cart not found");
+        return await _unitOfWork.OrderRepository.GetActiveCartAsync(CustomerStub.StubCustomerId)
+            ?? throw new NotFoundException("Active cart not found");
     }
 
     private static decimal CalculateOrderTotal(OrderEntity order)

@@ -29,58 +29,46 @@ public class GameAutoMapping : Profile
 {
     public GameAutoMapping()
     {
+        // Games
         CreateMap<GameModel, ProductEntity>()
-          .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
-           .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Name))
-                   .ForMember(dest => dest.Key, opt => opt.MapFrom(src => src.Key))
-                   .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
-                   .ForMember(dest => dest.UnitPrice, opt => opt.MapFrom(src => src.Price))
-                   .ForMember(dest => dest.UnitsInStock, opt => opt.MapFrom(src => src.UnitInStock))
-                   .ForMember(dest => dest.Discount, opt => opt.MapFrom(src => src.Discount))
-
-                   .ForMember(dest => dest.SupplierID, opt => opt.MapFrom(src => src.Publisher))
-                   .ForMember(dest => dest.ProductCategories, opt => opt.MapFrom(src =>
-               src.Genres.Select(gid => new ProductCategoryEntity { CategoryId = gid })))
-               .ForMember(dest => dest.ProductPlatforms, opt => opt.MapFrom(src =>
-               src.Platforms.Select(pid => new ProductPlatformEntity { PlatformId = pid })))
-               .ForMember(dest => dest.Supplier, opt => opt.Ignore());
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
+            .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Name))
+            .ForMember(dest => dest.Key, opt => opt.MapFrom(src => src.Key))
+            .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
+            .ForMember(dest => dest.UnitPrice, opt => opt.MapFrom(src => src.Price))
+            .ForMember(dest => dest.UnitsInStock, opt => opt.MapFrom(src => src.UnitInStock))
+            .ForMember(dest => dest.Discount, opt => opt.MapFrom(src => src.Discount))
+            .ForMember(dest => dest.SupplierID, opt => opt.MapFrom(src => src.Publisher))
+            .ForMember(dest => dest.ProductCategories, opt => opt.MapFrom(src =>
+                src.Genres.Select(gid => new ProductCategoryEntity { CategoryId = gid })))
+            .ForMember(dest => dest.ProductPlatforms, opt => opt.MapFrom(src =>
+                src.Platforms.Select(pid => new ProductPlatformEntity { PlatformId = pid })))
+            .ForMember(dest => dest.Supplier, opt => opt.Ignore());
 
         CreateMap<ProductEntity, GameModel>()
-     .ForMember(
-         dest => dest.Name,
-         opt => opt.MapFrom(src => src.ProductName))
-     .ForMember(
-         dest => dest.Price,
-         opt => opt.MapFrom(src => src.UnitPrice))
-     .ForMember(
-         dest => dest.UnitInStock,
-         opt => opt.MapFrom(src => src.UnitsInStock))
-     .ForMember(
-         dest => dest.Genres,
-         opt => opt.MapFrom(src => src.ProductCategories.Select(pc => pc.CategoryId)))
-     .ForMember(
-         dest => dest.Platforms,
-         opt => opt.MapFrom(src => src.ProductPlatforms.Select(pp => pp.PlatformId)))
-     .ForMember(
-         dest => dest.Publisher,
-         opt => opt.MapFrom(src => src.SupplierID));
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.ProductName))
+            .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.UnitPrice))
+            .ForMember(dest => dest.UnitInStock, opt => opt.MapFrom(src => src.UnitsInStock))
+            .ForMember(dest => dest.Genres, opt => opt.MapFrom(src => src.ProductCategories.Select(pc => pc.CategoryId)))
+            .ForMember(dest => dest.Platforms, opt => opt.MapFrom(src => src.ProductPlatforms.Select(pp => pp.PlatformId)))
+            .ForMember(dest => dest.Publisher, opt => opt.MapFrom(src => src.SupplierID));
 
         CreateMap<GameWithIdDTO, GameModel>()
             .IncludeBase<GameDTO, GameModel>()
             .ReverseMap();
 
         CreateMap<UpdateGameDTO, GameModel>()
-     .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Game.Id))
-     .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Game.Name))
-     .ForMember(dest => dest.Key, opt => opt.MapFrom(src => src.Game.Key))
-     .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Game.Description))
-     .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.Game.Price))
-     .ForMember(dest => dest.UnitInStock, opt => opt.MapFrom(src => src.Game.UnitInStock))
-     .ForMember(dest => dest.Discount, opt => opt.MapFrom(src => src.Game.Discount))
-     .ForMember(dest => dest.Genres, opt => opt.MapFrom(src => src.Genres))
-     .ForMember(dest => dest.Platforms, opt => opt.MapFrom(src => src.Platforms))
-     .ForMember(dest => dest.Publisher, opt => opt.MapFrom(src => src.Publisher))
-     .ReverseMap();
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Game.Id))
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Game.Name))
+            .ForMember(dest => dest.Key, opt => opt.MapFrom(src => src.Game.Key))
+            .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Game.Description))
+            .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.Game.Price))
+            .ForMember(dest => dest.UnitInStock, opt => opt.MapFrom(src => src.Game.UnitInStock))
+            .ForMember(dest => dest.Discount, opt => opt.MapFrom(src => src.Game.Discount))
+            .ForMember(dest => dest.Genres, opt => opt.MapFrom(src => src.Genres))
+            .ForMember(dest => dest.Platforms, opt => opt.MapFrom(src => src.Platforms))
+            .ForMember(dest => dest.Publisher, opt => opt.MapFrom(src => src.Publisher))
+            .ReverseMap();
 
         CreateMap<CreateGameDTO, GameModel>()
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Game.Name))
@@ -92,11 +80,13 @@ public class GameAutoMapping : Profile
             .ReverseMap();
 
         CreateMap<GameDTO, GameModel>()
-                .ReverseMap();
+            .ReverseMap();
 
+        // Genres
         CreateMap<CreateGenreDTO, GenreModel>()
-    .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Genre.Name))
-    .ForMember(dest => dest.ParentGenreId, opt => opt.MapFrom(src => src.Genre.Parent)).ReverseMap();
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Genre.Name))
+            .ForMember(dest => dest.ParentGenreId, opt => opt.MapFrom(src => src.Genre.Parent))
+            .ReverseMap();
 
         CreateMap<GenreNameAndParentGenreIdDTO, GenreModel>().ReverseMap();
 
@@ -110,33 +100,40 @@ public class GameAutoMapping : Profile
         CreateMap<GenreDTO, GenreModel>().ReverseMap();
 
         CreateMap<FullGenreDTO, GenreModel>()
-     .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
-     .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
-     .ForMember(dest => dest.ParentGenreId, opt => opt.MapFrom(src => src.Parent))
-     .ReverseMap();
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
+            .ForMember(dest => dest.ParentGenreId, opt => opt.MapFrom(src => src.Parent))
+            .ReverseMap();
 
         CreateMap<UpdateGenreDTO, GenreModel>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Genre.Id))
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Genre.Name))
-            .ForMember(dest => dest.ParentGenreId, opt => opt.MapFrom(src => src.Genre.Parent)).ReverseMap();
+            .ForMember(dest => dest.ParentGenreId, opt => opt.MapFrom(src => src.Genre.Parent))
+            .ReverseMap();
 
+        // Platforms
         CreateMap<FullPlatformDTO, PlatformModel>().ReverseMap();
+
         CreateMap<UpdatePlatformDTO, PlatformModel>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Platform.Id))
             .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Platform.Type))
             .ReverseMap();
+
         CreateMap<PlatformDTO, PlatformModel>()
             .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type))
             .ReverseMap();
+
         CreateMap<CreatePlatformDTO, PlatformModel>()
             .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Platform.Type))
-             .ReverseMap();
+            .ReverseMap();
 
         CreateMap<PlatformModel, PlatformEntity>().ReverseMap();
 
+        // Publishers
         CreateMap<PublisherModel, SupplierEntity>().ReverseMap();
 
         CreateMap<PublisherDTO, PublisherModel>().ReverseMap();
+
         CreateMap<CreatePublisherDTO, PublisherModel>()
             .ForMember(dest => dest.CompanyName, opt => opt.MapFrom(src => src.Publisher.CompanyName))
             .ForMember(dest => dest.HomePage, opt => opt.MapFrom(src => src.Publisher.HomePage))
@@ -144,6 +141,7 @@ public class GameAutoMapping : Profile
             .ReverseMap();
 
         CreateMap<PublisherWithIdDTO, PublisherModel>().ReverseMap();
+
         CreateMap<UpdatePublisherDTO, PublisherModel>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Publisher.Id))
             .ForMember(dest => dest.CompanyName, opt => opt.MapFrom(src => src.Publisher.CompanyName))
@@ -151,7 +149,7 @@ public class GameAutoMapping : Profile
             .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Publisher.Description))
             .ReverseMap();
 
-        // Visa
+        // Payments
         CreateMap<VisaPaymentDTO, VisaPaymentModel>()
             .ForMember(dest => dest.CardHolderName, opt => opt.MapFrom(src => src.Holder))
             .ForMember(dest => dest.ExpirationMonth, opt => opt.MapFrom(src => src.MonthExpire))
@@ -159,21 +157,30 @@ public class GameAutoMapping : Profile
             .ForMember(dest => dest.Cvv, opt => opt.MapFrom(src => src.Cvv2))
             .ForMember(dest => dest.TotalAmount, opt => opt.Ignore());
 
-        // Mongo → Model
+        CreateMap<PaymentRequestDTO, PaymentRequestModel>()
+            .ForMember(dest => dest.Method, opt => opt.MapFrom(src => src.Method.ToEnum<PaymentOptions>()));
+
+        CreateMap<PaymentResponseModel, PaymentResponseDTO>()
+            .ForMember(dest => dest.BankResponseDTO, opt => opt.MapFrom(src => src.BankResponseModel))
+            .ForMember(dest => dest.IBoxResponseDTO, opt => opt.MapFrom(src => src.IBoxResponseModel));
+
+        CreateMap<BankResponseModel, BankResponseDTO>();
+
+        CreateMap<PaymentMethodResponseDTO, PaymentMethodResponseModel>().ReverseMap();
+
+        // Orders
         CreateMap<DataAccessLayer.Entities.NorthwindMDBEntities.OrderMongoDBEntity, OrderModel>()
             .ForMember(d => d.Id, opt => opt.MapFrom(s => MongoIdConverter.ToGuid(s.InternalId)))
             .ForMember(d => d.CustomerId, opt => opt.MapFrom(s => s.CustomerID ?? string.Empty))
             .ForMember(d => d.Date, opt => opt.MapFrom(s => s.OrderDate))
             .ForMember(d => d.Status, opt => opt.MapFrom(_ => OrderStatus.Paid));
 
-        // SQL → Model
         CreateMap<OrderEntity, OrderModel>()
             .ForMember(d => d.Id, opt => opt.MapFrom(s => s.Id))
             .ForMember(d => d.CustomerId, opt => opt.MapFrom(s => s.CustomerId.ToString()))
             .ForMember(d => d.Date, opt => opt.MapFrom(s => s.OrderDate))
             .ForMember(d => d.Status, opt => opt.MapFrom(s => s.Status));
 
-        // Model → DTO
         CreateMap<OrderModel, OrderDTO>();
 
         CreateMap<OrderDetailsEntity, OrderGameModel>()
@@ -182,51 +189,29 @@ public class GameAutoMapping : Profile
             .ForMember(dest => dest.GameName, opt => opt.MapFrom(src => src.Product != null ? src.Product.ProductName : string.Empty));
 
         CreateMap<OrderGameModel, OrderGameDTO>()
-        .ForMember(
-            dest => dest.Price,
-            opt => opt.MapFrom(src => OrderTotalCalculator.LineTotal(src.Price, src.Quantity, src.Discount)));
+            .ForMember(dest => dest.Price, opt => opt.MapFrom(src => OrderTotalCalculator.LineTotal(src.Price, src.Quantity, src.Discount)));
 
-        // Request
-        CreateMap<PaymentRequestDTO, PaymentRequestModel>()
-     .ForMember(
-         dest => dest.Method,
-         opt => opt.MapFrom(src => src.Method.ToEnum<PaymentOptions>()));
-
-        // Response
-        CreateMap<PaymentResponseModel, PaymentResponseDTO>()
-            .ForMember(dest => dest.BankResponseDTO, opt => opt.MapFrom(src => src.BankResponseModel))
-            .ForMember(dest => dest.IBoxResponseDTO, opt => opt.MapFrom(src => src.IBoxResponseModel));
-
-        // Nested responses
-        CreateMap<BankResponseModel, BankResponseDTO>();
-
-        CreateMap<PaymentMethodResponseDTO, PaymentMethodResponseModel>().ReverseMap();
-
-        // CommentEntity → CommentModel
-        // =============================
+        // Comments
         CreateMap<CommentEntity, CommentModel>();
 
-        // =============================
-        // CommentModel → CommentEntity
-        // =============================
         CreateMap<CommentModel, CommentEntity>();
 
-        // =============================
-        // AddCommentModel → CommentEntity
-        // =============================
         CreateMap<AddCommentModel, CommentEntity>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.ProductId, opt => opt.Ignore())
             .ForMember(dest => dest.Product, opt => opt.Ignore())
-             .ForMember(dest => dest.ParentCommentId, opt => opt.MapFrom(src => src.ParentId));
+            .ForMember(dest => dest.ParentCommentId, opt => opt.MapFrom(src => src.ParentId));
 
-        // DTO → Model
+        CreateMap<AddCommentRequestDTO, AddCommentModel>()
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Comment.Name))
+            .ForMember(dest => dest.Body, opt => opt.MapFrom(src => src.Comment.Body))
+            .ForMember(dest => dest.Action, opt => opt.MapFrom(src => string.IsNullOrWhiteSpace(src.Action) ? null : src.Action))
+            .ForMember(dest => dest.ParentId, opt => opt.MapFrom((src, dest) => ParseOptionalGuid(src.ParentId)));
+
+        // Bans
         CreateMap<BanRequestDTO, BanModel>()
-    .ForMember(dest => dest.Duration, opt => opt.MapFrom(src => src.Duration.ToEnum<BanDurationOption>()));
+            .ForMember(dest => dest.Duration, opt => opt.MapFrom(src => src.Duration.ToEnum<BanDurationOption>()));
 
-        // =============================
-        // BanModel ↔ BanEntity
-        // =============================
         CreateMap<BanModel, BanEntity>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.User))
@@ -235,32 +220,30 @@ public class GameAutoMapping : Profile
         CreateMap<BanEntity, BanModel>()
             .ForMember(dest => dest.User, opt => opt.MapFrom(src => src.UserName));
 
-        CreateMap<AddCommentRequestDTO, AddCommentModel>()
-    .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Comment.Name))
-    .ForMember(dest => dest.Body, opt => opt.MapFrom(src => src.Comment.Body))
-
-    .ForMember(dest => dest.Action, opt => opt.MapFrom(src =>
-        string.IsNullOrWhiteSpace(src.Action) ? null : src.Action))
-    .ForMember(dest => dest.ParentId, opt => opt.MapFrom((src, dest) =>
-    {
-        return string.IsNullOrWhiteSpace(src.ParentId) ? null : Guid.TryParse(src.ParentId, out var guid) ? guid : (Guid?)null;
-    }));
-
-        // FilterDTO -> FilterModel
-        // ================================
+        // Game filters
         CreateMap<GameFilterDTO, GameFilterModel>()
-     .ForMember(dest => dest.PageSize, opt => opt.MapFrom(src =>
-         string.IsNullOrWhiteSpace(src.PageCount)
-             ? (int)PaginationOptions.Ten
-             : src.PageCount == "All"
-                 ? (int)PaginationOptions.All
-                 : int.Parse(src.PageCount)))
-     .ForMember(dest => dest.DatePublishing, opt => opt.MapFrom(src =>
-         string.IsNullOrWhiteSpace(src.DatePublishing)
-             ? PublishDateOptions.AllTime
-             : src.DatePublishing.ToEnum<PublishDateOptions>()));
+            .ForMember(dest => dest.PageSize, opt => opt.MapFrom(src => ParsePageSize(src.PageCount)))
+            .ForMember(dest => dest.DatePublishing, opt => opt.MapFrom(src =>
+                string.IsNullOrWhiteSpace(src.DatePublishing)
+                    ? PublishDateOptions.AllTime
+                    : src.DatePublishing.ToEnum<PublishDateOptions>()));
 
         CreateMap<FilteredGamesResponseModel, FilteredGamesResponseDTO>()
             .ForMember(dest => dest.Games, opt => opt.MapFrom(src => src.Games));
+    }
+
+    private static Guid? ParseOptionalGuid(string? value)
+    {
+        return Guid.TryParse(value, out var guid) ? guid : null;
+    }
+
+    private static int ParsePageSize(string? pageCount)
+    {
+        if (string.IsNullOrWhiteSpace(pageCount))
+        {
+            return (int)PaginationOptions.Ten;
+        }
+
+        return pageCount == "All" ? (int)PaginationOptions.All : int.Parse(pageCount);
     }
 }

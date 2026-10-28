@@ -24,7 +24,7 @@ public class PublisherService(
 
         if (exist != null)
         {
-            throw new ArgumentException($"Publisher with this name '{publisherModel.CompanyName}' already exists");
+            throw new BadRequestException($"Publisher with company name '{publisherModel.CompanyName}' already exists.");
         }
 
         var publisherEntity = _mapper.Map<SupplierEntity>(publisherModel);
@@ -37,10 +37,7 @@ public class PublisherService(
         var publisherEntity = await supplierCatalog.GetByCompanyNameAsync(companyName)
             ?? throw new NotFoundException($"Publisher with this name '{companyName}' does not exist");
 
-        var publisherModel =
-      _mapper.Map<PublisherModel>(publisherEntity);
-
-        return publisherModel;
+        return _mapper.Map<PublisherModel>(publisherEntity);
     }
 
     public async Task<List<PublisherModel>> GetPublishersAsync()

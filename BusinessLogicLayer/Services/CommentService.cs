@@ -81,7 +81,7 @@ public class CommentService(ISqlServerUnitOfWork unitOfWork, IMapper mapper, IPr
 
     public async Task DeleteCommentAsync(string gameKey, Guid id)
     {
-        var game = await _unitOfWork.GameRepository
+        var game = await _unitOfWork.ProductRepository
             .GetGameByKeyAsync(gameKey)
             ?? throw new NotFoundException("Game not found");
 

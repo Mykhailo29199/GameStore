@@ -5,23 +5,23 @@ namespace DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
 
 public interface ISqlServerUnitOfWork : IUnitOfWorkBase<GameStoreContext>
 {
-    IProductSqlRepository GameRepository { get; }
+    IProductSqlRepository ProductRepository { get; }
 
     IPlatformSqlRepository PlatformRepository { get; }
 
-    ICategorySqlRepository GenreRepository { get; }
+    ICategorySqlRepository CategoryRepository { get; }
 
-    IProductCategorySqlRepository GameGenreRepository { get; }
+    IProductCategorySqlRepository ProductCategoryRepository { get; }
 
-    IProductPlatformSqlRepository GamePlatformRepository { get; }
+    IProductPlatformSqlRepository ProductPlatformRepository { get; }
 
-    IProductFileSqlRepository GameFileRepository { get; }
+    IProductFileSqlRepository ProductFileRepository { get; }
 
     ISupplierSqlRepository SupplierRepository { get; }
 
     IOrderSqlRepository OrderRepository { get; }
 
-    IOrderDetailsSqlRepository OrderGameRepository { get; }
+    IOrderDetailsSqlRepository OrderDetailsRepository { get; }
 
     ICommentSqlRepository CommentRepository { get; }
 

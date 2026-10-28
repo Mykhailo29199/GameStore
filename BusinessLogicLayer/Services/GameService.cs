@@ -42,7 +42,7 @@ public class GameService(
         ProductEntity gameEntity = _mapper.Map<ProductEntity>(gameModel);
         gameEntity.SupplierID = publisher.Id;
 
-        await _unitOfWork.GameRepository.AddAsync(gameEntity);
+        await _unitOfWork.ProductRepository.AddAsync(gameEntity);
         await _unitOfWork.SaveAsync();
     }
 
@@ -110,7 +110,7 @@ public class GameService(
         var gameEntity = await productCatalog.GetByKeyAsync(key)
             ?? throw new NotFoundException($"Game with Key '{key}' was not found.");
 
-        var sqlGame = await _unitOfWork.GameRepository.GetGameByKeyAsync(key);
+        var sqlGame = await _unitOfWork.ProductRepository.GetGameByKeyAsync(key);
 
         if (sqlGame is null)
         {
@@ -122,7 +122,7 @@ public class GameService(
         }
         else
         {
-            await _unitOfWork.GameRepository.DeleteAsync(sqlGame);
+            await _unitOfWork.ProductRepository.DeleteAsync(sqlGame);
         }
 
         await _unitOfWork.SaveAsync();
@@ -135,7 +135,7 @@ public class GameService(
             throw new NotFoundException($"Game with Key '{gameKey}' was not found.");
         }
 
-        var fileEntity = await _unitOfWork.GameFileRepository.GetGameFileByKeyAsync(gameKey)
+        var fileEntity = await _unitOfWork.ProductFileRepository.GetGameFileByKeyAsync(gameKey)
             ?? throw new NotFoundException($"Game file for game with Key '{gameKey}' was not found.");
 
         var filePath = fileEntity?.FilePath;
@@ -167,7 +167,7 @@ public class GameService(
 
     public async Task<IList<PlatformModel>> GetPlatformsByGameKeyAsync(string key)
     {
-        var platforms = await _unitOfWork.GameRepository.GetPlatformsByGameKeyAsync(key);
+        var platforms = await _unitOfWork.ProductRepository.GetPlatformsByGameKeyAsync(key);
 
         return _mapper.Map<IList<PlatformModel>>(platforms);
     }
@@ -206,7 +206,7 @@ public class GameService(
 
     public async Task<FilteredGamesResponseModel> GetFilteredGamesAsync(GameFilterModel filter)
     {
-        var sqlGames = _pipeline.Filter(_unitOfWork.GameRepository.GetQueryable().AsNoTracking(), filter);
+        var sqlGames = _pipeline.Filter(_unitOfWork.ProductRepository.GetQueryable().AsNoTracking(), filter);
         var sqlCount = await sqlGames.CountAsync();
 
         // Only the games that can reach the requested page are read from SQL; the page is cut after the merge.
@@ -222,8 +222,8 @@ public class GameService(
             Games = _mapper.Map<List<GameModel>>(games),
             CurrentPage = filter.Page,
             TotalPages = filter.PageSize == (int)PaginationOptions.All
-             ? 1
-             : (int)Math.Ceiling(totalCount / (double)filter.PageSize),
+                ? 1
+                : (int)Math.Ceiling(totalCount / (double)filter.PageSize),
         };
     }
 

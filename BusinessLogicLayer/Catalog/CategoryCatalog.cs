@@ -20,7 +20,7 @@ public class CategoryCatalog(ISqlServerUnitOfWork sqlUnitOfWork, IMongoDBUnitOfW
 
     public async Task<List<CategoryEntity>> GetAllAsync()
     {
-        var sqlCategories = await sqlUnitOfWork.GenreRepository.GetAllAsync();
+        var sqlCategories = await sqlUnitOfWork.CategoryRepository.GetAllAsync();
         var northwind = await ResolveNorthwindAsync();
 
         return sqlCategories.Concat(northwind.NorthwindOnly).ToList();
@@ -28,14 +28,14 @@ public class CategoryCatalog(ISqlServerUnitOfWork sqlUnitOfWork, IMongoDBUnitOfW
 
     public async Task<CategoryEntity?> GetByIdAsync(Guid id)
     {
-        var sqlCategory = await sqlUnitOfWork.GenreRepository.FirstOrDefaultAsync(c => c.Id == id);
+        var sqlCategory = await sqlUnitOfWork.CategoryRepository.FirstOrDefaultAsync(c => c.Id == id);
 
         return sqlCategory ?? await GetNorthwindOnlyAsync(id);
     }
 
     public async Task<CategoryEntity> EnsureInGameStoreAsync(Guid id)
     {
-        var sqlCategory = await sqlUnitOfWork.GenreRepository.FirstOrDefaultAsync(c => c.Id == id);
+        var sqlCategory = await sqlUnitOfWork.CategoryRepository.FirstOrDefaultAsync(c => c.Id == id);
 
         if (sqlCategory is not null)
         {
@@ -45,7 +45,7 @@ public class CategoryCatalog(ISqlServerUnitOfWork sqlUnitOfWork, IMongoDBUnitOfW
         var northwindCategory = await GetNorthwindOnlyAsync(id)
             ?? throw new NotFoundException($"Genre with Id {id} does not exist.");
 
-        await sqlUnitOfWork.GenreRepository.AddAsync(northwindCategory);
+        await sqlUnitOfWork.CategoryRepository.AddAsync(northwindCategory);
 
         return northwindCategory;
     }
@@ -59,7 +59,7 @@ public class CategoryCatalog(ISqlServerUnitOfWork sqlUnitOfWork, IMongoDBUnitOfW
 
     public async Task<NorthwindResolution<CategoryEntity>> ResolveNorthwindAsync()
     {
-        var sqlCategories = await sqlUnitOfWork.GenreRepository.GetAllIncludingDeleted().ToListAsync();
+        var sqlCategories = await sqlUnitOfWork.CategoryRepository.GetAllIncludingDeleted().ToListAsync();
         var northwindCategories = await mongoUnitOfWork.CategoryRepository.GetAllAsync();
 
         return NorthwindResolver.Resolve(sqlCategories, northwindCategories, ResolverOptions);
@@ -88,7 +88,7 @@ public class CategoryCatalog(ISqlServerUnitOfWork sqlUnitOfWork, IMongoDBUnitOfW
 
     private async Task<NorthwindResolution<CategoryEntity>> ResolveSubsetAsync(List<Northwind.CategoryEntity> documents)
     {
-        var (sqlCategories, related) = await NorthwindResolver.LoadRelatedAsync<CategoryEntity, Northwind.CategoryEntity>(
+        var (sqlCategories, related) = await NorthwindResolver.LoadRelatedAsync(
             documents,
             c => c.InternalId,
             c => c.Name,
@@ -101,7 +101,7 @@ public class CategoryCatalog(ISqlServerUnitOfWork sqlUnitOfWork, IMongoDBUnitOfW
     private async Task<List<CategoryEntity>> FindSqlCategoriesAsync(List<Guid> ids, List<string> names)
     {
         // The default SQL Server collation ignores case, as the duplicate check does.
-        return await sqlUnitOfWork.GenreRepository.GetAllIncludingDeleted()
+        return await sqlUnitOfWork.CategoryRepository.GetAllIncludingDeleted()
             .Where(c => ids.Contains(c.Id) || names.Contains(c.Name.Trim()))
             .ToListAsync();
     }

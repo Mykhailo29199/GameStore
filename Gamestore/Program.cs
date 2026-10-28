@@ -119,10 +119,18 @@ builder.Services.AddSingleton(sp =>
 
 // SQL Server context. Every saved change is logged into the Northwind database.
 builder.Services.AddDbContext<GameStoreContext>((sp, options) =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")).LogTo(Console.WriteLine)
-        .AddInterceptors(sp.GetRequiredService<EntityChangeLoggingInterceptor>())
-        .EnableSensitiveDataLogging()
-        .EnableDetailedErrors());
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+        .AddInterceptors(sp.GetRequiredService<EntityChangeLoggingInterceptor>());
+
+    // SQL text, parameter values and detailed errors are shown only during development.
+    if (builder.Environment.IsDevelopment())
+    {
+        options.LogTo(Console.WriteLine, LogLevel.Information)
+            .EnableSensitiveDataLogging()
+            .EnableDetailedErrors();
+    }
+});
 
 builder.Services.AddCors(options =>
 {

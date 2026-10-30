@@ -5,7 +5,7 @@ namespace GameStore.Shared.Logging;
 public class FileLogger() : ILogger
 {
     public IDisposable? BeginScope<TState>(TState state)
-     where TState : notnull
+        where TState : notnull
     {
         return null;
     }

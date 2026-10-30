@@ -1,0 +1,388 @@
+using System.Globalization;
+using System.Linq.Expressions;
+using System.Text.RegularExpressions;
+using BusinessLogicLayer.Catalog.Interfaces;
+using BusinessLogicLayer.Models.GameModels;
+using BusinessLogicLayer.Pipelines.Steps;
+using DataAccessLayer.Entities.GameStoreSQLEntities;
+using DataAccessLayer.Mongo;
+using DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
+using GameStore.Shared.Exceptions;
+using Microsoft.EntityFrameworkCore;
+using MongoDB.Bson;
+using Northwind = DataAccessLayer.Entities.NorthwindMDBEntities;
+
+namespace BusinessLogicLayer.Catalog;
+
+public partial class ProductCatalog(
+    ISqlServerUnitOfWork sqlUnitOfWork,
+    IMongoDBUnitOfWork mongoUnitOfWork,
+    ISupplierCatalog supplierCatalog,
+    ICategoryCatalog categoryCatalog) : IProductCatalog
+{
+    private const string NorthwindKeyPrefix = "nw_";
+
+    public async Task<List<ProductEntity>> GetAllAsync()
+    {
+        var sqlProducts = await sqlUnitOfWork.ProductRepository.GetQueryable().AsNoTracking().ToListAsync();
+        var sqlProductsIncludingDeleted = await sqlUnitOfWork.ProductRepository.GetAllIncludingDeleted().ToListAsync();
+        var northwindProducts = await mongoUnitOfWork.ProductRepository.GetAllAsync();
+
+        var northwindOnly = Resolve(
+            sqlProductsIncludingDeleted,
+            northwindProducts,
+            await supplierCatalog.ResolveNorthwindAsync(),
+            await categoryCatalog.ResolveNorthwindAsync());
+
+        return sqlProducts.Concat(northwindOnly).ToList();
+    }
+
+    public async Task<List<ProductEntity>> GetNorthwindOnlyAsync(GameFilterModel filter)
+    {
+        // Northwind products have no platforms.
+        if (filter.Platforms?.Count > 0)
+        {
+            return [];
+        }
+
+        var suppliers = await supplierCatalog.ResolveNorthwindAsync();
+        var categories = await categoryCatalog.ResolveNorthwindAsync();
+
+        var documents = await mongoUnitOfWork.ProductRepository.FindAsync(GetNorthwindConditions(filter, suppliers, categories));
+
+        var (sqlProducts, related) = await NorthwindResolver.LoadRelatedAsync(
+            documents,
+            p => p.InternalId,
+            p => p.Key,
+            mongoUnitOfWork.ProductRepository.GetByIdsOrKeysAsync,
+            FindSqlProductsAsync);
+
+        // A product is converted from its own document, so the filter gives the same result before and after the merge.
+        var ids = documents.Select(d => MongoIdConverter.ToGuid(d.InternalId)).ToHashSet();
+
+        return Resolve(sqlProducts, related, suppliers, categories)
+            .Where(p => ids.Contains(p.Id))
+            .ToList();
+    }
+
+    public async Task<ProductEntity?> GetByKeyAsync(string key)
+    {
+        var sqlProduct = await sqlUnitOfWork.ProductRepository.GetQueryable().FirstOrDefaultAsync(p => p.Key == key);
+
+        return sqlProduct ?? await GetNorthwindOnlyAsync(await mongoUnitOfWork.ProductRepository.GetByKeyAsync(key));
+    }
+
+    public async Task<ProductEntity?> GetByIdAsync(Guid id)
+    {
+        var sqlProduct = await sqlUnitOfWork.ProductRepository.GetFullGame(id);
+
+        if (sqlProduct is not null || !MongoIdConverter.TryGetObjectId(id, out var objectId))
+        {
+            return sqlProduct;
+        }
+
+        return await GetNorthwindOnlyAsync(await mongoUnitOfWork.ProductRepository.GetByIdAsync(objectId));
+    }
+
+    public async Task<ProductEntity> EnsureInGameStoreAsync(string key)
+    {
+        var sqlProduct = await sqlUnitOfWork.ProductRepository.GetQueryable().FirstOrDefaultAsync(p => p.Key == key);
+
+        if (sqlProduct is not null)
+        {
+            return sqlProduct;
+        }
+
+        var northwindProduct = await GetNorthwindOnlyAsync(await mongoUnitOfWork.ProductRepository.GetByKeyAsync(key))
+            ?? throw new NotFoundException($"Game with Key '{key}' was not found.");
+
+        return await AddGameStoreCopyAsync(northwindProduct, isDeleted: false);
+    }
+
+    public async Task MarkNorthwindProductDeletedAsync(ProductEntity product)
+    {
+        await AddGameStoreCopyAsync(product, isDeleted: true);
+    }
+
+    public async Task<bool> KeyExistsAsync(string key)
+    {
+        var existsInGameStore = await sqlUnitOfWork.ProductRepository.GetAllIncludingDeleted().AnyAsync(p => p.Key == key);
+
+        return existsInGameStore || await mongoUnitOfWork.ProductRepository.GetByKeyAsync(key) is not null;
+    }
+
+    public async Task<bool> HasNorthwindCounterpartAsync(ProductEntity product)
+    {
+        // A Northwind product is matched either by the game key or by the id of a copied product.
+        return await mongoUnitOfWork.ProductRepository.GetByKeyAsync(product.Key) is not null
+            || (MongoIdConverter.TryGetObjectId(product.Id, out var objectId)
+                && await mongoUnitOfWork.ProductRepository.CheckIfExistAsync(objectId));
+    }
+
+    public async Task IncreaseViewsAsync(string key)
+    {
+        var sqlProduct = await sqlUnitOfWork.ProductRepository.GetGameByKeyAsync(key);
+
+        if (sqlProduct is not null)
+        {
+            sqlProduct.Views++;
+            return;
+        }
+
+        var northwindProduct = await GetNorthwindOnlyAsync(await mongoUnitOfWork.ProductRepository.GetByKeyAsync(key));
+
+        if (northwindProduct is not null && MongoIdConverter.TryGetObjectId(northwindProduct.Id, out var objectId))
+        {
+            await mongoUnitOfWork.ProductRepository.IncrementViewsAsync(objectId);
+        }
+    }
+
+    public async Task SyncUnitsInStockAsync(IReadOnlyCollection<ProductEntity> products)
+    {
+        if (products.Count == 0)
+        {
+            return;
+        }
+
+        var unitsByKey = products.ToDictionary(p => p.Key, p => p.UnitsInStock);
+        var keys = unitsByKey.Keys.ToList();
+        var documents = await mongoUnitOfWork.ProductRepository.FindAsync(p => keys.Contains(p.Key));
+
+        foreach (var document in documents.Where(d => d.UnitsInStock != unitsByKey[d.Key]))
+        {
+            await mongoUnitOfWork.ProductRepository.SetUnitsInStockAsync(document.InternalId, unitsByKey[document.Key]);
+        }
+    }
+
+    /// <summary>
+    /// The game key field in Northwind is managed only by the Game Store: every product gets a unique one.
+    /// </summary>
+    public async Task AssignMissingGameKeysAsync()
+    {
+        var northwindProducts = (await mongoUnitOfWork.ProductRepository.GetAllAsync()).ToList();
+        var withoutKey = northwindProducts.Where(p => string.IsNullOrWhiteSpace(p.Key)).ToList();
+
+        if (withoutKey.Count == 0)
+        {
+            return;
+        }
+
+        var sqlKeys = await sqlUnitOfWork.ProductRepository.GetAllIncludingDeleted().Select(p => p.Key).ToListAsync();
+        var usedKeys = sqlKeys
+            .Concat(northwindProducts.Select(p => p.Key))
+            .Where(k => !string.IsNullOrWhiteSpace(k))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var product in withoutKey)
+        {
+            product.Key = CreateNorthwindKey(product, usedKeys);
+            usedKeys.Add(product.Key);
+
+            await mongoUnitOfWork.ProductRepository.SetGameKeyAsync(product.InternalId, product.Key);
+        }
+    }
+
+    private static List<ProductEntity> Resolve(
+        IEnumerable<ProductEntity> sqlProductsIncludingDeleted,
+        IEnumerable<Northwind.ProductEntity> northwindProducts,
+        NorthwindResolution<SupplierEntity> suppliers,
+        NorthwindResolution<CategoryEntity> categories)
+    {
+        // Products without a valid publisher (damaged or deleted) cannot be shown or bought, so they take no part in the merge.
+        var withPublisher = new List<NorthwindProduct>();
+
+        foreach (var product in northwindProducts)
+        {
+            if (Lookup(suppliers, product.SupplierID) is { } supplier)
+            {
+                withPublisher.Add(new NorthwindProduct(product, supplier));
+            }
+        }
+
+        var options = new NorthwindResolverOptions<ProductEntity, NorthwindProduct>(
+            p => NorthwindEntityConverter.ToProduct(p.Document, p.Supplier, Lookup(categories, p.Document.CategoryID)),
+            p => p.Document.ProductID,
+            p => p.Id,
+            p => p.Key,
+            p => p.IsDeleted);
+
+        // A product without a game key cannot be opened; keys are assigned when the application starts.
+        return NorthwindResolver.Resolve(sqlProductsIncludingDeleted, withPublisher, options).NorthwindOnly
+            .Where(p => !string.IsNullOrWhiteSpace(p.Key))
+            .ToList();
+    }
+
+    /// <summary>
+    /// Translates the game filter into conditions on Northwind documents, so Mongo returns only matching products.
+    /// Genres and publishers are matched through the numeric Northwind ids of the effective entities.
+    /// </summary>
+    private static List<Expression<Func<Northwind.ProductEntity, bool>>> GetNorthwindConditions(
+        GameFilterModel filter,
+        NorthwindResolution<SupplierEntity> suppliers,
+        NorthwindResolution<CategoryEntity> categories)
+    {
+        var supplierIds = GetLegacyIds(suppliers, s => s.Id, filter.Publishers);
+        var conditions = new List<Expression<Func<Northwind.ProductEntity, bool>>> { p => supplierIds.Contains(p.SupplierID) };
+
+        if (filter.Genres?.Count > 0)
+        {
+            var categoryIds = GetLegacyIds(categories, c => c.Id, filter.Genres);
+            conditions.Add(p => categoryIds.Contains(p.CategoryID));
+        }
+
+        if (filter.MinPrice.HasValue)
+        {
+            var minPrice = filter.MinPrice.Value;
+            conditions.Add(p => p.UnitPrice >= minPrice);
+        }
+
+        if (filter.MaxPrice.HasValue)
+        {
+            var maxPrice = filter.MaxPrice.Value;
+            conditions.Add(p => p.UnitPrice <= maxPrice);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.Name))
+        {
+            // Mongo translates a regular expression, not a string comparison that ignores case.
+            var name = new Regex(Regex.Escape(filter.Name.Trim()), RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
+            conditions.Add(p => name.IsMatch(p.ProductName));
+        }
+
+        // The creation date of a Northwind product is the time stored in its ObjectId, with a precision of one second.
+        var fromDate = DateFilterStep.GetFromDate(filter.DatePublishing);
+
+        if (fromDate > DateTime.UnixEpoch)
+        {
+            var fromSeconds = (int)Math.Ceiling((fromDate - DateTime.UnixEpoch).TotalSeconds);
+            var minId = ObjectId.Parse(fromSeconds.ToString("x8", CultureInfo.InvariantCulture) + new string('0', 16));
+            conditions.Add(p => p.InternalId >= minId);
+        }
+
+        return conditions;
+    }
+
+    /// <summary>
+    /// Returns the numeric Northwind ids that resolve to the given entities, or to any entity when no ids are given.
+    /// </summary>
+    private static List<int?> GetLegacyIds<T>(NorthwindResolution<T> resolution, Func<T, Guid> getId, List<Guid>? ids)
+    {
+        return resolution.ByLegacyId
+            .Where(pair => ids is not { Count: > 0 } || ids.Contains(getId(pair.Value)))
+            .Select(pair => (int?)pair.Key)
+            .ToList();
+    }
+
+    private static T? Lookup<T>(NorthwindResolution<T> resolution, int? legacyId)
+        where T : class
+    {
+        return legacyId.HasValue ? resolution.ByLegacyId.GetValueOrDefault(legacyId.Value) : null;
+    }
+
+    private static string CreateNorthwindKey(Northwind.ProductEntity product, HashSet<string> usedKeys)
+    {
+        var name = product.ProductName ?? product.ProductID?.ToString() ?? product.InternalId.ToString();
+        var slug = NonKeyCharacters().Replace(name.ToLowerInvariant(), "_").Trim('_');
+        var baseKey = NorthwindKeyPrefix + slug;
+
+        var key = baseKey;
+        var counter = 1;
+
+        while (usedKeys.Contains(key))
+        {
+            key = $"{baseKey}_{counter++}";
+        }
+
+        return key;
+    }
+
+    [GeneratedRegex(@"[^\p{L}0-9]+")]
+    private static partial Regex NonKeyCharacters();
+
+    /// <summary>
+    /// Resolves one Northwind product, reading only the records that decide whether it is shown.
+    /// </summary>
+    private async Task<ProductEntity?> GetNorthwindOnlyAsync(Northwind.ProductEntity? document)
+    {
+        if (document is null)
+        {
+            return null;
+        }
+
+        var (sqlProducts, related) = await NorthwindResolver.LoadRelatedAsync(
+            [document],
+            p => p.InternalId,
+            p => p.Key,
+            mongoUnitOfWork.ProductRepository.GetByIdsOrKeysAsync,
+            FindSqlProductsAsync);
+
+        var supplierIds = related.Select(p => p.SupplierID).OfType<int>().Distinct().ToList();
+        var categoryIds = related.Select(p => p.CategoryID).OfType<int>().Distinct().ToList();
+
+        var northwindOnly = Resolve(
+            sqlProducts,
+            related,
+            await supplierCatalog.ResolveNorthwindAsync(supplierIds),
+            await categoryCatalog.ResolveNorthwindAsync(categoryIds));
+
+        var id = MongoIdConverter.ToGuid(document.InternalId);
+
+        return northwindOnly.FirstOrDefault(p => p.Id == id);
+    }
+
+    private async Task<List<ProductEntity>> FindSqlProductsAsync(List<Guid> ids, List<string> keys)
+    {
+        // Products are matched by game key. The default SQL Server collation ignores case, as the duplicate check does.
+        return await sqlUnitOfWork.ProductRepository.GetAllIncludingDeleted()
+            .Where(p => ids.Contains(p.Id) || keys.Contains(p.Key.Trim()))
+            .ToListAsync();
+    }
+
+    /// <summary>
+    /// Adds a tracked Game Store copy of a Northwind product with its publisher and genres. The caller saves changes.
+    /// </summary>
+    private async Task<ProductEntity> AddGameStoreCopyAsync(ProductEntity product, bool isDeleted)
+    {
+        var supplier = await supplierCatalog.EnsureInGameStoreAsync(product.SupplierID);
+
+        var copy = new ProductEntity
+        {
+            Id = product.Id,
+            ProductID = product.ProductID,
+            ProductName = product.ProductName,
+            Key = product.Key,
+            Description = product.Description,
+            UnitPrice = product.UnitPrice,
+            UnitsInStock = product.UnitsInStock,
+            UnitsOnOrder = product.UnitsOnOrder,
+            ReorderLevel = product.ReorderLevel,
+            QuantityPerUnit = product.QuantityPerUnit,
+            Discontinued = product.Discontinued,
+            Discount = product.Discount,
+            Views = product.Views,
+            CreatedAt = product.CreatedAt,
+            SupplierID = supplier.Id,
+            IsDeleted = isDeleted,
+        };
+
+        foreach (var productCategory in product.ProductCategories)
+        {
+            var category = await categoryCatalog.EnsureInGameStoreAsync(productCategory.CategoryId);
+
+            copy.ProductCategories.Add(new ProductCategoryEntity
+            {
+                ProductId = copy.Id,
+                CategoryId = category.Id,
+            });
+        }
+
+        await sqlUnitOfWork.ProductRepository.AddAsync(copy);
+
+        return copy;
+    }
+
+    /// <summary>
+    /// A Northwind product together with its resolved publisher.
+    /// </summary>
+    private sealed record NorthwindProduct(Northwind.ProductEntity Document, SupplierEntity Supplier);
+}

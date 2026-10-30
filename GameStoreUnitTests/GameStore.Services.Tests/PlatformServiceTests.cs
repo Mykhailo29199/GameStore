@@ -3,9 +3,8 @@ using AutoMapper;
 using BusinessLogicLayer.Models;
 using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Services;
-using DataAccessLayer.Entities;
-using DataAccessLayer.StoreContext;
-using DataAccessLayer.UnitOfWork;
+using DataAccessLayer.Entities.GameStoreSQLEntities;
+using DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
 using FluentAssertions;
 using GameStore.Shared.Exceptions;
 using Moq;
@@ -17,26 +16,25 @@ namespace GameStoreUnitTests.GameStore.Services.Tests;
 public class PlatformServiceTests
 {
     private readonly PlatformService _platformService;
-    private readonly Mock<IUnitOfWork<GameStoreContext>> _unitOfWorkMock;
+    private readonly Mock<ISqlServerUnitOfWork> _unitOfWorkMock;
     private readonly Mock<IMapper> _mapperMock;
 
     public PlatformServiceTests()
     {
-        _unitOfWorkMock = new Mock<IUnitOfWork<GameStoreContext>>();
+        _unitOfWorkMock = new Mock<ISqlServerUnitOfWork>();
         _mapperMock = new Mock<IMapper>();
         _platformService = new PlatformService(_unitOfWorkMock.Object, _mapperMock.Object);
     }
 
     [Fact]
-    public async Task CreatePlatformAsync_WhenPlatformTypeExists_ThrowsArgumentException()
+    public async Task CreatePlatformAsync_WhenPlatformTypeExists_ThrowsBadRequestException()
     {
         // Arrange
-        _unitOfWorkMock.Setup(uow => uow.PlatformRepository
-                   .FindAsync(It.IsAny<Expression<Func<PlatformEntity, bool>>>()))
+        _unitOfWorkMock.Setup(uow => uow.PlatformRepository.FindAsync(It.IsAny<Expression<Func<PlatformEntity, bool>>>()))
             .ReturnsAsync(new List<PlatformEntity> { ExistingPlatform1 });
 
         // Act
-        var exception = await Assert.ThrowsAsync<ArgumentException>(
+        var exception = await Assert.ThrowsAsync<BadRequestException>(
             () => _platformService.CreatePlatformAsync(ExistingPlatform1.Type));
 
         exception.Message.Should().Be($"Platform with type '{ExistingPlatform1.Type}' already exists.");
@@ -51,8 +49,7 @@ public class PlatformServiceTests
         // Arrange
         var newPlatformType = "PlayStation";
 
-        _unitOfWorkMock.Setup(uow => uow.PlatformRepository
-                   .FindAsync(It.IsAny<Expression<Func<PlatformEntity, bool>>>()))
+        _unitOfWorkMock.Setup(uow => uow.PlatformRepository.FindAsync(It.IsAny<Expression<Func<PlatformEntity, bool>>>()))
             .ReturnsAsync(new List<PlatformEntity>());
 
         _mapperMock.Setup(m => m.Map<PlatformEntity>(It.IsAny<PlatformModel>()))
@@ -242,23 +239,23 @@ public class PlatformServiceTests
     public async Task GetGamesByPlatformIdAsync_WhenPlatformExists_ShouldReturnMappedGames()
     {
         // Arrange
-        var gameEntities = new List<GameEntity>
+        var gameEntities = new List<ProductEntity>
     {
-        new() { Id = ExistingGameId, Name = "Game 1", Key = ExistingGameKey },
-        new() { Id = ExistingGameId2, Name = "Game 2", Key = ExistingGameKey2 },
+        new() { Id = ExistingGameId, ProductName = "Game 1", Key = ExistingGameKey },
+        new() { Id = ExistingGameId2, ProductName = "Game 2", Key = ExistingGameKey2 },
     };
 
         var gameModels = gameEntities.Select(g => new GameModel
         {
             Id = g.Id,
-            Name = g.Name,
+            Name = g.ProductName,
             Key = g.Key,
         }).ToList();
 
         _unitOfWorkMock.Setup(uow => uow.PlatformRepository.GetByIdAsync(ExistingPlatformId))
             .ReturnsAsync(ExistingPlatform1);
 
-        _unitOfWorkMock.Setup(uow => uow.GamePlatformRepository.GetGamesByPlatformIdAsync(ExistingPlatform1.Id))
+        _unitOfWorkMock.Setup(uow => uow.ProductPlatformRepository.GetGamesByPlatformIdAsync(ExistingPlatform1.Id))
             .ReturnsAsync(gameEntities);
 
         _mapperMock.Setup(m => m.Map<List<GameModel>>(gameEntities))

@@ -1,17 +1,19 @@
 ﻿using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Pipelines.Interfaces;
-using DataAccessLayer.Entities;
+using DataAccessLayer.Entities.GameStoreSQLEntities;
 
 namespace BusinessLogicLayer.Pipelines.Steps;
 
 public class NameFilterStep : IGamePipelineStep
 {
-    public IQueryable<GameEntity> Filter(IQueryable<GameEntity> query, GameFilterModel filter)
+    public IQueryable<ProductEntity> Filter(IQueryable<ProductEntity> query, GameFilterModel filter)
     {
         if (!string.IsNullOrWhiteSpace(filter?.Name))
         {
             var name = filter.Name.Trim();
-            query = query.Where(g => g.Name.Contains(name, StringComparison.OrdinalIgnoreCase));
+
+            // The default SQL Server collation ignores case.
+            query = query.Where(g => g.ProductName.Contains(name));
         }
 
         return query;

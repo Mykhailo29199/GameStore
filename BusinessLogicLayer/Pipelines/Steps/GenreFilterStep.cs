@@ -1,17 +1,17 @@
 ﻿using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Pipelines.Interfaces;
-using DataAccessLayer.Entities;
+using DataAccessLayer.Entities.GameStoreSQLEntities;
 
 namespace BusinessLogicLayer.Pipelines.Steps;
 
 public class GenreFilterStep : IGamePipelineStep
 {
-    public IQueryable<GameEntity> Filter(IQueryable<GameEntity> query, GameFilterModel filter)
+    public IQueryable<ProductEntity> Filter(IQueryable<ProductEntity> query, GameFilterModel filter)
     {
         if (filter.Genres?.Count > 0)
         {
             query = query.Where(g =>
-                g.GameGenres.Any(gg => filter.Genres.Contains(gg.GenreId)));
+                g.ProductCategories.Any(gg => filter.Genres.Contains(gg.CategoryId)));
         }
 
         return query;

@@ -1,49 +1,59 @@
-﻿using System.ComponentModel.DataAnnotations;
 using AutoMapper;
+using BusinessLogicLayer.Catalog;
+using BusinessLogicLayer.Catalog.Interfaces;
 using BusinessLogicLayer.Models;
 using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Services.Interaces;
-using DataAccessLayer.Entities;
-using DataAccessLayer.StoreContext;
-using DataAccessLayer.UnitOfWork;
+using DataAccessLayer.Entities.GameStoreSQLEntities;
+using DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
 using GameStore.Shared.Exceptions;
 
 namespace BusinessLogicLayer.Services;
 
-public class GenreService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapper) : IGenreService
+public class GenreService(
+    ISqlServerUnitOfWork unitOfWork,
+    IMapper mapper,
+    ICategoryCatalog categoryCatalog,
+    IProductCatalog productCatalog) : IGenreService
 {
-    private readonly IUnitOfWork<GameStoreContext> _unitOfWork = unitOfWork;
+    private readonly ISqlServerUnitOfWork _unitOfWork = unitOfWork;
     private readonly IMapper _mapper = mapper;
 
     public async Task CreateGenreAsync(GenreModel genreModel)
     {
         if (genreModel.ParentGenreId.HasValue)
         {
-            _ = await _unitOfWork.GenreRepository
-                .GetByIdAsync(genreModel.ParentGenreId.Value)
+            _ = await categoryCatalog.GetByIdAsync(genreModel.ParentGenreId.Value)
                 ?? throw new NotFoundException($"Parent genre with Id {genreModel.ParentGenreId} does not exist.");
         }
 
         if (genreModel.ParentGenreId.HasValue && genreModel.ParentGenreId.Value == genreModel.Id)
         {
-            throw new ValidationException("A genre cannot be its own parent.");
+            throw new BadRequestException("A genre cannot be its own parent.");
         }
 
         if (genreModel.ParentGenreId.HasValue
             && await IsCyclicReferenceAsync(genreModel.ParentGenreId.Value, genreModel.Id))
         {
-            throw new ValidationException("Cyclic genre references are not allowed.");
+            throw new BadRequestException("Cyclic genre references are not allowed.");
         }
 
-        var genreEntity = _mapper.Map<GenreEntity>(genreModel);
-        await _unitOfWork.GenreRepository.AddAsync(genreEntity);
+        await EnsureNameIsUniqueAsync(genreModel);
+
+        if (genreModel.ParentGenreId.HasValue)
+        {
+            await categoryCatalog.EnsureInGameStoreAsync(genreModel.ParentGenreId.Value);
+        }
+
+        var genreEntity = _mapper.Map<CategoryEntity>(genreModel);
+        await _unitOfWork.CategoryRepository.AddAsync(genreEntity);
 
         await _unitOfWork.SaveAsync();
     }
 
     public async Task<GenreModel> GetGenreByIdAsync(Guid genreId)
     {
-        var genreEntity = await _unitOfWork.GenreRepository.GetByIdAsync(genreId)
+        var genreEntity = await categoryCatalog.GetByIdAsync(genreId)
             ?? throw new NotFoundException($"Genre with Id {genreId} does not exist.");
 
         var genreModel = _mapper.Map<GenreModel>(genreEntity);
@@ -52,71 +62,110 @@ public class GenreService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapp
 
     public async Task<List<GenreModel>> GetAllGenresAsync()
     {
-        var genreEntities = await _unitOfWork.GenreRepository.GetAllAsync();
+        var genreEntities = await categoryCatalog.GetAllAsync();
         var genreModels = _mapper.Map<List<GenreModel>>(genreEntities);
         return genreModels;
     }
 
     public async Task<IList<GenreModel>> GetGenresByParentGenreIdAsync(Guid parentGenreId)
     {
-        _ = await _unitOfWork.GenreRepository.GetByIdAsync(parentGenreId)
+        _ = await categoryCatalog.GetByIdAsync(parentGenreId)
             ?? throw new NotFoundException($"Parent genre with Id {parentGenreId} does not exist.");
 
-        var genreEntities = await _unitOfWork.GenreRepository
-            .FindAsync(g => g.ParentGenreId == parentGenreId);
+        var genreEntities = await _unitOfWork.CategoryRepository
+            .FindAsync(g => g.ParentCategoryId == parentGenreId);
 
         var genreModels = _mapper.Map<List<GenreModel>>(genreEntities);
         return genreModels;
     }
 
+    /// <summary>
+    /// A Northwind genre is copied to the Game Store database and the copy is updated; Northwind data stays untouched.
+    /// </summary>
     public async Task UpdateGenreAsync(GenreModel genreModel)
     {
-        var existingGenreEntity = await _unitOfWork.GenreRepository.GetByIdAsync(genreModel.Id)
+        _ = await categoryCatalog.GetByIdAsync(genreModel.Id)
             ?? throw new NotFoundException($"Genre with Id {genreModel.Id} does not exist.");
 
         if (genreModel.ParentGenreId.HasValue)
         {
-            _ = await _unitOfWork.GenreRepository
-                .GetByIdAsync(genreModel.ParentGenreId.Value)
+            _ = await categoryCatalog.GetByIdAsync(genreModel.ParentGenreId.Value)
                 ?? throw new NotFoundException($"Parent genre with Id {genreModel.ParentGenreId} does not exist.");
         }
 
         if (genreModel.ParentGenreId == genreModel.Id)
         {
-            throw new ValidationException("A genre cannot be its own parent.");
+            throw new BadRequestException("A genre cannot be its own parent.");
         }
 
         if (genreModel.ParentGenreId.HasValue
-           && await IsCyclicReferenceAsync(genreModel.ParentGenreId.Value, genreModel.Id))
+            && await IsCyclicReferenceAsync(genreModel.ParentGenreId.Value, genreModel.Id))
         {
-            throw new ValidationException("Cyclic genre references are not allowed.");
+            throw new BadRequestException("Cyclic genre references are not allowed.");
         }
 
-        _mapper.Map(genreModel, existingGenreEntity);
-        await _unitOfWork.GenreRepository.UpdateAsync(existingGenreEntity);
+        await EnsureNameIsUniqueAsync(genreModel);
+
+        var existingGenreEntity = await categoryCatalog.EnsureInGameStoreAsync(genreModel.Id);
+
+        if (genreModel.ParentGenreId.HasValue)
+        {
+            await categoryCatalog.EnsureInGameStoreAsync(genreModel.ParentGenreId.Value);
+        }
+
+        existingGenreEntity.Name = genreModel.Name;
+        existingGenreEntity.ParentCategoryId = genreModel.ParentGenreId;
 
         await _unitOfWork.SaveAsync();
     }
 
+    /// <summary>
+    /// Genres that exist in Northwind are soft-deleted in the Game Store database, so the Northwind original stays hidden.
+    /// </summary>
     public async Task DeleteGenreAsync(Guid id)
     {
-        var existingGenreEntity = await _unitOfWork.GenreRepository.GetWithSubGenresAsync(id)
+        var genre = await categoryCatalog.GetByIdAsync(id)
             ?? throw new NotFoundException($"Genre with Id {id} does not exist.");
 
-        await _unitOfWork.GenreRepository.DeleteAsync(existingGenreEntity);
+        if (!await categoryCatalog.HasNorthwindCounterpartAsync(genre))
+        {
+            var existingGenreEntity = await _unitOfWork.CategoryRepository.GetWithSubGenresAsync(id)
+                ?? throw new NotFoundException($"Genre with Id {id} does not exist.");
+
+            await _unitOfWork.CategoryRepository.DeleteAsync(existingGenreEntity);
+        }
+        else
+        {
+            var gameStoreGenre = await categoryCatalog.EnsureInGameStoreAsync(id);
+            gameStoreGenre.IsDeleted = true;
+        }
+
         await _unitOfWork.SaveAsync();
     }
 
     public async Task<List<GameModel>> GetGamesByGenreIdAsync(Guid genreId)
     {
-        _ = await _unitOfWork.GenreRepository.GetByIdAsync(genreId)
-          ?? throw new NotFoundException($"Genre with id '{genreId}' does not exist.");
+        _ = await categoryCatalog.GetByIdAsync(genreId)
+            ?? throw new NotFoundException($"Genre with id '{genreId}' does not exist.");
 
-        var gameEntities = await _unitOfWork.GameGenreRepository.GetGamesByGenreIdAsync(genreId);
+        var gameEntities = (await productCatalog.GetAllAsync())
+            .Where(g => g.ProductCategories.Any(pc => pc.CategoryId == genreId))
+            .ToList();
 
         var gameModels = _mapper.Map<List<GameModel>>(gameEntities);
 
         return gameModels;
+    }
+
+    private async Task EnsureNameIsUniqueAsync(GenreModel genreModel)
+    {
+        var name = NorthwindResolver.Normalize(genreModel.Name);
+        var genres = await categoryCatalog.GetAllAsync();
+
+        if (genres.Any(g => g.Id != genreModel.Id && NorthwindResolver.Normalize(g.Name) == name))
+        {
+            throw new BadRequestException($"Genre with name '{genreModel.Name}' already exists.");
+        }
     }
 
     private async Task<bool> IsCyclicReferenceAsync(Guid parentGenreId, Guid genreId)
@@ -125,7 +174,7 @@ public class GenreService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapp
 
         while (true)
         {
-            var parent = await _unitOfWork.GenreRepository.GetByIdAsync(currentParentId);
+            var parent = await categoryCatalog.GetByIdAsync(currentParentId);
             if (parent == null)
             {
                 break;
@@ -136,12 +185,12 @@ public class GenreService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapp
                 return true; // Cyclic reference detected
             }
 
-            if (!parent.ParentGenreId.HasValue)
+            if (!parent.ParentCategoryId.HasValue)
             {
                 break;
             }
 
-            currentParentId = parent.ParentGenreId.Value;
+            currentParentId = parent.ParentCategoryId.Value;
         }
 
         return false;

@@ -2,16 +2,15 @@
 using BusinessLogicLayer.Models;
 using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Services.Interaces;
-using DataAccessLayer.Entities;
-using DataAccessLayer.StoreContext;
-using DataAccessLayer.UnitOfWork;
+using DataAccessLayer.Entities.GameStoreSQLEntities;
+using DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
 using GameStore.Shared.Exceptions;
 
 namespace BusinessLogicLayer.Services;
 
-public class PlatformService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper mapper) : IPlatformService
+public class PlatformService(ISqlServerUnitOfWork unitOfWork, IMapper mapper) : IPlatformService
 {
-    private readonly IUnitOfWork<GameStoreContext> _unitOfWork = unitOfWork;
+    private readonly ISqlServerUnitOfWork _unitOfWork = unitOfWork;
     private readonly IMapper _mapper = mapper;
 
     public async Task CreatePlatformAsync(string platformType)
@@ -22,7 +21,7 @@ public class PlatformService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper m
 
         if (existType is not null)
         {
-            throw new ArgumentException($"Platform with type '{platformType}' already exists.");
+            throw new BadRequestException($"Platform with type '{platformType}' already exists.");
         }
 
         var platformModel = new PlatformModel
@@ -82,7 +81,7 @@ public class PlatformService(IUnitOfWork<GameStoreContext> unitOfWork, IMapper m
         _ = await _unitOfWork.PlatformRepository.GetByIdAsync(platformId)
             ?? throw new NotFoundException($"Platform with id '{platformId}' does not exist.");
 
-        var gameEntities = await _unitOfWork.GamePlatformRepository.GetGamesByPlatformIdAsync(platformId);
+        var gameEntities = await _unitOfWork.ProductPlatformRepository.GetGamesByPlatformIdAsync(platformId);
 
         var gameModels = _mapper.Map<List<GameModel>>(gameEntities);
 

@@ -1,4 +1,4 @@
-﻿using DataAccessLayer.Entities;
+﻿using DataAccessLayer.Entities.GameStoreSQLEntities;
 
 namespace GameStoreUnitTests.GameStore.Services.Tests;
 
@@ -29,19 +29,19 @@ public static class TestConstants
     // --------------------
     // Genre Entities
     // --------------------
-    public static readonly GenreEntity ExistingGenre1 = new()
+    public static readonly CategoryEntity ExistingGenre1 = new()
     {
         Id = Guid.Parse("10000000-0000-0000-0000-000000000001"),
         Name = "Action",
     };
 
-    public static readonly GenreEntity ExistingGenre2 = new()
+    public static readonly CategoryEntity ExistingGenre2 = new()
     {
         Id = Guid.Parse("20000000-0000-0000-0000-000000000002"),
         Name = "Adventure",
     };
 
-    public static readonly List<GenreEntity> ExistingGenres = [ExistingGenre1, ExistingGenre2];
+    public static readonly List<CategoryEntity> ExistingGenres = [ExistingGenre1, ExistingGenre2];
 
     // --------------------
     // Genre Ids

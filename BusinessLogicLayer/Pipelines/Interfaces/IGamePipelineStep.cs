@@ -1,9 +1,9 @@
 ﻿using BusinessLogicLayer.Models.GameModels;
-using DataAccessLayer.Entities;
+using DataAccessLayer.Entities.GameStoreSQLEntities;
 
 namespace BusinessLogicLayer.Pipelines.Interfaces;
 
 public interface IGamePipelineStep
 {
-    IQueryable<GameEntity> Filter(IQueryable<GameEntity> query, GameFilterModel filter);
+    IQueryable<ProductEntity> Filter(IQueryable<ProductEntity> query, GameFilterModel filter);
 }

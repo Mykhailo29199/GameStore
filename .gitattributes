@@ -1,0 +1,3 @@
+# Front-end build provided by the course: it is generated code, so GitLab collapses it in merge request
+# diffs and analysis tools treat it as third-party code.
+gamestore-ui-app/** linguist-generated=true linguist-vendored=true

@@ -39,10 +39,10 @@ public class GlobalExceptionMiddleware(
     private async Task ProcessException(Exception ex, int statusCode, HttpContext context)
     {
         _logger.LogError(
-                   ex,
-                   "Unhandled exception. Type={Type}, Path={Path}",
-                   ex.GetType().FullName,
-                   context.Request.Path);
+            ex,
+            "Unhandled exception. Type={Type}, Path={Path}",
+            ex.GetType().FullName,
+            context.Request.Path);
         context.Response.StatusCode = statusCode;
         context.Response.ContentType = "application/json";
 

@@ -1,106 +1,161 @@
-﻿using DataAccessLayer.Entities;
+﻿using DataAccessLayer.Entities.GameStoreSQLEntities;
 using Microsoft.EntityFrameworkCore;
 
 namespace DataAccessLayer.StoreContext;
 
 public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbContext(options)
 {
-    public DbSet<GameEntity> Games { get; set; }
+    // Money is stored as decimal(18, 2), so prices and totals have no floating-point rounding errors.
+    private const int MoneyPrecision = 18;
+    private const int MoneyScale = 2;
 
-    public DbSet<GameGenreEntity> GameGenres { get; set; }
+    public DbSet<ProductEntity> Products { get; set; }
 
-    public DbSet<GamePlatformEntity> GamePlatforms { get; set; }
+    public DbSet<ProductCategoryEntity> ProductCategories { get; set; }
 
-    public DbSet<GenreEntity> Genres { get; set; }
+    public DbSet<ProductPlatformEntity> ProductPlatforms { get; set; }
+
+    public DbSet<CategoryEntity> Categories { get; set; }
 
     public DbSet<PlatformEntity> Platforms { get; set; }
 
-    public DbSet<GameFileEntity> Files { get; set; }
+    public DbSet<ProductFileEntity> ProductFiles { get; set; }
 
-    public DbSet<PublisherEntity> Publishers { get; set; }
+    public DbSet<SupplierEntity> Suppliers { get; set; }
 
     public DbSet<OrderEntity> Orders { get; set; }
 
-    public DbSet<OrderGameEntity> OrderGames { get; set; }
+    public DbSet<OrderDetailsEntity> OrderDetails { get; set; }
 
     public DbSet<CommentEntity> Comments { get; set; }
 
     public DbSet<BanEntity> Bans { get; set; }
 
+    // Entities from Northwind Legacy
+    public DbSet<EmployeeEntity> Employees { get; set; }
+
+    public DbSet<TerritoryEntity> Territories { get; set; }
+
+    public DbSet<RegionEntity> Regions { get; set; }
+
+    public DbSet<EmployeeTerritoryEntity> EmployeeTerritories { get; set; }
+
+    public DbSet<ShipperEntity> Shippers { get; set; }
+
+    // The Northwind int ids kept next to the Guid keys look like foreign keys of another type, so EF Core's warning about them is ignored.
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        base.OnConfiguring(optionsBuilder);
+
+        optionsBuilder.ConfigureWarnings(w => w.Ignore(
+            Microsoft.EntityFrameworkCore.Diagnostics.CoreEventId.IncompatibleMatchingForeignKeyProperties));
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        // ===================== GameEntity =====================
-        modelBuilder.Entity<GameEntity>(entity =>
+        // ===================== ProductEntity =====================
+        modelBuilder.Entity<ProductEntity>(entity =>
         {
-            entity.HasKey(g => g.Id);
+            entity.HasKey(p => p.Id);
 
-            entity.Property(g => g.Views)
+            entity.Property(p => p.ProductName)
                 .IsRequired()
-                .HasDefaultValue(0);
+                .HasMaxLength(200);
 
-            entity.Property(g => g.CreatedAt)
+            entity.Property(p => p.Key)
                 .IsRequired()
+                .HasMaxLength(250);
+
+            entity.Property(p => p.UnitPrice)
+                .HasPrecision(MoneyPrecision, MoneyScale)
+                .IsRequired();
+
+            entity.Property(p => p.Description)
+                .HasMaxLength(3000);
+
+            entity.Property(p => p.Discount)
+                .HasColumnType("float")
+                .HasDefaultValue(0.0);
+
+            entity.Property(p => p.CreatedAt)
                 .HasDefaultValueSql("GETUTCDATE()");
 
-            entity.HasOne(g => g.Publisher)
-                .WithMany(p => p.Games)
-                .HasForeignKey(g => g.PublisherId)
+            // Genres and platforms are linked through explicit join entities.
+            entity.HasMany(p => p.ProductCategories)
+                .WithOne(gg => gg.Product)
+                .HasForeignKey(gg => gg.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(g => g.GameFile)
-                .WithOne(f => f.Game)
-                .HasForeignKey<GameFileEntity>(f => f.GameId)
+            entity.HasMany(p => p.ProductPlatforms)
+                .WithOne(gp => gp.Product)
+                .HasForeignKey(gp => gp.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(p => p.ProductFile)
+                .WithOne(pf => pf.Product)
+                .HasForeignKey<ProductFileEntity>(pf => pf.ProductId);
+
+            entity.HasMany(p => p.Comments)
+                .WithOne(c => c.Product)
+                .HasForeignKey(c => c.ProductId);
+
+            entity.HasIndex(p => p.Key)
+                .IsUnique();
+
+            entity.HasQueryFilter(p => !p.IsDeleted);
+        });
+
+        // ===================== ProductFileEntity =====================
+        modelBuilder.Entity<ProductFileEntity>(entity =>
+        {
+            entity.HasKey(f => f.ProductId);
+        });
+
+        // ===================== ProductCategoryEntity =====================
+        modelBuilder.Entity<ProductCategoryEntity>(entity =>
+        {
+            entity.HasKey(gg => new { gg.ProductId, gg.CategoryId });
+
+            entity.HasOne(gg => gg.Category)
+                .WithMany(c => c.ProductCategories)
+                .HasForeignKey(gg => gg.CategoryId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(gg => gg.Product)
+                .WithMany(p => p.ProductCategories)
+                .HasForeignKey(gg => gg.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // ===================== GameFileEntity =====================
-        modelBuilder.Entity<GameFileEntity>(entity =>
+        // ===================== ProductPlatformEntity =====================
+        modelBuilder.Entity<ProductPlatformEntity>(entity =>
         {
-            entity.HasKey(f => f.GameId);
-        });
+            entity.HasKey(gp => new { gp.ProductId, gp.PlatformId });
 
-        // ===================== GameGenreEntity =====================
-        modelBuilder.Entity<GameGenreEntity>(entity =>
-        {
-            entity.HasKey(gg => new { gg.GameId, gg.GenreId });
-
-            entity.HasOne(gg => gg.Game)
-                .WithMany(g => g.GameGenres)
-                .HasForeignKey(gg => gg.GameId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasOne(gg => gg.Genre)
-                .WithMany()
-                .HasForeignKey(gg => gg.GenreId)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        // ===================== GamePlatformEntity =====================
-        modelBuilder.Entity<GamePlatformEntity>(entity =>
-        {
-            entity.HasKey(gp => new { gp.GameId, gp.PlatformId });
-
-            entity.HasOne(gp => gp.Game)
-                .WithMany(g => g.GamePlatforms)
-                .HasForeignKey(gp => gp.GameId)
+            entity.HasOne(gp => gp.Product)
+                .WithMany(g => g.ProductPlatforms)
+                .HasForeignKey(gp => gp.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(gp => gp.Platform)
-                .WithMany()
+                .WithMany(p => p.ProductPlatforms)
                 .HasForeignKey(gp => gp.PlatformId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // ===================== GenreEntity =====================
-        modelBuilder.Entity<GenreEntity>(entity =>
+        // ===================== CategoryEntity =====================
+        modelBuilder.Entity<CategoryEntity>(entity =>
         {
+            entity.ToTable("Categories");
             entity.HasKey(g => g.Id);
+            entity.HasQueryFilter(g => !g.IsDeleted);
 
             entity.HasOne(g => g.ParentGenre)
                 .WithMany(g => g.SubGenres)
-                .HasForeignKey(g => g.ParentGenreId);
+                .HasForeignKey(g => g.ParentCategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // ===================== PlatformEntity =====================
@@ -108,16 +163,12 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
             .HasIndex(p => p.Type)
             .IsUnique();
 
-        // ===================== PublisherEntity =====================
-        modelBuilder.Entity<PublisherEntity>(entity =>
+        // ===================== SupplierEntity =====================
+        modelBuilder.Entity<SupplierEntity>(entity =>
         {
             entity.HasKey(p => p.Id);
-
-            // Зв'язок уже описаний в GameEntity, але дублювання тут не завадить для ясності
-            entity.HasMany(p => p.Games)
-                .WithOne(g => g.Publisher)
-                .HasForeignKey(g => g.PublisherId)
-                .OnDelete(DeleteBehavior.Cascade);
+            entity.ToTable("Suppliers");
+            entity.HasQueryFilter(s => !s.IsDeleted);
         });
 
         // ===================== OrderEntity =====================
@@ -125,26 +176,40 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
         {
             entity.HasKey(o => o.Id);
 
-            entity.HasMany(o => o.OrderGames)
+            entity.Property(o => o.Freight)
+                .HasPrecision(MoneyPrecision, MoneyScale);
+
+            entity.Property(o => o.Status);
+
+            entity.HasMany(o => o.OrderDetails)
                 .WithOne(og => og.Order)
                 .HasForeignKey(og => og.OrderId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // ===================== OrderGameEntity =====================
-        modelBuilder.Entity<OrderGameEntity>(entity =>
+        // ===================== OrderDetailsEntity =====================
+        modelBuilder.Entity<OrderDetailsEntity>(entity =>
         {
+            entity.ToTable("OrderDetails");
             entity.HasKey(og => new { og.OrderId, og.ProductId });
 
-            entity.HasOne(og => og.Order)
-                .WithMany(o => o.OrderGames)
-                .HasForeignKey(og => og.OrderId)
-                .OnDelete(DeleteBehavior.Cascade);
+            entity.Property(og => og.UnitPrice)
+                .HasColumnName("Price")
+                .HasPrecision(MoneyPrecision, MoneyScale)
+                .IsRequired();
 
-            entity.HasOne(og => og.Game)
+            entity.Property(og => og.Discount)
+                .HasColumnName("Discount")
+                .IsRequired(false)
+                .HasDefaultValue(0.0);
+
+            entity.HasOne(od => od.Order)
+                .WithMany(o => o.OrderDetails)
+                .HasForeignKey(od => od.OrderId);
+
+            entity.HasOne(od => od.Product)
                 .WithMany()
-                .HasForeignKey(og => og.ProductId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .HasForeignKey(od => od.ProductId);
         });
 
         // ===================== CommentEntity =====================
@@ -154,11 +219,11 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
 
             entity.Property(c => c.Name).IsRequired();
             entity.Property(c => c.Body).IsRequired();
-            entity.Property(c => c.GameId).IsRequired();
+            entity.Property(c => c.ProductId).IsRequired();
 
-            entity.HasOne(c => c.Game)
+            entity.HasOne(c => c.Product)
                 .WithMany(g => g.Comments)
-                .HasForeignKey(c => c.GameId)
+                .HasForeignKey(c => c.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne<CommentEntity>()
@@ -174,6 +239,86 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
             entity.HasIndex(b => b.UserName);
             entity.Property(b => b.UserName).IsRequired();
             entity.Property(b => b.ExpireAt).IsRequired(false);
+        });
+
+        // ===================== EmployeeEntity =====================
+        modelBuilder.Entity<EmployeeEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Manager)
+                .WithMany(e => e.Subordinates)
+                .HasForeignKey(e => e.ReportsToId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(e => e.FirstName).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.LastName).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Title).HasMaxLength(100);
+        });
+
+        // ===================== RegionEntity =====================
+        modelBuilder.Entity<RegionEntity>(entity =>
+        {
+            entity.HasKey(r => r.Id);
+
+            entity.Property(r => r.RegionDescription)
+                .HasMaxLength(50)
+                .IsRequired(false);
+        });
+
+        // ===================== ShipperEntity =====================
+        modelBuilder.Entity<ShipperEntity>(entity =>
+        {
+            entity.HasKey(s => s.Id);
+
+            entity.Property(s => s.CompanyName)
+                .HasMaxLength(40)
+                .IsRequired(false);
+
+            entity.Property(s => s.Phone)
+                .HasMaxLength(24)
+                .IsRequired(false);
+        });
+
+        // ===================== CustomerEntity =====================
+        modelBuilder.Entity<CustomerEntity>(entity =>
+        {
+            entity.HasKey(c => c.Id);
+
+            entity.Property(c => c.CompanyName).HasMaxLength(100).IsRequired(false);
+            entity.Property(c => c.ContactName).HasMaxLength(100).IsRequired(false);
+            entity.Property(c => c.Field11).HasMaxLength(50).IsRequired(false);
+        });
+
+        // ===================== TerritoryEntity =====================
+        modelBuilder.Entity<TerritoryEntity>(entity =>
+        {
+            entity.HasKey(t => t.Id);
+
+            entity.Property(t => t.TerritoryDescription)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.HasOne(t => t.RegionId)
+                .WithMany()
+                .HasForeignKey(t => t.RegionGuidId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ===================== EmployeeTerritoryEntity =====================
+        modelBuilder.Entity<EmployeeTerritoryEntity>(entity =>
+        {
+            entity.HasKey(et => new { et.EmployeeGuidId, et.TerritoryGuidId });
+
+            entity.HasOne(et => et.Employee)
+                .WithMany(e => e.EmployeeTerritories)
+                .HasForeignKey(et => et.EmployeeGuidId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(et => et.Territory)
+                .WithMany(t => t.EmployeeTerritories)
+                .HasForeignKey(et => et.TerritoryGuidId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

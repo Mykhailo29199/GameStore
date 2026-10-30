@@ -2,6 +2,7 @@
 using BusinessLogicLayer.Services.Interaces;
 using GameStore.Shared.Stubs;
 using Gamestore.WebAPI.DTOs.OrderDTO;
+using Gamestore.WebAPI.Helpers;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GameStore.WebAPI.Controllers;
@@ -36,7 +37,7 @@ public class OrderController(IOrderService orderService, IMapper mapper) : Contr
         return Ok(orderDtos);
     }
 
-    [HttpGet("orders/{id}")]
+    [HttpGet("orders/{id:guid}")]
     public async Task<ActionResult<OrderDTO>> GetOrderById(Guid id)
     {
         var order = await _orderService.GetOrderByIdAsync(id);
@@ -45,7 +46,7 @@ public class OrderController(IOrderService orderService, IMapper mapper) : Contr
         return Ok(orderDto);
     }
 
-    [HttpGet("orders/{id}/details")]
+    [HttpGet("orders/{id:guid}/details")]
     public async Task<ActionResult<IEnumerable<OrderGameDTO>>> GetOrderDetails(Guid id)
     {
         var models = await _orderService.GetOrderDetailsAsync(id);
@@ -61,5 +62,17 @@ public class OrderController(IOrderService orderService, IMapper mapper) : Contr
         var cartDtos = _mapper.Map<IEnumerable<OrderGameDTO>>(cart);
 
         return Ok(cartDtos);
+    }
+
+    [HttpGet("orders/history")]
+    [ProducesResponseType(typeof(IEnumerable<OrderDTO>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetHistory([FromQuery] string? start, [FromQuery] string? end)
+    {
+        var historyModels = await _orderService.GetOrdersHistoryAsync(
+            QueryDateParser.ParseStartDate(start),
+            QueryDateParser.ParseEndDate(end));
+        var result = _mapper.Map<IEnumerable<OrderDTO>>(historyModels);
+
+        return Ok(result);
     }
 }

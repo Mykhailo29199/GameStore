@@ -470,7 +470,7 @@ public class GameServiceTests
     /// </summary>
     private GameService CreateServiceWithGames(List<ProductEntity> gameStoreGames, List<ProductEntity> northwindGames)
     {
-        _unitOfWorkMock.Setup(x => x.ProductRepository.GetQueryable()).Returns(new AsyncQueryable<ProductEntity>(gameStoreGames));
+        _unitOfWorkMock.Setup(x => x.ProductRepository.GetQueryable(It.IsAny<bool>())).Returns(new AsyncQueryable<ProductEntity>(gameStoreGames));
         _productCatalogMock.Setup(x => x.GetNorthwindOnlyAsync(It.IsAny<GameFilterModel>())).ReturnsAsync(northwindGames);
         _mapperMock.Setup(x => x.Map<List<GameModel>>(It.IsAny<List<ProductEntity>>()))
             .Returns((object games) => ((List<ProductEntity>)games).Select(g => new GameModel { Key = g.Key }).ToList());

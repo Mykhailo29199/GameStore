@@ -14,5 +14,5 @@ public interface IProductSqlRepository : ISqlServerGenericRepository<ProductEnti
 
     Task<SupplierEntity> GetSupplierByGameKeyAsync(string gameKey);
 
-    IQueryable<ProductEntity> GetQueryable();
+    IQueryable<ProductEntity> GetQueryable(bool includeDeleted = false);
 }

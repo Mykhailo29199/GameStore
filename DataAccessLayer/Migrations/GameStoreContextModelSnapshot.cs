@@ -271,6 +271,11 @@ namespace DataAccessLayer.Migrations
                         .HasDefaultValue(0.0)
                         .HasColumnName("Discount");
 
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWID()");
+
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
 
@@ -280,6 +285,9 @@ namespace DataAccessLayer.Migrations
                         .HasColumnName("Price");
 
                     b.HasKey("OrderId", "ProductId");
+
+                    b.HasIndex("Id")
+                        .IsUnique();
 
                     b.HasIndex("ProductId");
 
@@ -497,6 +505,323 @@ namespace DataAccessLayer.Migrations
                     b.ToTable("Regions");
                 });
 
+            modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.RoleEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Roles", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("a0000000-0000-0000-0000-000000000001"),
+                            Name = "Admin"
+                        },
+                        new
+                        {
+                            Id = new Guid("a0000000-0000-0000-0000-000000000002"),
+                            Name = "Manager"
+                        },
+                        new
+                        {
+                            Id = new Guid("a0000000-0000-0000-0000-000000000003"),
+                            Name = "Moderator"
+                        },
+                        new
+                        {
+                            Id = new Guid("a0000000-0000-0000-0000-000000000004"),
+                            Name = "User"
+                        },
+                        new
+                        {
+                            Id = new Guid("a0000000-0000-0000-0000-000000000005"),
+                            Name = "Guest"
+                        });
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.RolePermissionEntity", b =>
+                {
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Permission")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("RoleId", "Permission");
+
+                    b.ToTable("RolePermissions", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000001"),
+                            Permission = "BuyGame"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000001"),
+                            Permission = "AddComment"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000001"),
+                            Permission = "DeleteComment"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000001"),
+                            Permission = "BanUser"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000001"),
+                            Permission = "AddGame"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000001"),
+                            Permission = "UpdateGame"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000001"),
+                            Permission = "DeleteGame"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000001"),
+                            Permission = "AddGenre"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000001"),
+                            Permission = "UpdateGenre"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000001"),
+                            Permission = "DeleteGenre"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000001"),
+                            Permission = "AddPlatform"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000001"),
+                            Permission = "UpdatePlatform"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000001"),
+                            Permission = "DeletePlatform"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000001"),
+                            Permission = "AddPublisher"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000001"),
+                            Permission = "UpdatePublisher"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000001"),
+                            Permission = "DeletePublisher"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000001"),
+                            Permission = "ViewOrders"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000001"),
+                            Permission = "UpdateOrder"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000001"),
+                            Permission = "ShipOrder"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000001"),
+                            Permission = "ViewOrderHistory"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000001"),
+                            Permission = "ViewDeletedGames"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000001"),
+                            Permission = "UpdateDeletedGame"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000001"),
+                            Permission = "ManageDeletedGameComments"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000001"),
+                            Permission = "ManageUsers"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000001"),
+                            Permission = "ManageRoles"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000002"),
+                            Permission = "BuyGame"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000002"),
+                            Permission = "AddComment"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000002"),
+                            Permission = "DeleteComment"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000002"),
+                            Permission = "BanUser"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000002"),
+                            Permission = "AddGame"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000002"),
+                            Permission = "UpdateGame"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000002"),
+                            Permission = "DeleteGame"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000002"),
+                            Permission = "AddGenre"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000002"),
+                            Permission = "UpdateGenre"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000002"),
+                            Permission = "DeleteGenre"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000002"),
+                            Permission = "AddPlatform"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000002"),
+                            Permission = "UpdatePlatform"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000002"),
+                            Permission = "DeletePlatform"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000002"),
+                            Permission = "AddPublisher"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000002"),
+                            Permission = "UpdatePublisher"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000002"),
+                            Permission = "DeletePublisher"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000002"),
+                            Permission = "ViewOrders"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000002"),
+                            Permission = "UpdateOrder"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000002"),
+                            Permission = "ShipOrder"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000002"),
+                            Permission = "ViewOrderHistory"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000003"),
+                            Permission = "BuyGame"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000003"),
+                            Permission = "AddComment"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000003"),
+                            Permission = "DeleteComment"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000003"),
+                            Permission = "BanUser"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000004"),
+                            Permission = "BuyGame"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000004"),
+                            Permission = "AddComment"
+                        });
+                });
+
             modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.ShipperEntity", b =>
                 {
                     b.Property<Guid?>("Id")
@@ -609,6 +934,58 @@ namespace DataAccessLayer.Migrations
                     b.HasIndex("RegionGuidId");
 
                     b.ToTable("Territories");
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.UserEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("PasswordHash")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Users", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("b0000000-0000-0000-0000-000000000001"),
+                            Name = "admin",
+                            PasswordHash = "100000.R2FtZVN0b3JlU2VlZFNhbHQhIQ==.UWluZQtgKpTE83bjFn0gl3j60jbOT/I1BNmfczCbdFA="
+                        });
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.UserRoleEntity", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("UserId", "RoleId");
+
+                    b.HasIndex("RoleId");
+
+                    b.ToTable("UserRoles", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            UserId = new Guid("b0000000-0000-0000-0000-000000000001"),
+                            RoleId = new Guid("a0000000-0000-0000-0000-000000000001")
+                        });
                 });
 
             modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.CategoryEntity", b =>
@@ -754,6 +1131,17 @@ namespace DataAccessLayer.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.RolePermissionEntity", b =>
+                {
+                    b.HasOne("DataAccessLayer.Entities.GameStoreSQLEntities.RoleEntity", "Role")
+                        .WithMany("Permissions")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Role");
+                });
+
             modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.TerritoryEntity", b =>
                 {
                     b.HasOne("DataAccessLayer.Entities.GameStoreSQLEntities.RegionEntity", "RegionId")
@@ -762,6 +1150,25 @@ namespace DataAccessLayer.Migrations
                         .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("RegionId");
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.UserRoleEntity", b =>
+                {
+                    b.HasOne("DataAccessLayer.Entities.GameStoreSQLEntities.RoleEntity", "Role")
+                        .WithMany("UserRoles")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DataAccessLayer.Entities.GameStoreSQLEntities.UserEntity", "User")
+                        .WithMany("UserRoles")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Role");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.CategoryEntity", b =>
@@ -800,6 +1207,13 @@ namespace DataAccessLayer.Migrations
                     b.Navigation("ProductPlatforms");
                 });
 
+            modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.RoleEntity", b =>
+                {
+                    b.Navigation("Permissions");
+
+                    b.Navigation("UserRoles");
+                });
+
             modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.ShipperEntity", b =>
                 {
                     b.Navigation("Orders");
@@ -813,6 +1227,11 @@ namespace DataAccessLayer.Migrations
             modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.TerritoryEntity", b =>
                 {
                     b.Navigation("EmployeeTerritories");
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.UserEntity", b =>
+                {
+                    b.Navigation("UserRoles");
                 });
 #pragma warning restore 612, 618
         }

@@ -26,4 +26,8 @@ public interface ISqlServerUnitOfWork : IUnitOfWorkBase<GameStoreContext>
     ICommentSqlRepository CommentRepository { get; }
 
     IBanSqlRepository BanRepository { get; }
+
+    IUserSqlRepository UserRepository { get; }
+
+    IRoleSqlRepository RoleRepository { get; }
 }

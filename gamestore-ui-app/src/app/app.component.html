@@ -1,6 +1,8 @@
 <app-header />
 <main class="page">
-  <router-outlet />
+  @for (current of [language()]; track current) {
+    <router-outlet />
+  }
 </main>
 <app-site-widgets />
 <app-footer />

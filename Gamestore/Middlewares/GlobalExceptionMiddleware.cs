@@ -26,6 +26,14 @@ public class GlobalExceptionMiddleware(
         {
             await ProcessException(ex, (int)HttpStatusCode.BadRequest, context);
         }
+        catch (UnauthorizedException ex)
+        {
+            await ProcessException(ex, (int)HttpStatusCode.Unauthorized, context);
+        }
+        catch (ForbiddenException ex)
+        {
+            await ProcessException(ex, (int)HttpStatusCode.Forbidden, context);
+        }
         catch (InvoiceGenerationException ex)
         {
             await ProcessException(ex, (int)HttpStatusCode.InternalServerError, context);

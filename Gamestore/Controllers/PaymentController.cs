@@ -1,9 +1,11 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Models.Payment;
 using BusinessLogicLayer.Services.Interaces;
+using GameStore.Shared.Authorization;
 using GameStore.Shared.Enums.PaymentEnums;
 using Gamestore.WebAPI.DTOs.PaymentDTO;
 using Gamestore.WebAPI.DTOs.PaymentDTO.PaymentResponseDTOs;
+using Gamestore.WebAPI.Security;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GameStore.WebAPI.Controllers;
@@ -14,6 +16,8 @@ public class PaymentController(IPaymentService paymentService, IMapper mapper) :
 {
     private readonly IPaymentService _paymentService = paymentService;
     private readonly IMapper _mapper = mapper;
+
+    [HasPermission(Permissions.BuyGame)]
 
     [HttpPost("orders/payment")]
     public async Task<IActionResult> ProcessPayment([FromBody] PaymentRequestDTO request)
@@ -32,6 +36,8 @@ public class PaymentController(IPaymentService paymentService, IMapper mapper) :
             _ => BadRequest("Unknown payment method"),
         };
     }
+
+    [HasPermission(Permissions.BuyGame)]
 
     [HttpGet("orders/payment-methods")]
     public IActionResult GetPaymentMethods()

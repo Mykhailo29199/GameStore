@@ -1,10 +1,12 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Services.Interaces;
+using GameStore.Shared.Authorization;
 using Gamestore.WebAPI.DTOs.GameDTO;
 using Gamestore.WebAPI.DTOs.GenreDTO;
 using Gamestore.WebAPI.DTOs.PlatformDTO;
 using Gamestore.WebAPI.DTOs.PublisherDTO;
+using Gamestore.WebAPI.Security;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Gamestore.WebAPI.Controllers;
@@ -15,6 +17,8 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
 {
     private readonly IGameService _gameService = gameService;
     private readonly IMapper _mapper = mapper;
+
+    [HasPermission(Permissions.AddGame)]
 
     [HttpPost("game")]
     public async Task<IActionResult> CreateGame([FromBody] CreateGameDTO requestPostDTO)
@@ -43,6 +47,8 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
         return Ok(gameDTO);
     }
 
+    [HasPermission(Permissions.UpdateGame)]
+
     [HttpPut("game")]
     public async Task<IActionResult> UpdateGame([FromBody] UpdateGameDTO requestPutDTO)
     {
@@ -51,6 +57,8 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
 
         return NoContent();
     }
+
+    [HasPermission(Permissions.DeleteGame)]
 
     [HttpDelete("game/{key}")]
     public async Task<IActionResult> DeleteGame([FromRoute] string key)
@@ -70,6 +78,15 @@ public class GameController(IGameService gameService, IMapper mapper) : Controll
 
         var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
         return File(fileStream, contentType, fileName);
+    }
+
+    [HttpGet("games/all")]
+    public async Task<IActionResult> GetAllGames()
+    {
+        var gameModels = await _gameService.GetAllGamesAsync();
+        var gameDTOs = _mapper.Map<IEnumerable<GameWithIdDTO>>(gameModels);
+
+        return Ok(gameDTOs);
     }
 
     [HttpGet("games")]

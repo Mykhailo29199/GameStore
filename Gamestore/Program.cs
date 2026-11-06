@@ -3,6 +3,7 @@ using BusinessLogicLayer.Catalog.Interfaces;
 using BusinessLogicLayer.Pipelines;
 using BusinessLogicLayer.Pipelines.Interfaces;
 using BusinessLogicLayer.Pipelines.Steps;
+using BusinessLogicLayer.Security;
 using BusinessLogicLayer.Services;
 using BusinessLogicLayer.Services.Interaces;
 using DataAccessLayer.Logging;
@@ -19,6 +20,7 @@ using GameStore.Shared.Logging;
 using GameStore.Shared.Options;
 using Gamestore.WebAPI.Mapper;
 using Gamestore.WebAPI.Middlewares;
+using Gamestore.WebAPI.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using MongoDB.Driver;
@@ -86,6 +88,21 @@ builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IBanService, BanService>();
 builder.Services.AddScoped<IShipperService, ShipperService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IRoleService, RoleService>();
+builder.Services.AddScoped<IAccessService, AccessService>();
+builder.Services.AddScoped<IExternalAuthClient, ExternalAuthClient>();
+builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+builder.Services.AddGameStoreAuthorization(builder.Configuration);
+
+// External authorization microservice
+builder.Services.AddHttpClient(ExternalAuthClient.HttpClientName, client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["AuthService:BaseUrl"] ?? "https://localhost:5037/");
+});
 
 builder.Services.AddScoped<IGamePipelineStep, GenreFilterStep>();
 builder.Services.AddScoped<IGamePipelineStep, PlatformFilterStep>();
@@ -197,6 +214,7 @@ if (angularFiles is not null)
     });
 }
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

@@ -7,4 +7,6 @@ public interface IOrderDetailsSqlRepository : ISqlServerGenericRepository<OrderD
     Task<OrderDetailsEntity?> GetOrderGameAsync(Guid orderId, Guid productId);
 
     Task<List<OrderDetailsEntity>> GetOrderGamesAsync(Guid orderId);
+
+    Task<OrderDetailsEntity?> GetDetailWithOrderAsync(Guid detailId);
 }

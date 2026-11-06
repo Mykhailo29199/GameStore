@@ -27,4 +27,12 @@ public class OrderDetailsSqlRepository : GenericSqlRepository<OrderDetailsEntity
             .Where(og => og.OrderId == orderId)
             .ToListAsync();
     }
+
+    public async Task<OrderDetailsEntity?> GetDetailWithOrderAsync(Guid detailId)
+    {
+        return await _context.OrderDetails
+            .Include(og => og.Order)
+            .Include(og => og.Product)
+            .FirstOrDefaultAsync(og => og.Id == detailId);
+    }
 }

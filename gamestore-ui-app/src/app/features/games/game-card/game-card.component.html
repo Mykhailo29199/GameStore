@@ -1,0 +1,5 @@
+<a class="card" [routerLink]="['/games', game().key]">
+  <img class="card__cover" [src]="cover()" alt="" width="160" height="160" loading="lazy" />
+  <h3 class="card__name">{{ game().name }}</h3>
+</a>
+<app-price class="card__price" [price]="game().price" [discount]="game().discount" />

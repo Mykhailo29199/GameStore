@@ -1,0 +1,84 @@
+:host {
+  display: block;
+}
+
+.comments__header {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: space-between;
+  margin-bottom: 50px;
+}
+
+.comments__title {
+  margin-bottom: 6px;
+}
+
+.comments__rating {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+}
+
+.comments__score {
+  color: var(--color-accent);
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.comments__write {
+  min-width: 210px;
+}
+
+.comments__form {
+  background-color: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 25px 30px;
+}
+
+.comments__form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.comments__list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.comments__item {
+  background-color: var(--color-surface);
+  padding: 25px 30px 22px;
+}
+
+.comments__empty {
+  font-size: 16px;
+}
+
+.comments__pages {
+  display: block;
+  margin-top: 40px;
+}
+
+@media (max-width: 600px) {
+  .comments__header {
+    margin-bottom: 30px;
+  }
+
+  .comments__item,
+  .comments__form {
+    padding: 18px 16px;
+  }
+
+  .comments__write {
+    width: 100%;
+  }
+}

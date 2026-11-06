@@ -1,0 +1,6 @@
+@if (discounted()) {
+  <s class="price__old">{{ price() | currency }}</s>
+  <strong class="price__new">{{ finalPrice() | currency }}</strong>
+} @else {
+  <span>{{ price() | currency }}</span>
+}

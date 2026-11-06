@@ -1,0 +1,22 @@
+@if (readonly()) {
+  <span class="stars" aria-hidden="true">
+    @for (star of stars; track star) {
+      <span class="star" [class.star--on]="star <= value()"></span>
+    }
+  </span>
+  <span class="visually-hidden">{{ label() }}: {{ value() }} of 5</span>
+} @else {
+  <fieldset class="stars stars--input">
+    <legend class="visually-hidden">{{ label() }}</legend>
+    @for (star of stars; track star) {
+      <button
+        class="star star--button"
+        type="button"
+        [class.star--on]="star <= value()"
+        [attr.aria-label]="star + ' of 5'"
+        [attr.aria-pressed]="star <= value()"
+        (click)="select(star)"
+      ></button>
+    }
+  </fieldset>
+}

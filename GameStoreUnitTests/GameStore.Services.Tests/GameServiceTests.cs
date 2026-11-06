@@ -1,3 +1,4 @@
+using System.Data;
 using AutoMapper;
 using BusinessLogicLayer.Catalog;
 using BusinessLogicLayer.Catalog.Interfaces;
@@ -8,11 +9,13 @@ using BusinessLogicLayer.Pipelines.Steps;
 using BusinessLogicLayer.Security;
 using BusinessLogicLayer.Services;
 using DataAccessLayer.Entities.GameStoreSQLEntities;
+using DataAccessLayer.Entities.GameStoreSQLEntities.Localization;
 using DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
 using GameStore.Shared.Authorization;
 using GameStore.Shared.Enums.FilterOptionsEnums;
 using GameStore.Shared.Exceptions;
 using GameStore.Shared.FileSystem;
+using GameStore.Shared.Localization;
 using Moq;
 using Xunit;
 using static GameStoreUnitTests.GameStore.Services.Tests.TestConstants;
@@ -477,6 +480,107 @@ public class GameServiceTests
 
         // Assert
         Assert.Equal(publisherModel, result);
+    }
+
+    [Fact]
+    public async Task UpdateGameAsync_WhenLanguageIsPolish_ShouldSaveTranslationAndKeepEnglishData()
+    {
+        // Arrange
+        var service = CreateService(Languages.Polish);
+        var gameModel = CreateGameModel(
+            key: ExistingGameKey,
+            name: "Kosmiczna podróż",
+            publisher: ExistingPublisherId,
+            platforms: ExistingPlatformIds,
+            genres: ExistingGenreIds);
+        gameModel.Id = ExistingGameId;
+        gameModel.Description = "Leć";
+        gameModel.Price = 42;
+
+        var game = new ProductEntity { Id = ExistingGameId, Key = ExistingGameKey, ProductName = "Space Trip", Description = "Fly" };
+
+        _productCatalogMock.Setup(x => x.GetByIdAsync(ExistingGameId, It.IsAny<bool>())).ReturnsAsync(game);
+        _productCatalogMock.Setup(x => x.EnsureInGameStoreAsync(ExistingGameKey, It.IsAny<bool>())).ReturnsAsync(game);
+        SetupExistingReferences(new SupplierEntity { Id = ExistingPublisherId, CompanyName = "Publisher" });
+
+        // Act
+        await service.UpdateGameAsync(gameModel);
+
+        // Assert
+        Assert.Equal(("Space Trip", "Fly"), (game.ProductName, game.Description));
+        Assert.Equal(42, game.UnitPrice);
+
+        var translation = Assert.Single(game.Translations);
+        Assert.Equal((Languages.Polish, "Kosmiczna podróż", "Leć"), (translation.LanguageCode, translation.Name, translation.Description));
+        _unitOfWorkMock.Verify(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task>>(), IsolationLevel.RepeatableRead), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteGameAsync_WhenGameHasTranslations_ShouldRemoveThem()
+    {
+        // Arrange
+        var game = new ProductEntity { Key = ExistingGameKey };
+        game.Translations.Add(new ProductTranslationEntity { LanguageCode = Languages.Polish, Name = "Gra" });
+        game.Translations.Add(new ProductTranslationEntity { LanguageCode = Languages.Ukrainian, Name = "Гра" });
+
+        _productCatalogMock.Setup(x => x.GetByKeyAsync(ExistingGameKey, It.IsAny<bool>())).ReturnsAsync(game);
+        _unitOfWorkMock.Setup(x => x.ProductRepository.GetGameByKeyAsync(ExistingGameKey)).ReturnsAsync(game);
+
+        // Act
+        await _gameService.DeleteGameAsync(ExistingGameKey);
+
+        // Assert
+        Assert.True(game.IsDeleted);
+        Assert.Empty(game.Translations);
+    }
+
+    [Fact]
+    public async Task GetGameByKeyAsync_WhenLanguageIsUkrainian_ShouldReturnTranslatedGameInRepeatableReadTransaction()
+    {
+        // Arrange
+        var service = CreateService(Languages.Ukrainian);
+        var game = new ProductEntity { Id = ExistingGameId, Key = ExistingGameKey };
+        var gameModel = new GameModel { Id = ExistingGameId, Key = ExistingGameKey, Name = "Space Trip" };
+
+        _productCatalogMock.Setup(x => x.GetByKeyAsync(ExistingGameKey, It.IsAny<bool>())).ReturnsAsync(game);
+        _mapperMock.Setup(x => x.Map<GameModel>(game)).Returns(gameModel);
+        _unitOfWorkMock.Setup(x => x.TranslationRepository.GetLocalizedGamesAsync(Languages.Ukrainian, It.IsAny<IReadOnlyCollection<Guid>>()))
+            .ReturnsAsync([new LocalizedGameEntity { Id = ExistingGameId, Name = "Космічна подорож", LanguageCode = Languages.Ukrainian }]);
+
+        // Act
+        var result = await service.GetGameByKeyAsync(ExistingGameKey);
+
+        // Assert
+        Assert.Equal("Космічна подорож", result.Name);
+        _unitOfWorkMock.Verify(x => x.ExecuteInTransactionAsync(It.IsAny<Func<Task<GameModel>>>(), IsolationLevel.RepeatableRead), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetFilteredGamesAsync_WhenNameIsTranslated_ShouldFindGameByTranslation()
+    {
+        // Arrange
+        var translatedGame = CreateGame("Space Trip", "space-trip", views: 1);
+        translatedGame.Translations.Add(new ProductTranslationEntity { LanguageCode = Languages.Polish, Name = "Kosmiczna podróż" });
+
+        var service = CreateServiceWithGames([translatedGame, CreateGame("Chess", "chess", views: 2)], []);
+
+        // Act
+        var result = await service.GetFilteredGamesAsync(new GameFilterModel { Name = "Kosmiczna", Page = 1, PageSize = 10 });
+
+        // Assert
+        Assert.Equal(["space-trip"], result.Games.Select(g => g.Key));
+    }
+
+    private GameService CreateService(string languageCode)
+    {
+        return new GameService(
+            _unitOfWorkMock.Object,
+            _mapperMock.Object,
+            _fileSystemMock.Object,
+            new GameFilterPipeline([], new SortingStep(), new PaginationStep()),
+            new StoreCatalog(_productCatalogMock.Object, _categoryCatalogMock.Object, _supplierCatalogMock.Object),
+            _currentUserMock.Object,
+            TestLocalization.CreateLocalizer(_unitOfWorkMock, languageCode));
     }
 
     private static GameModel CreateGameModel(

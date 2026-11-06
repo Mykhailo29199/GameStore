@@ -5,8 +5,10 @@ using BusinessLogicLayer.Models;
 using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Services;
 using DataAccessLayer.Entities.GameStoreSQLEntities;
+using DataAccessLayer.Entities.GameStoreSQLEntities.Localization;
 using DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
 using GameStore.Shared.Exceptions;
+using GameStore.Shared.Localization;
 using Moq;
 using Xunit;
 using static GameStoreUnitTests.GameStore.Services.Tests.TestConstants;
@@ -403,6 +405,47 @@ public class GenreServiceTests
         _unitOfWorkMock.Verify(
             x => x.SaveAsync(),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteGenreAsync_WhenSoftDeletedGenreHasTranslations_ShouldRemoveThem()
+    {
+        // Arrange
+        CategoryEntity gameStoreCopy = new() { Id = ExistingGenreId, Name = ExistingGenre1.Name };
+        gameStoreCopy.Translations.Add(new CategoryTranslationEntity { LanguageCode = Languages.Polish, Name = "Strategia" });
+
+        _categoryCatalogMock.Setup(x => x.GetByIdAsync(ExistingGenreId)).ReturnsAsync(ExistingGenre1);
+        _categoryCatalogMock.Setup(x => x.HasNorthwindCounterpartAsync(ExistingGenre1)).ReturnsAsync(true);
+        _categoryCatalogMock.Setup(x => x.EnsureInGameStoreAsync(ExistingGenreId)).ReturnsAsync(gameStoreCopy);
+
+        // Act
+        await _genreService.DeleteGenreAsync(ExistingGenreId);
+
+        // Assert
+        Assert.True(gameStoreCopy.IsDeleted);
+        Assert.Empty(gameStoreCopy.Translations);
+    }
+
+    [Fact]
+    public async Task GetAllGenresAsync_WhenLanguageIsPolish_ShouldReturnTranslatedNames()
+    {
+        // Arrange
+        var service = new GenreService(
+            _unitOfWorkMock.Object,
+            _mapperMock.Object,
+            _categoryCatalogMock.Object,
+            _productCatalogMock.Object,
+            TestLocalization.CreateLocalizer(_unitOfWorkMock, Languages.Polish));
+
+        _unitOfWorkMock.Setup(x => x.TranslationRepository.GetCategoryTranslationsAsync(Languages.Polish, It.IsAny<IReadOnlyCollection<Guid>>()))
+            .ReturnsAsync([new CategoryTranslationEntity { CategoryId = ExistingGenreId, LanguageCode = Languages.Polish, Name = "Strategia" }]);
+
+        // Act
+        var result = await service.GetAllGenresAsync();
+
+        // Assert
+        Assert.Equal("Strategia", result.Single(g => g.Id == ExistingGenreId).Name);
+        Assert.All(result.Where(g => g.Id != ExistingGenreId), g => Assert.Equal(ExistingGenres.Single(e => e.Id == g.Id).Name, g.Name));
     }
 
     [Fact]

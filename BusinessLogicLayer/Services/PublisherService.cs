@@ -1,5 +1,6 @@
 using AutoMapper;
 using BusinessLogicLayer.Catalog.Interfaces;
+using BusinessLogicLayer.Localization;
 using BusinessLogicLayer.Models;
 using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Services.Interaces;
@@ -13,7 +14,8 @@ public class PublisherService(
     ISqlServerUnitOfWork unitOfWork,
     IMapper mapper,
     ISupplierCatalog supplierCatalog,
-    IProductCatalog productCatalog) : IPublisherService
+    IProductCatalog productCatalog,
+    IContentLocalizer localizer) : IPublisherService
 {
     private readonly ISqlServerUnitOfWork _unitOfWork = unitOfWork;
     private readonly IMapper _mapper = mapper;
@@ -28,6 +30,13 @@ public class PublisherService(
         }
 
         var publisherEntity = _mapper.Map<SupplierEntity>(publisherModel);
+
+        // English data is required, so a publisher added in another language also gets it as the English version.
+        if (!localizer.IsDefaultLanguage)
+        {
+            await localizer.SavePublisherTranslationAsync(publisherEntity, publisherModel.Description);
+        }
+
         await _unitOfWork.SupplierRepository.AddAsync(publisherEntity);
         await _unitOfWork.SaveAsync();
     }
@@ -37,7 +46,10 @@ public class PublisherService(
         var publisherEntity = await supplierCatalog.GetByCompanyNameAsync(companyName)
             ?? throw new NotFoundException($"Publisher with this name '{companyName}' does not exist");
 
-        return _mapper.Map<PublisherModel>(publisherEntity);
+        var publisherModel = _mapper.Map<PublisherModel>(publisherEntity);
+        await localizer.LocalizePublishersAsync([publisherModel]);
+
+        return publisherModel;
     }
 
     public async Task<List<PublisherModel>> GetPublishersAsync()
@@ -45,12 +57,14 @@ public class PublisherService(
         var publisherEntities = await supplierCatalog.GetAllAsync();
 
         var publisherModels = _mapper.Map<List<PublisherModel>>(publisherEntities);
+        await localizer.LocalizePublishersAsync(publisherModels);
 
         return publisherModels;
     }
 
     /// <summary>
     /// A Northwind publisher is copied to the Game Store database and the copy is updated; Northwind data stays untouched.
+    /// The company name is not translated; the description is saved in the language of the request.
     /// </summary>
     public async Task UpdatePublisherAsync(PublisherModel publisherModel)
     {
@@ -65,14 +79,22 @@ public class PublisherService(
         }
 
         var publisherEntity = await supplierCatalog.EnsureInGameStoreAsync(publisherModel.Id);
+        var englishDescription = publisherEntity.Description;
 
         _mapper.Map(publisherModel, publisherEntity);
+
+        if (!localizer.IsDefaultLanguage)
+        {
+            publisherEntity.Description = englishDescription;
+            await localizer.SavePublisherTranslationAsync(publisherEntity, publisherModel.Description);
+        }
 
         await _unitOfWork.SaveAsync();
     }
 
     /// <summary>
     /// Publishers that exist in Northwind are soft-deleted in the Game Store database, so the Northwind original stays hidden.
+    /// All translations of the publisher are removed in the same operation: by the database cascade or explicitly.
     /// </summary>
     public async Task DeletePublisherAsync(Guid publisherId)
     {
@@ -89,6 +111,7 @@ public class PublisherService(
         else
         {
             var gameStorePublisher = await supplierCatalog.EnsureInGameStoreAsync(publisherId);
+            await localizer.RemoveTranslationsAsync(gameStorePublisher);
             gameStorePublisher.IsDeleted = true;
         }
 
@@ -117,6 +140,9 @@ public class PublisherService(
             .Where(g => g.SupplierID == publisherId)
             .ToList();
 
-        return _mapper.Map<List<GameModel>>(games);
+        var gameModels = _mapper.Map<List<GameModel>>(games);
+        await localizer.LocalizeGamesAsync(gameModels);
+
+        return gameModels;
     }
 }

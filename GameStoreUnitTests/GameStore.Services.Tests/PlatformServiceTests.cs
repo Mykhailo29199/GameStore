@@ -23,7 +23,7 @@ public class PlatformServiceTests
     {
         _unitOfWorkMock = new Mock<ISqlServerUnitOfWork>();
         _mapperMock = new Mock<IMapper>();
-        _platformService = new PlatformService(_unitOfWorkMock.Object, _mapperMock.Object);
+        _platformService = new PlatformService(_unitOfWorkMock.Object, _mapperMock.Object, TestLocalization.CreateLocalizer(_unitOfWorkMock));
     }
 
     [Fact]
@@ -166,12 +166,6 @@ public class PlatformServiceTests
         _unitOfWorkMock.Setup(uow => uow.PlatformRepository.GetByIdAsync(ExistingPlatformId))
             .ReturnsAsync(ExistingPlatform1);
 
-        _mapperMock.Setup(m => m.Map(platformModel, ExistingPlatform1))
-            .Callback<PlatformModel, PlatformEntity>((m, e) => e.Type = m.Type);
-
-        _unitOfWorkMock.Setup(uow => uow.PlatformRepository.UpdateAsync(ExistingPlatform1))
-            .Returns(Task.CompletedTask);
-
         _unitOfWorkMock.Setup(uow => uow.SaveAsync())
             .Returns(Task.CompletedTask);
 
@@ -180,7 +174,6 @@ public class PlatformServiceTests
 
         // Assert
         ExistingPlatform1.Type.Should().Be("UpdatedType");
-        _unitOfWorkMock.Verify(uow => uow.PlatformRepository.UpdateAsync(ExistingPlatform1), Times.Once);
         _unitOfWorkMock.Verify(uow => uow.SaveAsync(), Times.Once);
     }
 

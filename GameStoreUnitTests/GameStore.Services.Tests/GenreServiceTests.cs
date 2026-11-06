@@ -29,12 +29,17 @@ public class GenreServiceTests
         _productCatalogMock = new Mock<IProductCatalog>();
 
         _categoryCatalogMock.Setup(x => x.GetAllAsync()).ReturnsAsync(ExistingGenres);
+        _mapperMock.Setup(m => m.Map<List<GenreModel>>(It.IsAny<List<CategoryEntity>>()))
+            .Returns((object genres) => ((List<CategoryEntity>)genres)
+                .Select(g => new GenreModel { Id = g.Id, Name = g.Name, ParentGenreId = g.ParentCategoryId })
+                .ToList());
 
         _genreService = new GenreService(
             _unitOfWorkMock.Object,
             _mapperMock.Object,
             _categoryCatalogMock.Object,
-            _productCatalogMock.Object);
+            _productCatalogMock.Object,
+            TestLocalization.CreateLocalizer(_unitOfWorkMock));
     }
 
     #region CreateGenreAsync

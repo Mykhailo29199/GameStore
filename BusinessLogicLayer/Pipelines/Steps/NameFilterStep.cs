@@ -12,8 +12,8 @@ public class NameFilterStep : IGamePipelineStep
         {
             var name = filter.Name.Trim();
 
-            // The default SQL Server collation ignores case.
-            query = query.Where(g => g.ProductName.Contains(name));
+            // The default SQL Server collation ignores case. A game is found by its name in any language.
+            query = query.Where(g => g.ProductName.Contains(name) || g.Translations.Any(t => t.Name.Contains(name)));
         }
 
         return query;

@@ -45,6 +45,7 @@ public class GameServiceTests
         _unitOfWorkMock.Setup(x => x.PlatformRepository.GetAllAsync()).ReturnsAsync(ExistingPlatforms);
         _unitOfWorkMock.Setup(x => x.ProductCategoryRepository.GetByGameIdAsync(It.IsAny<Guid>())).ReturnsAsync([]);
         _unitOfWorkMock.Setup(x => x.ProductPlatformRepository.GetByGameIdAsync(It.IsAny<Guid>())).ReturnsAsync([]);
+        _unitOfWorkMock.RunTransactions<GameModel>();
 
         _gameService = new GameService(
             _unitOfWorkMock.Object,
@@ -52,7 +53,8 @@ public class GameServiceTests
             _fileSystemMock.Object,
             new GameFilterPipeline([], new SortingStep(), new PaginationStep()),
             new StoreCatalog(_productCatalogMock.Object, _categoryCatalogMock.Object, _supplierCatalogMock.Object),
-            _currentUserMock.Object);
+            _currentUserMock.Object,
+            TestLocalization.CreateLocalizer(_unitOfWorkMock));
     }
 
     [Fact]
@@ -515,7 +517,8 @@ public class GameServiceTests
             _fileSystemMock.Object,
             new GameFilterPipeline([new NameFilterStep()], new SortingStep(), new PaginationStep()),
             new StoreCatalog(_productCatalogMock.Object, _categoryCatalogMock.Object, _supplierCatalogMock.Object),
-            _currentUserMock.Object);
+            _currentUserMock.Object,
+            TestLocalization.CreateLocalizer(_unitOfWorkMock));
     }
 
     private void SetupExistingReferences(SupplierEntity publisher)

@@ -176,13 +176,15 @@ public class GameAutoMapping : Profile
             .ForMember(d => d.Id, opt => opt.MapFrom(s => MongoIdConverter.ToGuid(s.InternalId)))
             .ForMember(d => d.CustomerId, opt => opt.MapFrom(s => s.CustomerID ?? string.Empty))
             .ForMember(d => d.Date, opt => opt.MapFrom(s => s.OrderDate))
-            .ForMember(d => d.Status, opt => opt.MapFrom(_ => OrderStatus.Paid));
+            .ForMember(d => d.Status, opt => opt.MapFrom(_ => OrderStatus.Paid))
+            .ForMember(d => d.Sum, opt => opt.Ignore());
 
         CreateMap<OrderEntity, OrderModel>()
             .ForMember(d => d.Id, opt => opt.MapFrom(s => s.Id))
             .ForMember(d => d.CustomerId, opt => opt.MapFrom(s => s.CustomerId.ToString()))
             .ForMember(d => d.Date, opt => opt.MapFrom(s => s.OrderDate))
-            .ForMember(d => d.Status, opt => opt.MapFrom(s => s.Status));
+            .ForMember(d => d.Status, opt => opt.MapFrom(s => s.Status))
+            .ForMember(d => d.Sum, opt => opt.Ignore());
 
         CreateMap<OrderModel, OrderDTO>();
 

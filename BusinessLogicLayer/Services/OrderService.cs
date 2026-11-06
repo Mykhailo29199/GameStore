@@ -37,15 +37,19 @@ public class OrderService(
     {
         var order = await _sqlUnitOfWork.OrderRepository.GetOrderWithGamesAsync(orderId);
 
-        if (order is not null)
+        var model = order is not null
+            ? _mapper.Map<OrderModel?>(order)
+            : _mapper.Map<OrderModel?>(await GetNorthwindOrderAsync(orderId)
+                ?? throw new NotFoundException($"Order with id `{orderId}` was not found."));
+
+        if (model is not null)
         {
-            return _mapper.Map<OrderModel?>(order);
+            var details = await GetOrderDetailsAsync(orderId);
+            model.Sum = OrderTotalCalculator.Total(
+                details.Select(d => ((decimal)d.Price, d.Quantity, (double?)d.Discount)));
         }
 
-        var northwindOrder = await GetNorthwindOrderAsync(orderId)
-            ?? throw new NotFoundException($"Order with id `{orderId}` was not found.");
-
-        return _mapper.Map<OrderModel?>(northwindOrder);
+        return model;
     }
 
     public async Task<IEnumerable<OrderGameModel>> GetOrderDetailsAsync(Guid orderId)
@@ -116,6 +120,26 @@ public class OrderService(
         var orderGame = await _sqlUnitOfWork.OrderDetailsRepository.GetOrderGameAsync(order.Id, game.Id) ?? throw new NotFoundException("Game not found in order");
 
         await DecreaseGameQuantityAsync(orderGame, order);
+    }
+
+    public async Task RemoveGamePositionFromCartAsync(Guid userId, string gameKey)
+    {
+        // A game deleted after it was added to the cart must still be removable from it.
+        var game = await productCatalog.GetByKeyAsync(gameKey, includeDeleted: true) ?? throw new NotFoundException("Game not found");
+        var order = await _sqlUnitOfWork.OrderRepository.GetActiveCartAsync(userId) ?? throw new NotFoundException("Active cart not found");
+        var position = order.OrderDetails.FirstOrDefault(d => d.ProductId == game.Id) ?? throw new NotFoundException("Game not found in order");
+
+        if (order.OrderDetails.Count == 1)
+        {
+            // The cart becomes empty, so the open order is removed together with its last position.
+            await _sqlUnitOfWork.OrderRepository.DeleteAsync(order);
+        }
+        else
+        {
+            await _sqlUnitOfWork.OrderDetailsRepository.DeleteAsync(position);
+        }
+
+        await _sqlUnitOfWork.SaveAsync();
     }
 
     public async Task CheckoutAsync(Guid orderId)

@@ -341,3 +341,5 @@ ASALocalRun/
 Gamestore/Invoices/
 
 
+# Local copy of the mock-ups (the tracked copy is in Mockups)
+mocksForUi/

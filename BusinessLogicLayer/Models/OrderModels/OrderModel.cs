@@ -11,4 +11,6 @@ public class OrderModel
     public DateTime? Date { get; set; }
 
     public OrderStatus Status { get; set; }
+
+    public decimal? Sum { get; set; }
 }

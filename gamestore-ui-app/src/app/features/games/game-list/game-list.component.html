@@ -1,0 +1,58 @@
+<div class="container catalog">
+  <section class="catalog__main">
+    <header class="catalog__header">
+      <h2 class="page-title">Games</h2>
+      <label class="search">
+        <svg class="search__icon" viewBox="0 0 16 16" aria-hidden="true">
+          <circle cx="6.5" cy="6.5" r="5.5" />
+          <path d="m10.5 10.5 4.5 4.5" />
+        </svg>
+        <input
+          #search
+          class="field__control search__input"
+          type="search"
+          placeholder="Search for Game"
+          aria-label="Search for Game"
+          [value]="filter().name"
+          (input)="applyFilter({ name: search.value })"
+        />
+      </label>
+    </header>
+
+    @if (failed()) {
+      <p class="catalog__message" role="alert">Games could not be loaded. Please try again later.</p>
+    } @else if (loading()) {
+      <p class="catalog__message">Loading games&hellip;</p>
+    } @else if (items().length === 0) {
+      <p class="catalog__message">No games match the selected filters.</p>
+    } @else {
+      <ul class="catalog__grid">
+        @for (game of items(); track game.id) {
+          <li><app-game-card [game]="game" /></li>
+        }
+      </ul>
+    }
+    @if (!failed() && !loading()) {
+      <app-pagination
+        class="catalog__pages"
+        [current]="filter().page"
+        [total]="totalPages()"
+        (pageChange)="applyFilter({ page: $event })"
+      />
+    }
+  </section>
+
+  <aside class="catalog__aside">
+    <header class="catalog__header">
+      <h2 class="page-title">Refine Results</h2>
+    </header>
+    <app-game-filters
+      [filter]="filter()"
+      [options]="options()"
+      [genres]="genres()"
+      [platforms]="platforms()"
+      [publishers]="publishers()"
+      (filterChange)="applyFilter($event)"
+    />
+  </aside>
+</div>

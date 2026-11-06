@@ -36,6 +36,14 @@ public class OrderController(IOrderService orderService, ICurrentUser currentUse
         return Ok();
     }
 
+    [HasPermission(Permissions.BuyGame)]
+    [HttpDelete("orders/cart/{key}/all")]
+    public async Task<IActionResult> RemoveGamePositionFromCart(string key)
+    {
+        await _orderService.RemoveGamePositionFromCartAsync(CurrentUserId, key);
+        return NoContent();
+    }
+
     [HasPermission(Permissions.ViewOrders)]
     [HttpGet("orders")]
     public async Task<ActionResult<IEnumerable<OrderDTO>>> GetClosedOrders()

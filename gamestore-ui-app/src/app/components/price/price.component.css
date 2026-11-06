@@ -1,0 +1,16 @@
+:host {
+  align-items: baseline;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0 8px;
+}
+
+.price__old {
+  color: var(--color-muted);
+  font-size: 0.85em;
+}
+
+.price__new {
+  color: var(--color-accent);
+  font-weight: 600;
+}

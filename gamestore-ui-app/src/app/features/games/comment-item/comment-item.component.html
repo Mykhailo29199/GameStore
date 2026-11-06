@@ -1,0 +1,54 @@
+<span class="comment__avatar" aria-hidden="true">{{ initials() }}</span>
+<div class="comment__main">
+  <header class="comment__header">
+    <h4 class="comment__author">{{ comment().name }}</h4>
+    @if (!nested()) {
+      <app-star-rating
+        class="comment__rating"
+        label="Comment rating"
+        [value]="reactions.commentRating(comment().id)"
+        (valueChange)="reactions.rateComment(comment().id, $event)"
+      />
+    }
+  </header>
+
+  @if (content().quote) {
+    <blockquote class="comment__quote">{{ content().quote }}</blockquote>
+  }
+  <p class="comment__text">{{ content().text }}</p>
+
+  <div class="comment__actions">
+    <button
+      class="link"
+      type="button"
+      [class.comment__action--on]="reactions.isLiked(comment().id)"
+      [attr.aria-pressed]="reactions.isLiked(comment().id)"
+      (click)="reactions.toggleLike(comment().id)"
+    >
+      {{ reactions.isLiked(comment().id) ? 'Liked (1)' : 'Like' }}
+    </button>
+    <button class="link" type="button" (click)="respond.emit({ comment: comment(), action: 'Reply' })">
+      Reply
+    </button>
+    <button class="link" type="button" (click)="respond.emit({ comment: comment(), action: 'Quote' })">
+      Quote
+    </button>
+    @if (canBan) {
+      <button class="link" type="button" (click)="ban.emit(comment())">Ban</button>
+    }
+    @if (canDelete) {
+      <app-confirm-button (confirmed)="remove.emit(comment())" />
+    }
+  </div>
+
+  @for (child of comment().childComments; track child.id) {
+    <app-comment-item
+      class="comment__child"
+      [comment]="child"
+      [nested]="true"
+      (respond)="respond.emit($event)"
+      (remove)="remove.emit($event)"
+      (ban)="ban.emit($event)"
+    />
+  }
+</div>

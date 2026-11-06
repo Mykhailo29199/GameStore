@@ -1,0 +1,125 @@
+<form class="filters" novalidate>
+  <fieldset class="filters__group">
+    <legend class="filters__title">Sorting</legend>
+    <select
+      #sort
+      class="field__control select"
+      aria-label="Sorting"
+      (change)="filterChange.emit({ sort: sort.value })"
+    >
+      @for (option of options().sorting; track option) {
+        <option [value]="option" [selected]="option === filter().sort">{{ option }}</option>
+      }
+    </select>
+  </fieldset>
+
+  <fieldset class="filters__group">
+    <legend class="filters__title">Price Range</legend>
+    <div class="filters__prices">
+      <label class="field">
+        <span>From</span>
+        <input
+          #min
+          class="field__control"
+          type="number"
+          min="0"
+          step="any"
+          placeholder="$0"
+          [value]="filter().minPrice ?? ''"
+          (input)="setPrice('minPrice', min.value)"
+        />
+      </label>
+      <label class="field">
+        <span>To</span>
+        <input
+          #max
+          class="field__control"
+          type="number"
+          min="0"
+          step="any"
+          placeholder="$100"
+          [value]="filter().maxPrice ?? ''"
+          (input)="setPrice('maxPrice', max.value)"
+        />
+      </label>
+    </div>
+  </fieldset>
+
+  <fieldset class="filters__group">
+    <legend class="filters__title">Publisher</legend>
+    @for (publisher of publishers(); track publisher.id) {
+      <label class="choice">
+        <input
+          #box
+          class="choice__input"
+          type="checkbox"
+          [checked]="filter().publishers.includes(publisher.id)"
+          (change)="toggle('publishers', publisher.id, box.checked)"
+        />
+        {{ publisher.companyName }}
+      </label>
+    }
+  </fieldset>
+
+  <fieldset class="filters__group">
+    <legend class="filters__title">Release Date</legend>
+    @for (option of options().publishDates; track option; let index = $index) {
+      <label class="choice">
+        <input
+          class="choice__input choice__input--radio"
+          type="radio"
+          name="datePublishing"
+          [checked]="isSelectedDate(option, index)"
+          (change)="filterChange.emit({ datePublishing: option })"
+        />
+        {{ option }}
+      </label>
+    }
+  </fieldset>
+
+  <fieldset class="filters__group">
+    <legend class="filters__title">Genre</legend>
+    @for (genre of genres(); track genre.id) {
+      <label class="choice">
+        <input
+          #box
+          class="choice__input"
+          type="checkbox"
+          [checked]="filter().genres.includes(genre.id)"
+          (change)="toggle('genres', genre.id, box.checked)"
+        />
+        {{ genre.name }}
+      </label>
+    }
+  </fieldset>
+
+  <fieldset class="filters__group">
+    <legend class="filters__title">Platform</legend>
+    @for (platform of platforms(); track platform.id) {
+      <label class="choice">
+        <input
+          #box
+          class="choice__input"
+          type="checkbox"
+          [checked]="filter().platforms.includes(platform.id)"
+          (change)="toggle('platforms', platform.id, box.checked)"
+        />
+        {{ platform.type }}
+      </label>
+    }
+  </fieldset>
+
+  <fieldset class="filters__group">
+    <legend class="filters__title">Games per Page</legend>
+    <select
+      #size
+      class="field__control select"
+      aria-label="Games per page"
+      (change)="filterChange.emit({ pageCount: size.value })"
+    >
+      @for (option of options().pageSizes; track option) {
+        <option [value]="option" [selected]="option === filter().pageCount">{{ option }}</option>
+      }
+    </select>
+  </fieldset>
+</form>

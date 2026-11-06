@@ -1,0 +1,31 @@
+@if (total() > 1) {
+  <nav class="pagination" aria-label="Pages">
+    @if (current() > 1) {
+      <button
+        class="pagination__arrow pagination__arrow--prev"
+        type="button"
+        aria-label="Previous page"
+        (click)="select(current() - 1)"
+      ></button>
+    }
+    @for (page of pages(); track page) {
+      <button
+        class="pagination__page"
+        type="button"
+        [class.pagination__page--current]="page === current()"
+        [attr.aria-current]="page === current() ? 'page' : null"
+        (click)="select(page)"
+      >
+        {{ page }}
+      </button>
+    }
+    @if (current() < total()) {
+      <button
+        class="pagination__arrow"
+        type="button"
+        aria-label="Next page"
+        (click)="select(current() + 1)"
+      ></button>
+    }
+  </nav>
+}

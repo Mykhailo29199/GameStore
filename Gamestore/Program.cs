@@ -193,7 +193,10 @@ app.UseMiddleware<RequestResponseLoggingMiddleware>();
 var angularPath = Path.Combine(
     Directory.GetCurrentDirectory(),
     "..",
-    "gamestore-ui-app");
+    "gamestore-ui-app",
+    "dist",
+    "gamestore-ui-app",
+    "browser");
 
 var angularFiles = Directory.Exists(angularPath)
     ? new PhysicalFileProvider(angularPath)

@@ -1,0 +1,111 @@
+<div class="container">
+  <div class="product__top">
+    <a class="back" routerLink="/games">Go Back to Game List</a>
+    @if (view()) {
+      <span class="row__actions">
+        @if (canEdit) {
+          <a class="link" [routerLink]="['/games', key(), 'edit']">Edit</a>
+        }
+        @if (canDelete) {
+          <app-confirm-button (confirmed)="deleteGame()" />
+        }
+      </span>
+    }
+  </div>
+
+  @if (view(); as details) {
+    <div class="product">
+      <app-game-gallery [images]="gallery()" [title]="details.game.name" />
+
+      <section class="product__info">
+        <h1 class="product__title">{{ details.game.name }}</h1>
+
+        <div class="product__summary">
+          <app-price
+            class="product__price"
+            [price]="details.game.price"
+            [discount]="details.game.discount"
+          />
+          <div class="product__rating">
+            <app-star-rating
+              label="Game rating"
+              [value]="reactions.gameRating(key())"
+              (valueChange)="reactions.rateGame(key(), $event)"
+            />
+            <a class="product__comments" [routerLink]="[]" fragment="comments">{{ commentCount() }} Comments</a>
+          </div>
+        </div>
+        <p class="product__tax">
+          Tax ({{ taxPercent }}%): <strong>{{ tax() | currency }}</strong>
+          <span class="product__tax-total">
+            Price with tax: <strong>{{ totalWithTax() | currency }}</strong>
+          </span>
+        </p>
+
+        <hr class="divider product__divider" />
+
+        @if (details.publisher; as publisher) {
+          <p class="product__publisher">{{ publisher.companyName }}</p>
+        }
+
+        <dl class="product__facts">
+          <div>
+            <dt>Playable on</dt>
+            <dd>
+              @for (platform of details.platforms; track platform.id; let last = $last) {
+                {{ platform.type }}{{ last ? '' : ', ' }}
+              } @empty {
+                &mdash;
+              }
+            </dd>
+          </div>
+          <div>
+            <dt>In stock</dt>
+            <dd>{{ details.game.unitInStock }}</dd>
+          </div>
+        </dl>
+
+        @if (details.genres.length > 0) {
+          <h2 class="product__label">Genres</h2>
+          <ul class="product__genres">
+            @for (genre of details.genres; track genre.id) {
+              <li class="product__genre">{{ genre.name }}</li>
+            }
+          </ul>
+        }
+
+        <button
+          class="btn product__buy"
+          type="button"
+          [disabled]="adding() || details.game.unitInStock < 1"
+          (click)="addToCart()"
+        >
+          {{ details.game.unitInStock < 1 ? 'Out of Stock' : 'Add To Cart' }}
+        </button>
+        @if (cartMessage(); as message) {
+          <output [class]="message.failed ? 'form-error' : 'form-success'">
+            {{ message.text }}
+          </output>
+        }
+
+        <hr class="divider product__divider" />
+
+        <h2 class="product__heading">Game Description</h2>
+        <p class="product__description">{{ details.game.description || 'No description yet.' }}</p>
+      </section>
+    </div>
+
+    <hr class="divider product__end" />
+
+    <app-game-comments
+      id="comments"
+      [gameKey]="key()"
+      [rating]="reactions.gameRating(key())"
+      (countChange)="commentCount.set($event)"
+    />
+  } @else if (loading()) {
+    <p class="product__message">Loading the game&hellip;</p>
+  } @else {
+    <p class="product__message" role="alert">The game was not found.</p>
+  }
+</div>

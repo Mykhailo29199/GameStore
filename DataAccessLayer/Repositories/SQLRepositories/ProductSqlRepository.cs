@@ -45,9 +45,9 @@ public class ProductSqlRepository(GameStoreContext context) : GenericSqlReposito
         return publisher;
     }
 
-    public IQueryable<ProductEntity> GetQueryable()
+    public IQueryable<ProductEntity> GetQueryable(bool includeDeleted = false)
     {
-        return GetDefaultIncludes();
+        return includeDeleted ? GetDefaultIncludes().IgnoreQueryFilters() : GetDefaultIncludes();
     }
 
     private IQueryable<ProductEntity> GetDefaultIncludes()

@@ -1,4 +1,5 @@
 ﻿using DataAccessLayer.Entities.GameStoreSQLEntities;
+using GameStore.Shared.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 namespace DataAccessLayer.StoreContext;
@@ -8,6 +9,12 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
     // Money is stored as decimal(18, 2), so prices and totals have no floating-point rounding errors.
     private const int MoneyPrecision = 18;
     private const int MoneyScale = 2;
+
+    // Default administrator created by the migration: login "admin", password "admin".
+    private const string DefaultAdminName = "admin";
+    private const string DefaultAdminPasswordHash = "100000.R2FtZVN0b3JlU2VlZFNhbHQhIQ==.UWluZQtgKpTE83bjFn0gl3j60jbOT/I1BNmfczCbdFA=";
+
+    private static readonly Guid DefaultAdminId = Guid.Parse("b0000000-0000-0000-0000-000000000001");
 
     public DbSet<ProductEntity> Products { get; set; }
 
@@ -30,6 +37,14 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
     public DbSet<CommentEntity> Comments { get; set; }
 
     public DbSet<BanEntity> Bans { get; set; }
+
+    public DbSet<UserEntity> Users { get; set; }
+
+    public DbSet<RoleEntity> Roles { get; set; }
+
+    public DbSet<UserRoleEntity> UserRoles { get; set; }
+
+    public DbSet<RolePermissionEntity> RolePermissions { get; set; }
 
     // Entities from Northwind Legacy
     public DbSet<EmployeeEntity> Employees { get; set; }
@@ -193,6 +208,9 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
             entity.ToTable("OrderDetails");
             entity.HasKey(og => new { og.OrderId, og.ProductId });
 
+            entity.Property(og => og.Id).HasDefaultValueSql("NEWID()");
+            entity.HasIndex(og => og.Id).IsUnique();
+
             entity.Property(og => og.UnitPrice)
                 .HasColumnName("Price")
                 .HasPrecision(MoneyPrecision, MoneyScale)
@@ -240,6 +258,8 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
             entity.Property(b => b.UserName).IsRequired();
             entity.Property(b => b.ExpireAt).IsRequired(false);
         });
+
+        ConfigureAuthorization(modelBuilder);
 
         // ===================== EmployeeEntity =====================
         modelBuilder.Entity<EmployeeEntity>(entity =>
@@ -319,6 +339,64 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
                 .WithMany(t => t.EmployeeTerritories)
                 .HasForeignKey(et => et.TerritoryGuidId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigureAuthorization(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<UserEntity>(entity =>
+        {
+            entity.ToTable("Users");
+            entity.HasKey(u => u.Id);
+            entity.HasIndex(u => u.Name).IsUnique();
+
+            entity.HasData(new UserEntity
+            {
+                Id = DefaultAdminId,
+                Name = DefaultAdminName,
+                PasswordHash = DefaultAdminPasswordHash,
+            });
+        });
+
+        modelBuilder.Entity<RoleEntity>(entity =>
+        {
+            entity.ToTable("Roles");
+            entity.HasKey(r => r.Id);
+            entity.HasIndex(r => r.Name).IsUnique();
+
+            entity.HasData(DefaultRoles.Names.Select(role => new RoleEntity { Id = role.Key, Name = role.Value }));
+        });
+
+        modelBuilder.Entity<UserRoleEntity>(entity =>
+        {
+            entity.ToTable("UserRoles");
+            entity.HasKey(ur => new { ur.UserId, ur.RoleId });
+
+            entity.HasOne(ur => ur.User)
+                .WithMany(u => u.UserRoles)
+                .HasForeignKey(ur => ur.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(ur => ur.Role)
+                .WithMany(r => r.UserRoles)
+                .HasForeignKey(ur => ur.RoleId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasData(new UserRoleEntity { UserId = DefaultAdminId, RoleId = DefaultRoles.AdminId });
+        });
+
+        modelBuilder.Entity<RolePermissionEntity>(entity =>
+        {
+            entity.ToTable("RolePermissions");
+            entity.HasKey(rp => new { rp.RoleId, rp.Permission });
+
+            entity.HasOne(rp => rp.Role)
+                .WithMany(r => r.Permissions)
+                .HasForeignKey(rp => rp.RoleId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasData(DefaultRoles.PermissionsByRole.SelectMany(role =>
+                role.Value.Select(permission => new RolePermissionEntity { RoleId = role.Key, Permission = permission })));
         });
     }
 }

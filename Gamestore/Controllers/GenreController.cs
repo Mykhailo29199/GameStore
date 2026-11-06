@@ -1,8 +1,10 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Models;
 using BusinessLogicLayer.Services.Interaces;
+using GameStore.Shared.Authorization;
 using Gamestore.WebAPI.DTOs.GameDTO;
 using Gamestore.WebAPI.DTOs.GenreDTO;
+using Gamestore.WebAPI.Security;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Gamestore.WebAPI.Controllers;
@@ -13,6 +15,8 @@ public class GenreController(IGenreService genreService, IMapper mapper) : Contr
 {
     private readonly IGenreService _genreService = genreService;
     private readonly IMapper _mapper = mapper;
+
+    [HasPermission(Permissions.AddGenre)]
 
     [HttpPost("genre")]
     public async Task<IActionResult> CreateGenreAsync([FromBody] CreateGenreDTO genreDTO)
@@ -50,6 +54,8 @@ public class GenreController(IGenreService genreService, IMapper mapper) : Contr
         return Ok(genreDTOs);
     }
 
+    [HasPermission(Permissions.UpdateGenre)]
+
     [HttpPut("genre")]
     public async Task<IActionResult> UpdateGenreAsync([FromBody] UpdateGenreDTO genreDTO)
     {
@@ -58,6 +64,8 @@ public class GenreController(IGenreService genreService, IMapper mapper) : Contr
 
         return NoContent();
     }
+
+    [HasPermission(Permissions.DeleteGenre)]
 
     [HttpDelete("genre/{id}")]
     public async Task<IActionResult> DeleteGenreAsync([FromRoute] Guid id)

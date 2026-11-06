@@ -1,28 +1,41 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Catalog.Interfaces;
 using BusinessLogicLayer.Models.CommentModels;
+using BusinessLogicLayer.Security;
 using BusinessLogicLayer.Services.Interaces;
 using DataAccessLayer.Entities.GameStoreSQLEntities;
 using DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
+using GameStore.Shared.Authorization;
 using GameStore.Shared.Enums;
 using GameStore.Shared.Exceptions;
 
 namespace BusinessLogicLayer.Services;
 
-public class CommentService(ISqlServerUnitOfWork unitOfWork, IMapper mapper, IProductCatalog productCatalog) : ICommentService
+public class CommentService(
+    ISqlServerUnitOfWork unitOfWork,
+    IMapper mapper,
+    IProductCatalog productCatalog,
+    ICurrentUser currentUser) : ICommentService
 {
     private readonly ISqlServerUnitOfWork _unitOfWork = unitOfWork;
     private readonly IMapper _mapper = mapper;
 
     private readonly string _deletedMessage = "A comment/quote was deleted";
 
+    // Comments of a deleted game can be managed only by an administrator.
+    private bool CanManageDeletedGameComments => currentUser.HasPermission(Permissions.ManageDeletedGameComments);
+
     public async Task AddCommentAsync(string gameKey, AddCommentModel model)
     {
-        _ = await productCatalog.GetByKeyAsync(gameKey)
+        _ = await productCatalog.GetByKeyAsync(gameKey, CanManageDeletedGameComments)
             ?? throw new NotFoundException("Game not found");
 
+        // The user name is used as the commenter name.
+        var userName = currentUser.Name
+            ?? throw new UnauthorizedException("Only authorized users can comment games.");
+
         var ban = await _unitOfWork.BanRepository.FirstOrDefaultAsync(b =>
-            b.UserName == model.Name &&
+            b.UserName == userName &&
             (b.ExpireAt > DateTime.UtcNow));
 
         if (ban != null)
@@ -55,11 +68,12 @@ public class CommentService(ISqlServerUnitOfWork unitOfWork, IMapper mapper, IPr
         }
 
         // Commenting a Northwind game copies it to the Game Store database, Northwind stays untouched.
-        var game = await productCatalog.EnsureInGameStoreAsync(gameKey);
+        var game = await productCatalog.EnsureInGameStoreAsync(gameKey, CanManageDeletedGameComments);
 
         var entity = _mapper.Map<CommentEntity>(model);
         entity.Id = Guid.NewGuid();
         entity.ProductId = game.Id;
+        entity.Name = userName;
         entity.Body = body;
 
         await _unitOfWork.CommentRepository.AddAsync(entity);
@@ -68,7 +82,7 @@ public class CommentService(ISqlServerUnitOfWork unitOfWork, IMapper mapper, IPr
 
     public async Task<List<CommentModel>> GetGameCommentsAsync(string gameKey)
     {
-        var game = await productCatalog.GetByKeyAsync(gameKey)
+        var game = await productCatalog.GetByKeyAsync(gameKey, currentUser.HasPermission(Permissions.ViewDeletedGames))
             ?? throw new NotFoundException("Game not found");
 
         var entities = await _unitOfWork.CommentRepository
@@ -81,8 +95,7 @@ public class CommentService(ISqlServerUnitOfWork unitOfWork, IMapper mapper, IPr
 
     public async Task DeleteCommentAsync(string gameKey, Guid id)
     {
-        var game = await _unitOfWork.ProductRepository
-            .GetGameByKeyAsync(gameKey)
+        var game = await productCatalog.GetByKeyAsync(gameKey, CanManageDeletedGameComments)
             ?? throw new NotFoundException("Game not found");
 
         var comment = await _unitOfWork.CommentRepository

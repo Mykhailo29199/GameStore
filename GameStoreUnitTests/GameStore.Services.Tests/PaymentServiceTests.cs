@@ -1,5 +1,6 @@
 using BusinessLogicLayer.Catalog.Interfaces;
 using BusinessLogicLayer.Models.Payment;
+using BusinessLogicLayer.Security;
 using BusinessLogicLayer.Services;
 using DataAccessLayer.Entities.GameStoreSQLEntities;
 using DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
@@ -7,7 +8,6 @@ using GameStore.Shared.Enums;
 using GameStore.Shared.Enums.PaymentEnums;
 using GameStore.Shared.Exceptions;
 using GameStore.Shared.FileSystem;
-using GameStore.Shared.Stubs;
 using Moq;
 using Xunit;
 
@@ -17,6 +17,7 @@ public class PaymentServiceTests
 {
     private readonly Mock<ISqlServerUnitOfWork> _unitOfWorkMock = new() { DefaultValue = DefaultValue.Mock };
     private readonly Mock<IProductCatalog> _productCatalogMock = new();
+    private readonly Guid _userId = Guid.NewGuid();
     private readonly ProductEntity _game = new() { Id = Guid.NewGuid(), Key = "nw_chai", ProductName = "Chai", UnitsInStock = 3 };
     private readonly PaymentService _paymentService;
 
@@ -27,11 +28,15 @@ public class PaymentServiceTests
 
         _unitOfWorkMock.Setup(x => x.ProductRepository.GetByIdAsync(_game.Id)).ReturnsAsync(_game);
 
+        var currentUserMock = new Mock<ICurrentUser>();
+        currentUserMock.Setup(x => x.Id).Returns(_userId);
+
         _paymentService = new PaymentService(
             httpClientFactoryMock.Object,
             _unitOfWorkMock.Object,
             new Mock<IFileSystem>().Object,
-            _productCatalogMock.Object);
+            _productCatalogMock.Object,
+            currentUserMock.Object);
     }
 
     [Fact]
@@ -76,12 +81,12 @@ public class PaymentServiceTests
         var order = new OrderEntity
         {
             Id = Guid.NewGuid(),
-            CustomerId = CustomerStub.StubCustomerId,
+            CustomerId = _userId,
             Status = OrderStatus.Open,
             OrderDetails = [new OrderDetailsEntity { ProductId = _game.Id, Quantity = quantity, UnitPrice = 10 }],
         };
 
-        _unitOfWorkMock.Setup(x => x.OrderRepository.GetActiveCartAsync(CustomerStub.StubCustomerId)).ReturnsAsync(order);
+        _unitOfWorkMock.Setup(x => x.OrderRepository.GetActiveCartAsync(_userId)).ReturnsAsync(order);
 
         return order;
     }

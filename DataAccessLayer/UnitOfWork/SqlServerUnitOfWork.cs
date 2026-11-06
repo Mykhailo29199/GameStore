@@ -21,6 +21,8 @@ public class SqlServerUnitOfWork : ISqlServerUnitOfWork
     private IOrderDetailsSqlRepository? _orderDetailsRepository;
     private ICommentSqlRepository? _commentRepository;
     private IBanSqlRepository? _banRepository;
+    private IUserSqlRepository? _userRepository;
+    private IRoleSqlRepository? _roleRepository;
 
     public SqlServerUnitOfWork(GameStoreContext context)
     {
@@ -61,6 +63,12 @@ public class SqlServerUnitOfWork : ISqlServerUnitOfWork
 
     public IBanSqlRepository BanRepository =>
         _banRepository ??= new BanSqlRepository(Context);
+
+    public IUserSqlRepository UserRepository =>
+        _userRepository ??= new UserSqlRepository(Context);
+
+    public IRoleSqlRepository RoleRepository =>
+        _roleRepository ??= new RoleSqlRepository(Context);
 
     public async Task CreateTransactionAsync() =>
         await Context.Database.BeginTransactionAsync();

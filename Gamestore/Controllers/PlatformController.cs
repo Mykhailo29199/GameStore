@@ -1,8 +1,10 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Models;
 using BusinessLogicLayer.Services.Interaces;
+using GameStore.Shared.Authorization;
 using Gamestore.WebAPI.DTOs.GameDTO;
 using Gamestore.WebAPI.DTOs.PlatformDTO;
+using Gamestore.WebAPI.Security;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Gamestore.WebAPI.Controllers;
@@ -13,6 +15,8 @@ public class PlatformController(IPlatformService platformService, IMapper mapper
 {
     private readonly IPlatformService _platformService = platformService;
     private readonly IMapper _mapper = mapper;
+
+    [HasPermission(Permissions.AddPlatform)]
 
     [HttpPost("platform")]
     public async Task<IActionResult> CreatePlatformAsync([FromBody] CreatePlatformDTO platformType)
@@ -40,6 +44,8 @@ public class PlatformController(IPlatformService platformService, IMapper mapper
         return Ok(platformDTOs);
     }
 
+    [HasPermission(Permissions.UpdatePlatform)]
+
     [HttpPut("platform")]
     public async Task<IActionResult> UpdatePlatformAsync([FromBody] UpdatePlatformDTO platformDTO)
     {
@@ -48,6 +54,8 @@ public class PlatformController(IPlatformService platformService, IMapper mapper
         await _platformService.UpdatePlatformAsync(model);
         return NoContent();
     }
+
+    [HasPermission(Permissions.DeletePlatform)]
 
     [HttpDelete("platform/{id}")]
     public async Task<IActionResult> DeletePlatformAsync([FromRoute] Guid id)

@@ -2,12 +2,12 @@
 using System.Net.Http.Json;
 using BusinessLogicLayer.Catalog.Interfaces;
 using BusinessLogicLayer.Models.Payment;
+using BusinessLogicLayer.Security;
 using BusinessLogicLayer.Services.Interaces;
 using DataAccessLayer.Entities.GameStoreSQLEntities;
 using DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
 using GameStore.Shared.Exceptions;
 using GameStore.Shared.FileSystem;
-using GameStore.Shared.Stubs;
 using OrderStatus = GameStore.Shared.Enums.OrderStatus;
 using PaymentOptions = GameStore.Shared.Enums.PaymentEnums.PaymentOptions;
 
@@ -19,17 +19,20 @@ public class PaymentService : IPaymentService
     private readonly IFileSystem _fileSystem;
     private readonly ISqlServerUnitOfWork _unitOfWork;
     private readonly IProductCatalog _productCatalog;
+    private readonly ICurrentUser _currentUser;
 
     public PaymentService(
         IHttpClientFactory httpClientFactory,
         ISqlServerUnitOfWork unitOfWork,
         IFileSystem fileSystem,
-        IProductCatalog productCatalog)
+        IProductCatalog productCatalog,
+        ICurrentUser currentUser)
     {
         _client = httpClientFactory.CreateClient("PaymentService");
         _unitOfWork = unitOfWork;
         _fileSystem = fileSystem;
         _productCatalog = productCatalog;
+        _currentUser = currentUser;
     }
 
     public IEnumerable<PaymentMethodResponseModel> GetPaymentMethods()
@@ -99,7 +102,7 @@ public class PaymentService : IPaymentService
     {
         var model = new BoxPaymentModel
         {
-            AccountNumber = CustomerStub.StubCustomerId,
+            AccountNumber = order.CustomerId,
             TransactionAmount = total,
             InvoiceNumber = order.Id,
         };
@@ -132,7 +135,7 @@ public class PaymentService : IPaymentService
     {
         await SetOrderStatusAsync(order, OrderStatus.Checkout);
 
-        var fileBytes = PdfProcessor.GeneratePdfInvoice(order.Id, total);
+        var fileBytes = PdfProcessor.GeneratePdfInvoice(order.Id, order.CustomerId, total);
 
         if (fileBytes == null || fileBytes.Length == 0)
         {
@@ -240,6 +243,11 @@ public class PaymentService : IPaymentService
 
     // Helpers
 
+    private Guid GetCurrentUserId()
+    {
+        return _currentUser.Id ?? throw new UnauthorizedException("Only authorized users can pay for orders.");
+    }
+
     private static void ValidateRequest(PaymentRequestModel request)
     {
         if (!Enum.IsDefined(typeof(PaymentOptions), request.Method))
@@ -250,7 +258,7 @@ public class PaymentService : IPaymentService
 
     private async Task<OrderEntity> GetActiveOrderAsync()
     {
-        return await _unitOfWork.OrderRepository.GetActiveCartAsync(CustomerStub.StubCustomerId)
+        return await _unitOfWork.OrderRepository.GetActiveCartAsync(GetCurrentUserId())
             ?? throw new NotFoundException("Active cart not found");
     }
 

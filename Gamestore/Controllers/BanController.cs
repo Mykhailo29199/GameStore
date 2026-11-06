@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Models.BanModels;
 using BusinessLogicLayer.Services.Interaces;
+using GameStore.Shared.Authorization;
 using Gamestore.WebAPI.DTOs.Users;
+using Gamestore.WebAPI.Security;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Gamestore.WebAPI.Controllers;
@@ -18,6 +20,8 @@ public class BanController(IBanService banService, IMapper mapper) : ControllerB
 
         return Ok(result);
     }
+
+    [HasPermission(Permissions.BanUser)]
 
     [HttpPost("comments/ban")]
     public async Task<IActionResult> BanUser([FromBody] BanRequestDTO dto)

@@ -8,7 +8,7 @@ namespace BusinessLogicLayer.Catalog.Interfaces;
 /// </summary>
 public interface IProductCatalog
 {
-    Task<List<ProductEntity>> GetAllAsync();
+    Task<List<ProductEntity>> GetAllAsync(bool includeDeleted = false);
 
     /// <summary>
     /// Returns the Northwind-only products that match the filter. Filtering runs in Northwind; sorting and paging are left
@@ -16,15 +16,15 @@ public interface IProductCatalog
     /// </summary>
     Task<List<ProductEntity>> GetNorthwindOnlyAsync(GameFilterModel filter);
 
-    Task<ProductEntity?> GetByKeyAsync(string key);
+    Task<ProductEntity?> GetByKeyAsync(string key, bool includeDeleted = false);
 
-    Task<ProductEntity?> GetByIdAsync(Guid id);
+    Task<ProductEntity?> GetByIdAsync(Guid id, bool includeDeleted = false);
 
     /// <summary>
     /// Returns the tracked Game Store product, copying it (with its publisher and genres) from Northwind first when needed.
     /// Northwind data itself is never changed. The caller saves changes.
     /// </summary>
-    Task<ProductEntity> EnsureInGameStoreAsync(string key);
+    Task<ProductEntity> EnsureInGameStoreAsync(string key, bool includeDeleted = false);
 
     /// <summary>
     /// Hides a Northwind-only product by saving a deleted copy of it into the Game Store database. The caller saves changes.

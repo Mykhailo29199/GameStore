@@ -1,12 +1,15 @@
 using AutoMapper;
+using BusinessLogicLayer.Catalog;
 using BusinessLogicLayer.Catalog.Interfaces;
 using BusinessLogicLayer.Models;
 using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Pipelines;
 using BusinessLogicLayer.Pipelines.Steps;
+using BusinessLogicLayer.Security;
 using BusinessLogicLayer.Services;
 using DataAccessLayer.Entities.GameStoreSQLEntities;
 using DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
+using GameStore.Shared.Authorization;
 using GameStore.Shared.Enums.FilterOptionsEnums;
 using GameStore.Shared.Exceptions;
 using GameStore.Shared.FileSystem;
@@ -27,6 +30,7 @@ public class GameServiceTests
     private readonly Mock<IProductCatalog> _productCatalogMock;
     private readonly Mock<ICategoryCatalog> _categoryCatalogMock;
     private readonly Mock<ISupplierCatalog> _supplierCatalogMock;
+    private readonly Mock<ICurrentUser> _currentUserMock;
 
     public GameServiceTests()
     {
@@ -36,6 +40,7 @@ public class GameServiceTests
         _productCatalogMock = new Mock<IProductCatalog>();
         _categoryCatalogMock = new Mock<ICategoryCatalog>();
         _supplierCatalogMock = new Mock<ISupplierCatalog>();
+        _currentUserMock = new Mock<ICurrentUser>();
 
         _unitOfWorkMock.Setup(x => x.PlatformRepository.GetAllAsync()).ReturnsAsync(ExistingPlatforms);
         _unitOfWorkMock.Setup(x => x.ProductCategoryRepository.GetByGameIdAsync(It.IsAny<Guid>())).ReturnsAsync([]);
@@ -46,9 +51,8 @@ public class GameServiceTests
             _mapperMock.Object,
             _fileSystemMock.Object,
             new GameFilterPipeline([], new SortingStep(), new PaginationStep()),
-            _productCatalogMock.Object,
-            _categoryCatalogMock.Object,
-            _supplierCatalogMock.Object);
+            new StoreCatalog(_productCatalogMock.Object, _categoryCatalogMock.Object, _supplierCatalogMock.Object),
+            _currentUserMock.Object);
     }
 
     [Fact]
@@ -149,7 +153,7 @@ public class GameServiceTests
     public async Task GetGameByKeyAsync_WhenGameDoesNotExist_ShouldThrowNotFound()
     {
         // Arrange
-        _productCatalogMock.Setup(x => x.GetByKeyAsync(NonExistingGameKey))
+        _productCatalogMock.Setup(x => x.GetByKeyAsync(NonExistingGameKey, It.IsAny<bool>()))
             .ReturnsAsync((ProductEntity?)null);
 
         // Act
@@ -167,7 +171,7 @@ public class GameServiceTests
         var gameEntity = new ProductEntity { Key = NorthwindGameKey };
         var gameModel = new GameModel { Key = NorthwindGameKey };
 
-        _productCatalogMock.Setup(x => x.GetByKeyAsync(NorthwindGameKey)).ReturnsAsync(gameEntity);
+        _productCatalogMock.Setup(x => x.GetByKeyAsync(NorthwindGameKey, It.IsAny<bool>())).ReturnsAsync(gameEntity);
         _mapperMock.Setup(x => x.Map<GameModel>(gameEntity)).Returns(gameModel);
 
         // Act
@@ -185,7 +189,7 @@ public class GameServiceTests
         var gameModel = CreateGameModel();
         gameModel.Id = NonExistingGameId;
 
-        _productCatalogMock.Setup(x => x.GetByIdAsync(NonExistingGameId))
+        _productCatalogMock.Setup(x => x.GetByIdAsync(NonExistingGameId, It.IsAny<bool>()))
             .ReturnsAsync((ProductEntity?)null);
 
         // Act
@@ -215,8 +219,8 @@ public class GameServiceTests
         var gameStoreCopy = new ProductEntity { Id = ExistingGameId, Key = NorthwindGameKey, ProductName = "Chai" };
         gameStoreCopy.ProductCategories.Add(new ProductCategoryEntity { ProductId = ExistingGameId, CategoryId = Guid.NewGuid() });
 
-        _productCatalogMock.Setup(x => x.GetByIdAsync(ExistingGameId)).ReturnsAsync(northwindGame);
-        _productCatalogMock.Setup(x => x.EnsureInGameStoreAsync(NorthwindGameKey)).ReturnsAsync(gameStoreCopy);
+        _productCatalogMock.Setup(x => x.GetByIdAsync(ExistingGameId, It.IsAny<bool>())).ReturnsAsync(northwindGame);
+        _productCatalogMock.Setup(x => x.EnsureInGameStoreAsync(NorthwindGameKey, It.IsAny<bool>())).ReturnsAsync(gameStoreCopy);
         _productCatalogMock.Setup(x => x.HasNorthwindCounterpartAsync(gameStoreCopy)).ReturnsAsync(true);
         SetupExistingReferences(new SupplierEntity { Id = ExistingPublisherId, CompanyName = "Publisher" });
 
@@ -237,7 +241,7 @@ public class GameServiceTests
     public async Task DeleteGameAsync_WhenGameDoesNotExist_ShouldThrowNotFound()
     {
         // Arrange
-        _productCatalogMock.Setup(x => x.GetByKeyAsync(NonExistingGameKey))
+        _productCatalogMock.Setup(x => x.GetByKeyAsync(NonExistingGameKey, It.IsAny<bool>()))
             .ReturnsAsync((ProductEntity?)null);
 
         // Act
@@ -254,7 +258,7 @@ public class GameServiceTests
         // Arrange
         var northwindGame = new ProductEntity { Key = NorthwindGameKey };
 
-        _productCatalogMock.Setup(x => x.GetByKeyAsync(NorthwindGameKey)).ReturnsAsync(northwindGame);
+        _productCatalogMock.Setup(x => x.GetByKeyAsync(NorthwindGameKey, It.IsAny<bool>())).ReturnsAsync(northwindGame);
         _unitOfWorkMock.Setup(x => x.ProductRepository.GetGameByKeyAsync(NorthwindGameKey))
             .ReturnsAsync((ProductEntity?)null);
 
@@ -268,46 +272,75 @@ public class GameServiceTests
     }
 
     [Fact]
-    public async Task DeleteGameAsync_WhenGameStoreCopyOfNorthwindGame_ShouldSoftDelete()
-    {
-        // Arrange
-        var gameStoreGame = new ProductEntity { Key = NorthwindGameKey };
-
-        _productCatalogMock.Setup(x => x.GetByKeyAsync(NorthwindGameKey)).ReturnsAsync(gameStoreGame);
-        _productCatalogMock.Setup(x => x.HasNorthwindCounterpartAsync(gameStoreGame)).ReturnsAsync(true);
-        _unitOfWorkMock.Setup(x => x.ProductRepository.GetGameByKeyAsync(NorthwindGameKey)).ReturnsAsync(gameStoreGame);
-
-        // Act
-        await _gameService.DeleteGameAsync(NorthwindGameKey);
-
-        // Assert
-        Assert.True(gameStoreGame.IsDeleted);
-        _unitOfWorkMock.Verify(x => x.ProductRepository.DeleteAsync(It.IsAny<ProductEntity>()), Times.Never);
-        _unitOfWorkMock.Verify(x => x.SaveAsync(), Times.Once);
-    }
-
-    [Fact]
-    public async Task DeleteGameAsync_WhenGameExistsOnlyInGameStore_ShouldDeleteGame()
+    public async Task DeleteGameAsync_WhenGameExistsInGameStore_ShouldSoftDelete()
     {
         // Arrange
         var existingGame = new ProductEntity { Key = ExistingGameKey };
 
-        _productCatalogMock.Setup(x => x.GetByKeyAsync(ExistingGameKey)).ReturnsAsync(existingGame);
+        _productCatalogMock.Setup(x => x.GetByKeyAsync(ExistingGameKey, It.IsAny<bool>())).ReturnsAsync(existingGame);
         _unitOfWorkMock.Setup(x => x.ProductRepository.GetGameByKeyAsync(ExistingGameKey)).ReturnsAsync(existingGame);
 
         // Act
         await _gameService.DeleteGameAsync(ExistingGameKey);
 
         // Assert
-        _unitOfWorkMock.Verify(x => x.ProductRepository.DeleteAsync(existingGame), Times.Once);
+        Assert.True(existingGame.IsDeleted);
+        _unitOfWorkMock.Verify(x => x.ProductRepository.DeleteAsync(It.IsAny<ProductEntity>()), Times.Never);
         _unitOfWorkMock.Verify(x => x.SaveAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetGameByKeyAsync_WhenUserCannotSeeDeletedGames_ShouldNotRequestDeletedGames()
+    {
+        // Arrange
+        _currentUserMock.Setup(x => x.HasPermission(Permissions.ViewDeletedGames)).Returns(false);
+        _productCatalogMock.Setup(x => x.GetByKeyAsync(ExistingGameKey, false)).ReturnsAsync((ProductEntity?)null);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<NotFoundException>(() => _gameService.GetGameByKeyAsync(ExistingGameKey));
+        _productCatalogMock.Verify(x => x.GetByKeyAsync(ExistingGameKey, true), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetGameByKeyAsync_WhenAdministrator_ShouldReturnDeletedGame()
+    {
+        // Arrange
+        var deletedGame = new ProductEntity { Key = ExistingGameKey, IsDeleted = true };
+        var gameModel = new GameModel { Key = ExistingGameKey };
+
+        _currentUserMock.Setup(x => x.HasPermission(Permissions.ViewDeletedGames)).Returns(true);
+        _productCatalogMock.Setup(x => x.GetByKeyAsync(ExistingGameKey, true)).ReturnsAsync(deletedGame);
+        _mapperMock.Setup(x => x.Map<GameModel>(deletedGame)).Returns(gameModel);
+
+        // Act
+        var result = await _gameService.GetGameByKeyAsync(ExistingGameKey);
+
+        // Assert
+        Assert.Equal(gameModel, result);
+    }
+
+    [Fact]
+    public async Task UpdateGameAsync_WhenGameIsDeletedAndUserIsNotAdministrator_ShouldThrowForbidden()
+    {
+        // Arrange
+        var gameModel = CreateGameModel(name: "Updated Name");
+        gameModel.Id = ExistingGameId;
+
+        var deletedGame = new ProductEntity { Id = ExistingGameId, Key = ExistingGameKey, IsDeleted = true };
+
+        _currentUserMock.Setup(x => x.HasPermission(Permissions.UpdateDeletedGame)).Returns(false);
+        _productCatalogMock.Setup(x => x.GetByIdAsync(ExistingGameId, true)).ReturnsAsync(deletedGame);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ForbiddenException>(() => _gameService.UpdateGameAsync(gameModel));
+        _unitOfWorkMock.Verify(x => x.SaveAsync(), Times.Never);
     }
 
     [Fact]
     public async Task GetGameFilePathAsync_WhenGameFileEntityDoesNotExist_ShouldThrowNotFound()
     {
         // Arrange
-        _productCatalogMock.Setup(x => x.GetByKeyAsync(ExistingGameKey)).ReturnsAsync(new ProductEntity());
+        _productCatalogMock.Setup(x => x.GetByKeyAsync(ExistingGameKey, It.IsAny<bool>())).ReturnsAsync(new ProductEntity());
         _unitOfWorkMock.Setup(x => x.ProductFileRepository.GetGameFileByKeyAsync(ExistingGameKey))
             .ReturnsAsync((ProductFileEntity?)null);
 
@@ -325,7 +358,7 @@ public class GameServiceTests
         // Arrange
         string filePath = "tempPath";
 
-        _productCatalogMock.Setup(x => x.GetByKeyAsync(ExistingGameKey)).ReturnsAsync(new ProductEntity());
+        _productCatalogMock.Setup(x => x.GetByKeyAsync(ExistingGameKey, It.IsAny<bool>())).ReturnsAsync(new ProductEntity());
         _unitOfWorkMock.Setup(x => x.ProductFileRepository.GetGameFileByKeyAsync(ExistingGameKey))
             .ReturnsAsync(new ProductFileEntity { FilePath = filePath });
         _fileSystemMock.Setup(x => x.FileExists(filePath)).Returns(true);
@@ -414,7 +447,7 @@ public class GameServiceTests
 
         List<GenreModel> mappedGenres = [new GenreModel { Id = ExistingGenreId, Name = ExistingGenre1.Name }];
 
-        _productCatalogMock.Setup(x => x.GetByKeyAsync(NorthwindGameKey)).ReturnsAsync(game);
+        _productCatalogMock.Setup(x => x.GetByKeyAsync(NorthwindGameKey, It.IsAny<bool>())).ReturnsAsync(game);
         _mapperMock.Setup(x => x.Map<IList<GenreModel>>(It.Is<List<CategoryEntity>>(l => l.Single() == ExistingGenre1)))
             .Returns(mappedGenres);
 
@@ -433,7 +466,7 @@ public class GameServiceTests
         var game = new ProductEntity { Key = NorthwindGameKey, SupplierID = ExistingPublisherId, Supplier = null };
         var publisherModel = new PublisherModel { Id = ExistingPublisherId, CompanyName = publisher.CompanyName };
 
-        _productCatalogMock.Setup(x => x.GetByKeyAsync(NorthwindGameKey)).ReturnsAsync(game);
+        _productCatalogMock.Setup(x => x.GetByKeyAsync(NorthwindGameKey, It.IsAny<bool>())).ReturnsAsync(game);
         _supplierCatalogMock.Setup(x => x.GetByIdAsync(ExistingPublisherId)).ReturnsAsync(publisher);
         _mapperMock.Setup(x => x.Map<PublisherModel>(publisher)).Returns(publisherModel);
 
@@ -471,7 +504,7 @@ public class GameServiceTests
     /// </summary>
     private GameService CreateServiceWithGames(List<ProductEntity> gameStoreGames, List<ProductEntity> northwindGames)
     {
-        _unitOfWorkMock.Setup(x => x.ProductRepository.GetQueryable()).Returns(new AsyncQueryable<ProductEntity>(gameStoreGames));
+        _unitOfWorkMock.Setup(x => x.ProductRepository.GetQueryable(It.IsAny<bool>())).Returns(new AsyncQueryable<ProductEntity>(gameStoreGames));
         _productCatalogMock.Setup(x => x.GetNorthwindOnlyAsync(It.IsAny<GameFilterModel>())).ReturnsAsync(northwindGames);
         _mapperMock.Setup(x => x.Map<List<GameModel>>(It.IsAny<List<ProductEntity>>()))
             .Returns((object games) => ((List<ProductEntity>)games).Select(g => new GameModel { Key = g.Key }).ToList());
@@ -481,9 +514,8 @@ public class GameServiceTests
             _mapperMock.Object,
             _fileSystemMock.Object,
             new GameFilterPipeline([new NameFilterStep()], new SortingStep(), new PaginationStep()),
-            _productCatalogMock.Object,
-            _categoryCatalogMock.Object,
-            _supplierCatalogMock.Object);
+            new StoreCatalog(_productCatalogMock.Object, _categoryCatalogMock.Object, _supplierCatalogMock.Object),
+            _currentUserMock.Object);
     }
 
     private void SetupExistingReferences(SupplierEntity publisher)

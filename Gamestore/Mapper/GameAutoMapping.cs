@@ -4,6 +4,7 @@ using BusinessLogicLayer.Models.CommentModels;
 using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Models.OrderModels;
 using BusinessLogicLayer.Models.Payment;
+using BusinessLogicLayer.Models.UserModels;
 using BusinessLogicLayer.Services;
 using DataAccessLayer.Entities.GameStoreSQLEntities;
 using DataAccessLayer.Mongo;
@@ -19,6 +20,8 @@ using Gamestore.WebAPI.DTOs.PaymentDTO;
 using Gamestore.WebAPI.DTOs.PaymentDTO.PaymentResponseDTOs;
 using Gamestore.WebAPI.DTOs.PlatformDTO;
 using Gamestore.WebAPI.DTOs.PublisherDTO;
+using Gamestore.WebAPI.DTOs.RoleDTO;
+using Gamestore.WebAPI.DTOs.UserDTO;
 using Gamestore.WebAPI.DTOs.Users;
 using BanDurationOption = GameStore.Shared.Enums.BanDurationOption;
 using BanModel = BusinessLogicLayer.Models.BanModels.BanModel;
@@ -220,13 +223,22 @@ public class GameAutoMapping : Profile
         CreateMap<BanEntity, BanModel>()
             .ForMember(dest => dest.User, opt => opt.MapFrom(src => src.UserName));
 
+        // Users and roles
+        CreateMap<LoginDTO, LoginModel>();
+        CreateMap<UserModel, UserDTO>().ReverseMap();
+        CreateMap<RoleModel, RoleDTO>().ReverseMap();
+
         // Game filters
         CreateMap<GameFilterDTO, GameFilterModel>()
             .ForMember(dest => dest.PageSize, opt => opt.MapFrom(src => ParsePageSize(src.PageCount)))
             .ForMember(dest => dest.DatePublishing, opt => opt.MapFrom(src =>
                 string.IsNullOrWhiteSpace(src.DatePublishing)
                     ? PublishDateOptions.AllTime
-                    : src.DatePublishing.ToEnum<PublishDateOptions>()));
+                    : src.DatePublishing.ToEnum<PublishDateOptions>()))
+            .ForMember(dest => dest.Sort, opt => opt.MapFrom(src =>
+                string.IsNullOrWhiteSpace(src.Sort)
+                    ? (SortingOptions?)null
+                    : src.Sort.ToEnum<SortingOptions>()));
 
         CreateMap<FilteredGamesResponseModel, FilteredGamesResponseDTO>()
             .ForMember(dest => dest.Games, opt => opt.MapFrom(src => src.Games));

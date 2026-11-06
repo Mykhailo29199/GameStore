@@ -22,9 +22,9 @@ public partial class ProductCatalog(
 {
     private const string NorthwindKeyPrefix = "nw_";
 
-    public async Task<List<ProductEntity>> GetAllAsync()
+    public async Task<List<ProductEntity>> GetAllAsync(bool includeDeleted = false)
     {
-        var sqlProducts = await sqlUnitOfWork.ProductRepository.GetQueryable().AsNoTracking().ToListAsync();
+        var sqlProducts = await sqlUnitOfWork.ProductRepository.GetQueryable(includeDeleted).AsNoTracking().ToListAsync();
         var sqlProductsIncludingDeleted = await sqlUnitOfWork.ProductRepository.GetAllIncludingDeleted().ToListAsync();
         var northwindProducts = await mongoUnitOfWork.ProductRepository.GetAllAsync();
 
@@ -65,16 +65,16 @@ public partial class ProductCatalog(
             .ToList();
     }
 
-    public async Task<ProductEntity?> GetByKeyAsync(string key)
+    public async Task<ProductEntity?> GetByKeyAsync(string key, bool includeDeleted = false)
     {
-        var sqlProduct = await sqlUnitOfWork.ProductRepository.GetQueryable().FirstOrDefaultAsync(p => p.Key == key);
+        var sqlProduct = await sqlUnitOfWork.ProductRepository.GetQueryable(includeDeleted).FirstOrDefaultAsync(p => p.Key == key);
 
         return sqlProduct ?? await GetNorthwindOnlyAsync(await mongoUnitOfWork.ProductRepository.GetByKeyAsync(key));
     }
 
-    public async Task<ProductEntity?> GetByIdAsync(Guid id)
+    public async Task<ProductEntity?> GetByIdAsync(Guid id, bool includeDeleted = false)
     {
-        var sqlProduct = await sqlUnitOfWork.ProductRepository.GetFullGame(id);
+        var sqlProduct = await sqlUnitOfWork.ProductRepository.GetQueryable(includeDeleted).FirstOrDefaultAsync(p => p.Id == id);
 
         if (sqlProduct is not null || !MongoIdConverter.TryGetObjectId(id, out var objectId))
         {
@@ -84,9 +84,9 @@ public partial class ProductCatalog(
         return await GetNorthwindOnlyAsync(await mongoUnitOfWork.ProductRepository.GetByIdAsync(objectId));
     }
 
-    public async Task<ProductEntity> EnsureInGameStoreAsync(string key)
+    public async Task<ProductEntity> EnsureInGameStoreAsync(string key, bool includeDeleted = false)
     {
-        var sqlProduct = await sqlUnitOfWork.ProductRepository.GetQueryable().FirstOrDefaultAsync(p => p.Key == key);
+        var sqlProduct = await sqlUnitOfWork.ProductRepository.GetQueryable(includeDeleted).FirstOrDefaultAsync(p => p.Key == key);
 
         if (sqlProduct is not null)
         {

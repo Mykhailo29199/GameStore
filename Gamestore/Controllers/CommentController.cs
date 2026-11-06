@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
 using BusinessLogicLayer.Models.CommentModels;
 using BusinessLogicLayer.Services.Interaces;
+using GameStore.Shared.Authorization;
 using Gamestore.WebAPI.DTOs.CommentDTOs;
+using Gamestore.WebAPI.Security;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Gamestore.WebAPI.Controllers;
@@ -10,6 +12,7 @@ namespace Gamestore.WebAPI.Controllers;
 [Route("api/")]
 public class CommentController(ICommentService commentService, IMapper mapper) : ControllerBase
 {
+    [HasPermission(Permissions.AddComment)]
     [HttpPost("games/{key}/comments")]
     public async Task<IActionResult> AddComment(string key, [FromBody] AddCommentRequestDTO dto)
     {
@@ -25,6 +28,8 @@ public class CommentController(ICommentService commentService, IMapper mapper) :
 
         return Ok(result);
     }
+
+    [HasPermission(Permissions.DeleteComment)]
 
     [HttpDelete("games/{key}/comments/{id}")]
     public async Task<IActionResult> DeleteComment(string key, Guid id)

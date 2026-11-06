@@ -1,0 +1,144 @@
+.product__top {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  justify-content: space-between;
+}
+
+.back {
+  color: var(--color-accent);
+  display: inline-block;
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 600;
+  margin: 10px 0 22px;
+  padding-left: 20px;
+  position: relative;
+}
+
+.back::before {
+  border-bottom: 2px solid currentColor;
+  border-left: 2px solid currentColor;
+  content: '';
+  height: 7px;
+  left: 3px;
+  position: absolute;
+  top: 6px;
+  transform: rotate(45deg);
+  width: 7px;
+}
+
+.product {
+  align-items: start;
+  display: grid;
+  gap: 40px var(--grid-gap);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.product__title {
+  font-size: 34px;
+  line-height: 46px;
+  overflow-wrap: anywhere;
+}
+
+.product__summary {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  justify-content: space-between;
+  margin-top: 14px;
+}
+
+.product__price {
+  font-family: var(--font-heading);
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.product__rating {
+  align-items: center;
+  display: flex;
+  gap: 18px;
+}
+
+.product__comments,
+.product__publisher,
+.product__facts dt,
+.product__label {
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.product__tax {
+  margin-top: 8px;
+}
+
+.product__tax-total {
+  margin-left: 16px;
+  white-space: nowrap;
+}
+
+.product__divider {
+  margin: 28px 0 32px;
+}
+
+.product__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 60px;
+  margin: 22px 0 24px;
+}
+
+.product__genres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.product__genre {
+  border: 1px solid var(--color-accent);
+  border-radius: 15px;
+  line-height: 28px;
+  padding: 0 19px;
+}
+
+.product__buy {
+  margin: 30px 0 10px;
+  min-width: 160px;
+}
+
+.product__heading {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.product__description {
+  font-size: 15px;
+  line-height: 24px;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.product__end {
+  margin: 50px 0 40px;
+}
+
+.product__message {
+  font-size: 16px;
+}
+
+@media (max-width: 800px) {
+  .product {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .product__title {
+    font-size: 28px;
+    line-height: 38px;
+  }
+}

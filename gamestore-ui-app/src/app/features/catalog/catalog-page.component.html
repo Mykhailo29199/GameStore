@@ -1,0 +1,94 @@
+<section class="container">
+  <header class="toolbar">
+    <h2 class="page-title">{{ config().title }}</h2>
+    @if (canAdd() && !draft()) {
+      <button class="btn" type="button" (click)="edit(null)">Add {{ config().singular }}</button>
+    }
+  </header>
+
+  @if (draft(); as current) {
+    <form class="panel" novalidate (submit)="$event.preventDefault(); save()">
+      <h3 class="panel__title">{{ current.id ? 'Edit' : 'New' }} {{ config().singular }}</h3>
+      <div class="form-grid">
+        @for (field of config().fields; track field.key) {
+          <label class="field" [class.form-grid__wide]="field.control === 'textarea'">
+            <span>{{ field.label }}</span>
+            @switch (field.control) {
+              @case ('textarea') {
+                <textarea
+                  #area
+                  class="field__control"
+                  rows="4"
+                  [value]="current.values[field.key] || ''"
+                  (input)="setValue(field.key, area.value)"
+                ></textarea>
+              }
+              @case ('parent') {
+                <select
+                  #select
+                  class="field__control select"
+                  (change)="setValue(field.key, select.value)"
+                >
+                  <option value="" [selected]="!current.values[field.key]">None</option>
+                  @for (option of parentOptions(); track option.id) {
+                    <option [value]="option.id" [selected]="option.id === current.values[field.key]">
+                      {{ title(option) }}
+                    </option>
+                  }
+                </select>
+              }
+              @default {
+                <input
+                  #text
+                  class="field__control"
+                  type="text"
+                  [value]="current.values[field.key] || ''"
+                  (input)="setValue(field.key, text.value)"
+                />
+              }
+            }
+          </label>
+        }
+      </div>
+      @if (error()) {
+        <p class="form-error" role="alert">{{ error() }}</p>
+      }
+      <div class="panel__actions">
+        <button class="btn btn--ghost" type="button" (click)="draft.set(null)">Cancel</button>
+        <button class="btn" type="submit">Save</button>
+      </div>
+    </form>
+  } @else if (error()) {
+    <p class="form-error message" role="alert">{{ error() }}</p>
+  }
+
+  @if (items(); as list) {
+    @if (list.length === 0) {
+      <p class="message">Nothing here yet.</p>
+    } @else {
+      <ul class="rows">
+        @for (item of list; track item.id) {
+          <li class="row">
+            <div class="row__main">
+              <h3 class="row__title">{{ title(item) }}</h3>
+              @for (note of notes(item); track $index) {
+                <p class="row__note">{{ note }}</p>
+              }
+            </div>
+            <div class="row__actions">
+              <a class="link" routerLink="/games" [queryParams]="gamesQuery(item)">Games</a>
+              @if (canUpdate()) {
+                <button class="link" type="button" (click)="edit(item)">Edit</button>
+              }
+              @if (canDelete()) {
+                <app-confirm-button (confirmed)="remove(item)" />
+              }
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  } @else {
+    <p class="message">Loading&hellip;</p>
+  }
+</section>

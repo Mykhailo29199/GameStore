@@ -1,0 +1,46 @@
+:host {
+  --star-size: 20px;
+
+  display: inline-flex;
+}
+
+.stars {
+  display: inline-flex;
+  gap: calc(var(--star-size) * 0.4);
+}
+
+.star {
+  background-color: #d8d8d8;
+  clip-path: polygon(
+    50% 0%,
+    61% 35%,
+    98% 35%,
+    68% 57%,
+    79% 91%,
+    50% 70%,
+    21% 91%,
+    32% 57%,
+    2% 35%,
+    39% 35%
+  );
+  display: block;
+  height: var(--star-size);
+  transition: background-color 0.15s ease;
+  width: var(--star-size);
+}
+
+.star--on {
+  background-color: var(--color-accent);
+}
+
+.star--button:hover,
+.star--button:focus-visible {
+  background-color: var(--color-accent-hover);
+}
+
+.stars--input {
+  border: 0;
+  margin: 0;
+  min-width: 0;
+  padding: 0;
+}

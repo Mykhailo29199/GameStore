@@ -75,6 +75,7 @@ builder.Services.AddScoped<EntityChangeLoggingInterceptor>();
 builder.Services.AddScoped<ICategoryCatalog, CategoryCatalog>();
 builder.Services.AddScoped<ISupplierCatalog, SupplierCatalog>();
 builder.Services.AddScoped<IProductCatalog, ProductCatalog>();
+builder.Services.AddScoped<IStoreCatalog, StoreCatalog>();
 
 builder.Services.AddScoped<IGameService, GameService>();
 builder.Services.AddScoped<IGenreService, GenreService>();

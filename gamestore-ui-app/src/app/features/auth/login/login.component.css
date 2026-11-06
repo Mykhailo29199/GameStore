@@ -1,0 +1,22 @@
+.auth {
+  background-color: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-inline: auto;
+  max-width: 445px;
+  padding: 26px 25px 30px;
+}
+
+.auth .page-title {
+  margin-bottom: 4px;
+}
+
+.auth__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  margin-top: 8px;
+}

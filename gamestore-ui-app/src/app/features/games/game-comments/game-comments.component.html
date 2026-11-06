@@ -1,0 +1,78 @@
+<header class="comments__header">
+  <div>
+    <h2 class="page-title comments__title">{{ count() }} Comments</h2>
+    <div class="comments__rating">
+      <app-star-rating label="Game rating" [value]="rating()" [readonly]="true" />
+      <strong class="comments__score">{{ rating().toFixed(1) }}</strong>
+    </div>
+  </div>
+  <button class="btn comments__write" type="button" (click)="write(null)">Write A Comment</button>
+</header>
+
+@if (formOpen()) {
+  <form class="comments__form" novalidate (submit)="$event.preventDefault(); submit(text.value)">
+    <label class="field">
+      <span>
+        @if (target(); as response) {
+          {{ response.action }} to {{ response.comment.name }}
+        } @else {
+          Your comment
+        }
+      </span>
+      <textarea #text class="field__control" name="body" rows="4" maxlength="2000"></textarea>
+    </label>
+    @if (error()) {
+      <p class="form-error" role="alert">{{ error() }}</p>
+    }
+    <div class="comments__form-actions">
+      <button class="btn btn--ghost" type="button" (click)="cancel()">Cancel</button>
+      <button class="btn" type="submit" [disabled]="sending()">Send</button>
+    </div>
+  </form>
+}
+
+@if (banTarget(); as banned) {
+  <form class="comments__form" novalidate (submit)="$event.preventDefault(); banUser(duration.value)">
+    <label class="field">
+      <span>Ban {{ banned.name }} for</span>
+      <select #duration class="field__control select">
+        @for (option of banDurations(); track option) {
+          <option [value]="option">{{ option }}</option>
+        }
+      </select>
+    </label>
+    <div class="comments__form-actions">
+      <button class="btn btn--ghost" type="button" (click)="banTarget.set(null)">Cancel</button>
+      <button class="btn" type="submit">Ban</button>
+    </div>
+  </form>
+}
+@if (!formOpen() && error()) {
+  <p class="form-error message" role="alert">{{ error() }}</p>
+}
+@if (notice()) {
+  <output class="form-success message">{{ notice() }}</output>
+}
+
+@if (comments().length === 0) {
+  <p class="comments__empty">There are no comments yet.</p>
+} @else {
+  <ul class="comments__list">
+    @for (comment of visible(); track comment.id) {
+      <li class="comments__item">
+        <app-comment-item
+          [comment]="comment"
+          (respond)="write($event)"
+          (remove)="remove($event)"
+          (ban)="askBan($event)"
+        />
+      </li>
+    }
+  </ul>
+  <app-pagination
+    class="comments__pages"
+    [current]="page()"
+    [total]="totalPages()"
+    (pageChange)="page.set($event)"
+  />
+}

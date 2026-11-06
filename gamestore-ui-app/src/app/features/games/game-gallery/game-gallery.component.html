@@ -3,13 +3,13 @@
   <button
     class="gallery__arrow gallery__arrow--prev"
     type="button"
-    aria-label="Previous picture"
+    [attr.aria-label]="'gallery.previous' | t"
     (click)="show(index() - 1)"
   ></button>
   <button
     class="gallery__arrow"
     type="button"
-    aria-label="Next picture"
+    [attr.aria-label]="'gallery.next' | t"
     (click)="show(index() + 1)"
   ></button>
 </div>
@@ -20,7 +20,7 @@
         class="gallery__thumb"
         type="button"
         [class.gallery__thumb--current]="position === index()"
-        [attr.aria-label]="'Picture ' + (position + 1)"
+        [attr.aria-label]="'gallery.picture' | t: { number: position + 1 }"
         (click)="show(position)"
       >
         <img [src]="image" alt="" width="160" height="115" loading="lazy" />

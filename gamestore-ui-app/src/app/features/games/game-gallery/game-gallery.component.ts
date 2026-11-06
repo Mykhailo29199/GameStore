@@ -1,7 +1,9 @@
 import { Component, computed, input, signal } from '@angular/core';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-game-gallery',
+  imports: [TranslatePipe],
   templateUrl: './game-gallery.component.html',
   styleUrl: './game-gallery.component.css',
 })

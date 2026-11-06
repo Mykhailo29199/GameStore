@@ -4,6 +4,9 @@ import { Observable, map } from 'rxjs';
 import { ConfirmButtonComponent } from '../../components/confirm-button/confirm-button.component';
 import { APP_SETTINGS } from '../../core/config/app-settings';
 import { apiErrorMessage } from '../../core/http/api-error';
+import { TranslationKey } from '../../core/i18n/dictionaries';
+import { LanguageService } from '../../core/i18n/language.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 export type AccessKind = 'users' | 'roles';
 
@@ -24,9 +27,11 @@ interface Draft {
 }
 
 interface AccessConfig {
-  readonly title: string;
-  readonly singular: string;
-  readonly optionsTitle: string;
+  readonly title: TranslationKey;
+  readonly addTitle: TranslationKey;
+  readonly newTitle: TranslationKey;
+  readonly editTitle: TranslationKey;
+  readonly optionsTitle: TranslationKey;
   readonly optionsPath: string;
   readonly selectedPath: string;
   readonly hasPassword: boolean;
@@ -36,17 +41,21 @@ const MIN_PASSWORD_LENGTH = 4;
 
 const CONFIGS: Readonly<Record<AccessKind, AccessConfig>> = {
   users: {
-    title: 'Users',
-    singular: 'User',
-    optionsTitle: 'Roles',
+    title: 'access.users.title',
+    addTitle: 'access.users.add',
+    newTitle: 'access.users.new',
+    editTitle: 'access.users.edit',
+    optionsTitle: 'access.users.options',
     optionsPath: 'roles',
     selectedPath: 'roles',
     hasPassword: true,
   },
   roles: {
-    title: 'Roles',
-    singular: 'Role',
-    optionsTitle: 'Permissions',
+    title: 'access.roles.title',
+    addTitle: 'access.roles.add',
+    newTitle: 'access.roles.new',
+    editTitle: 'access.roles.edit',
+    optionsTitle: 'access.roles.options',
     optionsPath: 'roles/permissions',
     selectedPath: 'permissions',
     hasPassword: false,
@@ -61,12 +70,13 @@ function toOption(item: NamedItem | string): Option {
 
 @Component({
   selector: 'app-access-page',
-  imports: [ConfirmButtonComponent],
+  imports: [ConfirmButtonComponent, TranslatePipe],
   templateUrl: './access-page.component.html',
 })
 export class AccessPageComponent {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = inject(APP_SETTINGS).apiUrl;
+  private readonly i18n = inject(LanguageService);
 
   readonly kind = input.required<AccessKind>();
 
@@ -108,7 +118,7 @@ export class AccessPageComponent {
       .subscribe({
         next: (selected) => this.draft.set({ id: item.id, name: item.name, selected }),
         error: (error: unknown) =>
-          this.error.set(apiErrorMessage(error, 'The record could not be loaded.')),
+          this.error.set(apiErrorMessage(error, this.i18n.translate('common.loadFailed'))),
       });
   }
 
@@ -148,13 +158,13 @@ export class AccessPageComponent {
 
   private validate(draft: Draft, name: string, password: string): string {
     if (!name) {
-      return 'Name is required.';
+      return this.i18n.translate('common.nameRequired');
     }
 
     const passwordNeeded = this.config().hasPassword && (!draft.id || password.length > 0);
 
     return passwordNeeded && password.length < MIN_PASSWORD_LENGTH
-      ? `The password must contain at least ${MIN_PASSWORD_LENGTH} characters.`
+      ? this.i18n.translate('common.passwordLength', { count: MIN_PASSWORD_LENGTH })
       : '';
   }
 
@@ -178,7 +188,7 @@ export class AccessPageComponent {
         this.load();
       },
       error: (error: unknown) =>
-        this.error.set(apiErrorMessage(error, 'The change could not be saved.')),
+        this.error.set(apiErrorMessage(error, this.i18n.translate('common.saveFailed'))),
     });
   }
 

@@ -5,7 +5,10 @@ describe('catalog config', () => {
   const publishers = CATALOG_CONFIGS.publishers;
 
   it('reads only the configured fields of an API record', () => {
-    const item = toCatalogItem({ id: 'g1', name: 'Action', parent: null, extra: 'x' }, genres.fields);
+    const item = toCatalogItem(
+      { id: 'g1', name: 'Action', parent: null, extra: 'x' },
+      genres.fields,
+    );
 
     expect(item).toEqual({ id: 'g1', values: { name: 'Action', parent: '' } });
   });
@@ -20,12 +23,19 @@ describe('catalog config', () => {
     const values = { companyName: 'Valve', homePage: 'https://valve.com', description: '' };
 
     expect(toCatalogPayload(publishers, values, 'p1')).toEqual({
-      publisher: { id: 'p1', companyName: 'Valve', homePage: 'https://valve.com', description: null },
+      publisher: {
+        id: 'p1',
+        companyName: 'Valve',
+        homePage: 'https://valve.com',
+        description: null,
+      },
     });
   });
 
   it('finds the first empty required field', () => {
-    expect(missingField(publishers, { companyName: '  ' })?.label).toBe('Company name');
+    expect(missingField(publishers, { companyName: '  ' })?.label).toBe(
+      'catalog.field.companyName',
+    );
     expect(missingField(publishers, { companyName: 'Valve' })).toBeNull();
   });
 });

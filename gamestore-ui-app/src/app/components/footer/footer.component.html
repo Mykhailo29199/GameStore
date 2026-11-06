@@ -1,27 +1,29 @@
 <footer class="footer">
   <div class="container">
     <div class="footer__columns">
-      <nav class="footer__column" aria-label="Site links">
-        <h3 class="footer__title">Site Links</h3>
+      <nav class="footer__column" [attr.aria-label]="'footer.siteLinks' | t">
+        <h3 class="footer__title">{{ 'footer.siteLinks' | t }}</h3>
         <ul class="footer__list">
           @for (link of siteLinks; track link.path) {
-            <li><a class="footer__link" [routerLink]="link.path">{{ link.label }}</a></li>
+            <li>
+              <a class="footer__link" [routerLink]="link.path">{{ link.label | t }}</a>
+            </li>
           }
         </ul>
       </nav>
 
       <div class="footer__column">
-        <h3 class="footer__title">Company Information</h3>
+        <h3 class="footer__title">{{ 'footer.company' | t }}</h3>
         <ul class="footer__list">
           @for (item of companyItems; track item) {
-            <li>{{ item }}</li>
+            <li>{{ item | t }}</li>
           }
         </ul>
       </div>
 
       <div class="footer__column">
-        <h3 class="footer__title">Social Media</h3>
-        <ul class="footer__social" aria-label="Social media">
+        <h3 class="footer__title">{{ 'footer.social' | t }}</h3>
+        <ul class="footer__social" [attr.aria-label]="'footer.social' | t">
           <li>
             <span class="visually-hidden">Twitter</span>
             <svg class="footer__icon" viewBox="0 0 16 16" aria-hidden="true">
@@ -66,6 +68,6 @@
       </div>
     </div>
 
-    <p class="footer__copyright">&#64;2007 - 2019 All Rights Reserved</p>
+    <p class="footer__copyright">{{ 'footer.copyright' | t }}</p>
   </div>
 </footer>

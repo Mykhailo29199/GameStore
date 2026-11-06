@@ -1,0 +1,116 @@
+<div class="container order">
+  <section>
+    <header class="toolbar">
+      <div>
+        <h2 class="page-title">Order</h2>
+        @if (order(); as current) {
+          <p class="row__note">
+            {{ current.id }} &middot; {{ current.date | date: 'mediumDate' }} &middot; Customer
+            {{ current.customerId }} &middot; <strong>{{ current.status }}</strong>
+          </p>
+        }
+      </div>
+      @if (shippable()) {
+        <app-confirm-button label="Ship" (confirmed)="ship()" />
+      }
+    </header>
+
+    @if (error()) {
+      <p class="form-error message" role="alert">{{ error() }}</p>
+    }
+    @if (message()) {
+      <output class="form-success message">{{ message() }}</output>
+    }
+
+    @if (lines(); as items) {
+      @if (items.length === 0) {
+        <p class="message">The order has no games.</p>
+      }
+      <ul class="rows">
+        @for (line of items; track line.id) {
+          <li class="row">
+            <div class="row__main">
+              <h3 class="row__title">
+                @if (line.gameKey) {
+                  <a [routerLink]="['/games', line.gameKey]">{{ line.gameName }}</a>
+                } @else {
+                  {{ line.gameName }}
+                }
+              </h3>
+              <app-price [price]="line.unitPrice" [discount]="line.discount" />
+            </div>
+            <div class="row__actions">
+              @if (editable()) {
+                <button
+                  class="link"
+                  type="button"
+                  aria-label="Decrease quantity"
+                  [disabled]="line.quantity < 2"
+                  (click)="changeQuantity(line, -1)"
+                >
+                  &minus;
+                </button>
+              }
+              <span>Qty {{ line.quantity }}</span>
+              @if (editable()) {
+                <button
+                  class="link"
+                  type="button"
+                  aria-label="Increase quantity"
+                  (click)="changeQuantity(line, 1)"
+                >
+                  +
+                </button>
+              }
+              <strong>{{ total(line) | currency }}</strong>
+              @if (editable()) {
+                <app-confirm-button label="Remove" (confirmed)="remove(line)" />
+              }
+            </div>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="message">Loading&hellip;</p>
+    }
+
+    @if (editable()) {
+      <form
+        class="panel order__add"
+        novalidate
+        (submit)="$event.preventDefault(); addGame(game.value)"
+      >
+        <label class="field">
+          <span>Add a game to the order</span>
+          <select #game class="field__control select">
+            <option value="">Choose a game</option>
+            @for (option of games(); track option.id) {
+              <option [value]="option.key">{{ option.name }}</option>
+            }
+          </select>
+        </label>
+        <div class="panel__actions">
+          <button class="btn" type="submit">Add Game</button>
+        </div>
+      </form>
+    }
+  </section>
+
+  <aside class="summary">
+    <h3 class="summary__title">Order Summary</h3>
+    <dl class="summary__rows">
+      <div class="summary__row">
+        <dt>Subtotal</dt>
+        <dd>{{ totals().subtotal | currency }}</dd>
+      </div>
+      <div class="summary__row">
+        <dt>Taxes</dt>
+        <dd>{{ totals().taxes | currency }}</dd>
+      </div>
+      <div class="summary__row summary__row--total">
+        <dt>Total</dt>
+        <dd>{{ totals().total | currency }}</dd>
+      </div>
+    </dl>
+  </aside>
+</div>

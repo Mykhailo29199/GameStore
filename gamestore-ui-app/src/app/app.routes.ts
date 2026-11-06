@@ -3,10 +3,14 @@ import { MainPageBodyComponent } from './components/bodies/main-page-body/main-p
 import { permissionGuard } from './core/auth/permission.guard';
 import { Permissions } from './core/auth/permissions';
 import { LoginComponent } from './features/auth/login/login.component';
+import { BasketComponent } from './features/cart/basket/basket.component';
 import { CatalogPageComponent } from './features/catalog/catalog-page.component';
 import { GameDetailsComponent } from './features/games/game-details/game-details.component';
 import { GameFormComponent } from './features/games/game-form/game-form.component';
 import { GameListComponent } from './features/games/game-list/game-list.component';
+import { CheckoutComponent } from './features/orders/checkout/checkout.component';
+import { OrderDetailsComponent } from './features/orders/order-details/order-details.component';
+import { OrderListComponent } from './features/orders/order-list/order-list.component';
 
 export const routes: Routes = [
   { path: '', component: MainPageBodyComponent, pathMatch: 'full' },
@@ -25,6 +29,32 @@ export const routes: Routes = [
   { path: 'genres', component: CatalogPageComponent, data: { kind: 'genres' } },
   { path: 'platforms', component: CatalogPageComponent, data: { kind: 'platforms' } },
   { path: 'publishers', component: CatalogPageComponent, data: { kind: 'publishers' } },
+  {
+    path: 'orders',
+    component: OrderListComponent,
+    canActivate: [permissionGuard(Permissions.ViewOrders)],
+  },
+  {
+    path: 'orders/:id',
+    component: OrderDetailsComponent,
+    canActivate: [permissionGuard(Permissions.ViewOrders)],
+  },
+  {
+    path: 'history',
+    component: OrderListComponent,
+    data: { history: true },
+    canActivate: [permissionGuard(Permissions.ViewOrderHistory)],
+  },
+  {
+    path: 'basket',
+    component: BasketComponent,
+    canActivate: [permissionGuard(Permissions.BuyGame)],
+  },
+  {
+    path: 'order',
+    component: CheckoutComponent,
+    canActivate: [permissionGuard(Permissions.BuyGame)],
+  },
   { path: 'login', component: LoginComponent, data: { mode: 'login' } },
   { path: 'register', component: LoginComponent, data: { mode: 'register' } },
   { path: '**', redirectTo: '' },

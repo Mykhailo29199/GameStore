@@ -1,0 +1,84 @@
+<div class="container cart">
+  <section class="cart__main">
+    <header class="cart__header">
+      <h2 class="page-title">Cart</h2>
+      <span class="cart__count">{{ totals().itemCount }} items</span>
+    </header>
+
+    @if (error()) {
+      <p class="form-error cart__message" role="alert">{{ error() }}</p>
+    }
+
+    @if (lines(); as items) {
+      @if (items.length === 0) {
+        <p class="cart__message">
+          Your cart is empty. <a class="link" routerLink="/games">Go to the game list</a>
+        </p>
+      }
+      <ul>
+        @for (line of items; track line.id) {
+          <li class="cart__line">
+            <img class="cart__cover" [src]="cover(line)" alt="" width="160" height="160" />
+            <div class="cart__details">
+              <h3 class="cart__name">
+                @if (line.gameKey) {
+                  <a [routerLink]="['/games', line.gameKey]">{{ line.gameName }}</a>
+                } @else {
+                  {{ line.gameName }}
+                }
+              </h3>
+              <app-price class="cart__price" [price]="line.unitPrice" [discount]="line.discount" />
+              <div class="quantity">
+                <button
+                  class="quantity__button"
+                  type="button"
+                  aria-label="Decrease quantity"
+                  [disabled]="busy()"
+                  (click)="decrease(line)"
+                >
+                  &minus;
+                </button>
+                <span class="quantity__value" aria-live="polite">{{ line.quantity }}</span>
+                <button
+                  class="quantity__button quantity__button--plus"
+                  type="button"
+                  aria-label="Increase quantity"
+                  [disabled]="busy()"
+                  (click)="increase(line)"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+            <button class="link cart__remove" type="button" [disabled]="busy()" (click)="remove(line)">
+              Remove
+            </button>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="cart__message">Loading the cart&hellip;</p>
+    }
+  </section>
+
+  <aside class="summary">
+    <h3 class="summary__title">Order Summary</h3>
+    <dl class="summary__rows">
+      <div class="summary__row">
+        <dt>Subtotal</dt>
+        <dd>{{ totals().subtotal | currency }}</dd>
+      </div>
+      <div class="summary__row">
+        <dt>Taxes</dt>
+        <dd>{{ totals().taxes | currency }}</dd>
+      </div>
+      <div class="summary__row summary__row--total">
+        <dt>Total</dt>
+        <dd>{{ totals().total | currency }}</dd>
+      </div>
+    </dl>
+    @if (totals().itemCount > 0) {
+      <a class="btn summary__checkout" routerLink="/order">Checkout</a>
+    }
+  </aside>
+</div>

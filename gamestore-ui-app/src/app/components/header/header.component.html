@@ -1,0 +1,49 @@
+<header class="hero">
+  <div class="container hero__inner">
+    <div>
+      <nav class="nav" aria-label="Main">
+        <a class="nav__logo" routerLink="/">GameStore</a>
+        <ul class="nav__links">
+          @for (link of links; track link.path) {
+            <li>
+              <a class="nav__link" [routerLink]="link.path" routerLinkActive="nav__link--active">
+                {{ link.label }}
+              </a>
+            </li>
+          }
+          <li>
+            <a class="nav__link" routerLink="/basket" routerLinkActive="nav__link--active">
+              Cart
+              @if (cart.itemCount() > 0) {
+                ({{ cart.itemCount() }})
+              }
+            </a>
+          </li>
+          @if (auth.isAuthenticated()) {
+            <li class="nav__user">{{ auth.userName() }}</li>
+            <li><button class="nav__link" type="button" (click)="logout()">Logout</button></li>
+          } @else {
+            <li>
+              <a class="nav__link" routerLink="/login" routerLinkActive="nav__link--active">Login</a>
+            </li>
+          }
+        </ul>
+      </nav>
+
+      @if (manageLinks().length > 0) {
+        <nav class="manage" aria-label="Management">
+          @for (link of manageLinks(); track link.path) {
+            <a class="manage__link" [routerLink]="link.path" routerLinkActive="manage__link--active">
+              {{ link.label }}
+            </a>
+          }
+        </nav>
+      }
+    </div>
+
+    <div class="hero__content">
+      <h1 class="hero__title">What Can Make Your Life Easier?</h1>
+      <p class="hero__subtitle">Empowered Solutions with Simple Process</p>
+    </div>
+  </div>
+</header>

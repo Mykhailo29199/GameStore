@@ -1,0 +1,49 @@
+<section class="container">
+  <form
+    class="auth"
+    novalidate
+    (submit)="$event.preventDefault(); submit(login.value, password.value, confirmation.value)"
+  >
+    <h2 class="page-title">{{ registering() ? 'Create Account' : 'Log In' }}</h2>
+
+    <label class="field">
+      <span>Login</span>
+      <input #login class="field__control" type="text" name="login" autocomplete="username" />
+    </label>
+    <label class="field">
+      <span>Password</span>
+      <input
+        #password
+        class="field__control"
+        type="password"
+        name="password"
+        [autocomplete]="registering() ? 'new-password' : 'current-password'"
+      />
+    </label>
+    <label class="field" [hidden]="!registering()">
+      <span>Repeat password</span>
+      <input
+        #confirmation
+        class="field__control"
+        type="password"
+        name="confirmation"
+        autocomplete="new-password"
+      />
+    </label>
+
+    @if (error()) {
+      <p class="form-error" role="alert">{{ error() }}</p>
+    }
+
+    <div class="auth__actions">
+      @if (registering()) {
+        <a class="link" routerLink="/login" queryParamsHandling="preserve">I already have an account</a>
+      } @else {
+        <a class="link" routerLink="/register" queryParamsHandling="preserve">Create an account</a>
+      }
+      <button class="btn" type="submit" [disabled]="sending()">
+        {{ registering() ? 'Register' : 'Log In' }}
+      </button>
+    </div>
+  </form>
+</section>

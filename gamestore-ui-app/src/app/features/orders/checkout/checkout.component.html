@@ -1,0 +1,129 @@
+<div class="container checkout">
+  <section class="checkout__main">
+    <h2 class="page-title">Checkout</h2>
+
+    @if (result()) {
+      <output class="form-success checkout__result">{{ result() }}</output>
+      <a class="btn" routerLink="/games">Continue Shopping</a>
+    } @else if (totals().itemCount === 0) {
+      <p class="checkout__result">
+        Your cart is empty. <a class="link" routerLink="/games">Go to the game list</a>
+      </p>
+    } @else {
+      <form
+        class="checkout__form"
+        novalidate
+        (submit)="
+          $event.preventDefault();
+          pay({
+            holder: holder.value,
+            cardNumber: cardNumber.value,
+            month: month.value,
+            year: year.value,
+            cvv: cvv.value
+          })
+        "
+      >
+        <fieldset class="checkout__methods">
+          <legend class="checkout__legend">Payment method</legend>
+          @for (method of methods(); track method.title) {
+            <label class="method" [class.method--selected]="selected() === method.title">
+              <input
+                class="choice__input choice__input--radio"
+                type="radio"
+                name="method"
+                [checked]="selected() === method.title"
+                (change)="selected.set(method.title)"
+              />
+              <img class="method__image" [src]="method.imageUrl" alt="" width="40" height="40" />
+              <span>
+                <strong class="method__title">{{ method.title }}</strong>
+                <span class="method__text">{{ method.description }}</span>
+              </span>
+            </label>
+          }
+        </fieldset>
+
+        <fieldset class="checkout__card" [hidden]="!visaSelected()">
+          <legend class="checkout__legend">Card details</legend>
+          <label class="field checkout__wide">
+            <span>Card holder</span>
+            <input #holder class="field__control" type="text" autocomplete="cc-name" />
+          </label>
+          <label class="field checkout__wide">
+            <span>Card number</span>
+            <input
+              #cardNumber
+              class="field__control"
+              type="text"
+              inputmode="numeric"
+              autocomplete="cc-number"
+            />
+          </label>
+          <label class="field">
+            <span>Month</span>
+            <input
+              #month
+              class="field__control"
+              type="text"
+              inputmode="numeric"
+              maxlength="2"
+              placeholder="MM"
+              autocomplete="cc-exp-month"
+            />
+          </label>
+          <label class="field">
+            <span>Year</span>
+            <input
+              #year
+              class="field__control"
+              type="text"
+              inputmode="numeric"
+              maxlength="4"
+              placeholder="YYYY"
+              autocomplete="cc-exp-year"
+            />
+          </label>
+          <label class="field">
+            <span>CVV</span>
+            <input
+              #cvv
+              class="field__control"
+              type="text"
+              inputmode="numeric"
+              maxlength="4"
+              autocomplete="cc-csc"
+            />
+          </label>
+        </fieldset>
+
+        @if (error()) {
+          <p class="form-error" role="alert">{{ error() }}</p>
+        }
+
+        <div class="checkout__actions">
+          <a class="btn btn--ghost" routerLink="/basket">Back to Cart</a>
+          <button class="btn" type="submit" [disabled]="!selected() || paying()">Pay</button>
+        </div>
+      </form>
+    }
+  </section>
+
+  <aside class="summary">
+    <h3 class="summary__title">Order Summary</h3>
+    <dl class="summary__rows">
+      <div class="summary__row">
+        <dt>Subtotal</dt>
+        <dd>{{ totals().subtotal | currency }}</dd>
+      </div>
+      <div class="summary__row">
+        <dt>Taxes</dt>
+        <dd>{{ totals().taxes | currency }}</dd>
+      </div>
+      <div class="summary__row summary__row--total">
+        <dt>Total</dt>
+        <dd>{{ totals().total | currency }}</dd>
+      </div>
+    </dl>
+  </aside>
+</div>

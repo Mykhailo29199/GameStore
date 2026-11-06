@@ -19,10 +19,16 @@ public class OrderService(
     private readonly ISqlServerUnitOfWork _sqlUnitOfWork = unitOfWork;
     private readonly IMapper _mapper = mapper;
 
+    // Orders older than this period belong to the orders history and cannot be edited.
+    private static readonly TimeSpan HistoryAge = TimeSpan.FromDays(30);
+
     public async Task<IEnumerable<OrderModel>> GetClosedOrdersAsync()
     {
+        var historyBoundary = DateTime.UtcNow - HistoryAge;
+
         var orders = await _sqlUnitOfWork.OrderRepository.FindAsync(o =>
-            o.Status == OrderStatus.Paid || o.Status == OrderStatus.Cancelled);
+            (o.Status == OrderStatus.Paid || o.Status == OrderStatus.Cancelled || o.Status == OrderStatus.Shipped) &&
+            (o.OrderDate == null || o.OrderDate >= historyBoundary));
 
         return _mapper.Map<IEnumerable<OrderModel>>(orders);
     }
@@ -134,10 +140,16 @@ public class OrderService(
     }
 
     /// <summary>
-    /// Returns orders from both databases. An empty start or end date means the range is unlimited on that side.
+    /// Returns orders from both databases. Without a date range only orders older than 30 days are returned;
+    /// when a range is given, an empty start or end date means it is unlimited on that side.
     /// </summary>
     public async Task<IEnumerable<OrderModel>> GetOrdersHistoryAsync(DateTime? startDate = null, DateTime? endDate = null)
     {
+        if (!startDate.HasValue && !endDate.HasValue)
+        {
+            endDate = DateTime.UtcNow - HistoryAge;
+        }
+
         // Open carts and orders still waiting for payment are not part of the history.
         var sqlOrders = await _sqlUnitOfWork.OrderRepository.FindAsync(o =>
             o.Status != OrderStatus.Open &&
@@ -154,6 +166,102 @@ public class OrderService(
             .Concat(northwindModels)
             .OrderByDescending(o => o.Date)
             .ToList();
+    }
+
+    public async Task UpdateOrderDetailQuantityAsync(Guid orderDetailId, int count)
+    {
+        if (count < 1)
+        {
+            throw new BadRequestException("Quantity must be greater than zero.");
+        }
+
+        var orderDetail = await GetEditableOrderDetailAsync(orderDetailId);
+
+        if (orderDetail.Product is not null && count > orderDetail.Product.UnitsInStock)
+        {
+            throw new BadRequestException("Not enough stock available");
+        }
+
+        orderDetail.Quantity = count;
+
+        await _sqlUnitOfWork.SaveAsync();
+    }
+
+    public async Task DeleteOrderDetailAsync(Guid orderDetailId)
+    {
+        var orderDetail = await GetEditableOrderDetailAsync(orderDetailId);
+
+        await _sqlUnitOfWork.OrderDetailsRepository.DeleteAsync(orderDetail);
+        await _sqlUnitOfWork.SaveAsync();
+    }
+
+    /// <summary>
+    /// Only a paid order can be shipped.
+    /// </summary>
+    public async Task ShipOrderAsync(Guid orderId)
+    {
+        var order = await _sqlUnitOfWork.OrderRepository.GetOrderWithGamesAsync(orderId)
+            ?? throw new NotFoundException($"Order with id `{orderId}` was not found.");
+
+        if (order.Status != OrderStatus.Paid)
+        {
+            throw new BadRequestException("Only a paid order can be shipped.");
+        }
+
+        order.Status = OrderStatus.Shipped;
+        order.ShippedDate = DateTime.UtcNow;
+
+        await _sqlUnitOfWork.SaveAsync();
+    }
+
+    public async Task AddGameToOrderAsync(Guid orderId, string gameKey)
+    {
+        var order = await _sqlUnitOfWork.OrderRepository.GetOrderWithGamesAsync(orderId)
+            ?? throw new NotFoundException($"Order with id `{orderId}` was not found.");
+
+        EnsureOrderIsEditable(order);
+
+        var catalogGame = await productCatalog.GetByKeyAsync(gameKey) ?? throw new NotFoundException("Game not found");
+
+        if (catalogGame.UnitsInStock <= 0)
+        {
+            throw new BadRequestException("Game is out of stock");
+        }
+
+        var game = await productCatalog.EnsureInGameStoreAsync(gameKey);
+
+        await IncreaseGameQuantityAsync(order, game);
+        await _sqlUnitOfWork.SaveAsync();
+    }
+
+    /// <summary>
+    /// Shipped and cancelled orders, and orders from the history (older than 30 days), cannot be edited.
+    /// Northwind orders are read-only, so they are never found here.
+    /// </summary>
+    private static void EnsureOrderIsEditable(OrderEntity order)
+    {
+        if (order.Status is OrderStatus.Shipped or OrderStatus.Cancelled)
+        {
+            throw new BadRequestException("Shipped and cancelled orders cannot be edited.");
+        }
+
+        if (order.OrderDate.HasValue && order.OrderDate.Value < DateTime.UtcNow - HistoryAge)
+        {
+            throw new BadRequestException("Orders from the history cannot be edited.");
+        }
+    }
+
+    private async Task<OrderDetailsEntity> GetEditableOrderDetailAsync(Guid orderDetailId)
+    {
+        var orderDetail = await _sqlUnitOfWork.OrderDetailsRepository.GetDetailWithOrderAsync(orderDetailId)
+            ?? throw new NotFoundException($"Order detail with id `{orderDetailId}` was not found.");
+
+        if (orderDetail.Order is not null)
+        {
+            EnsureOrderIsEditable(orderDetail.Order);
+        }
+
+        return orderDetail;
     }
 
     private async Task<DataAccessLayer.Entities.NorthwindMDBEntities.OrderMongoDBEntity?> GetNorthwindOrderAsync(Guid orderId)
@@ -183,6 +291,7 @@ public class OrderService(
 
             return new OrderGameModel
             {
+                Id = MongoIdConverter.ToGuid(d.InternalId),
                 OrderId = orderId,
                 ProductId = product is null ? Guid.Empty : MongoIdConverter.ToGuid(product.InternalId),
                 GameName = product?.ProductName ?? string.Empty,

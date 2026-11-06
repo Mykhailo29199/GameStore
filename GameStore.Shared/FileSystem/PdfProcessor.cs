@@ -1,12 +1,11 @@
-﻿using GameStore.Shared.Stubs;
-using MigraDocCore.DocumentObjectModel;
+﻿using MigraDocCore.DocumentObjectModel;
 using MigraDocCore.Rendering;
 
 namespace GameStore.Shared.FileSystem;
 
 public static class PdfProcessor
 {
-    public static byte[] GeneratePdfInvoice(Guid orderId, decimal total)
+    public static byte[] GeneratePdfInvoice(Guid orderId, Guid customerId, decimal total)
     {
         var document = new Document();
         var section = document.AddSection();
@@ -16,7 +15,7 @@ public static class PdfProcessor
         header.Format.Font.Bold = true;
         header.Format.SpaceAfter = "1cm";
 
-        section.AddParagraph($"User ID: {CustomerStub.StubCustomerId}");
+        section.AddParagraph($"User ID: {customerId}");
         section.AddParagraph($"Order ID: {orderId}");
         section.AddParagraph($"Creation Date: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}");
         section.AddParagraph($"Valid Until: {DateTime.UtcNow.AddDays(7):yyyy-MM-dd HH:mm:ss}");

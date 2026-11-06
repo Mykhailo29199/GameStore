@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { MainPageBodyComponent } from './components/bodies/main-page-body/main-page-body.component';
 import { permissionGuard } from './core/auth/permission.guard';
 import { Permissions } from './core/auth/permissions';
+import { AccessPageComponent } from './features/access/access-page.component';
 import { LoginComponent } from './features/auth/login/login.component';
 import { BasketComponent } from './features/cart/basket/basket.component';
 import { CatalogPageComponent } from './features/catalog/catalog-page.component';
@@ -54,6 +55,18 @@ export const routes: Routes = [
     path: 'order',
     component: CheckoutComponent,
     canActivate: [permissionGuard(Permissions.BuyGame)],
+  },
+  {
+    path: 'users',
+    component: AccessPageComponent,
+    data: { kind: 'users' },
+    canActivate: [permissionGuard(Permissions.ManageUsers)],
+  },
+  {
+    path: 'roles',
+    component: AccessPageComponent,
+    data: { kind: 'roles' },
+    canActivate: [permissionGuard(Permissions.ManageRoles)],
   },
   { path: 'login', component: LoginComponent, data: { mode: 'login' } },
   { path: 'register', component: LoginComponent, data: { mode: 'register' } },

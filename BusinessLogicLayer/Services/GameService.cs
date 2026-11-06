@@ -22,9 +22,7 @@ public class GameService(
     IMapper mapper,
     IFileSystem fileSystem,
     GameFilterPipeline pipeline,
-    IProductCatalog productCatalog,
-    ICategoryCatalog categoryCatalog,
-    ISupplierCatalog supplierCatalog) : IGameService
+    IStoreCatalog catalog) : IGameService
 {
     private readonly ISqlServerUnitOfWork _unitOfWork = unitOfWork;
     private readonly IMapper _mapper = mapper;
@@ -48,10 +46,10 @@ public class GameService(
 
     public async Task<GameModel> GetGameByKeyAsync(string key)
     {
-        await productCatalog.IncreaseViewsAsync(key);
+        await catalog.Products.IncreaseViewsAsync(key);
         await _unitOfWork.SaveAsync();
 
-        var gameEntity = await productCatalog.GetByKeyAsync(key)
+        var gameEntity = await catalog.Products.GetByKeyAsync(key)
             ?? throw new NotFoundException($"Game with Key '{key}' was not found.");
 
         return _mapper.Map<GameModel>(gameEntity);
@@ -59,7 +57,7 @@ public class GameService(
 
     public async Task<GameModel> GetGameByIdAsync(Guid gameId)
     {
-        var gameEntity = await productCatalog.GetByIdAsync(gameId);
+        var gameEntity = await catalog.Products.GetByIdAsync(gameId);
 
         return gameEntity != null
             ? _mapper.Map<GameModel>(gameEntity)
@@ -71,15 +69,15 @@ public class GameService(
     /// </summary>
     public async Task UpdateGameAsync(GameModel gameModel)
     {
-        var currentGame = await productCatalog.GetByIdAsync(gameModel.Id)
+        var currentGame = await catalog.Products.GetByIdAsync(gameModel.Id)
             ?? throw new NotFoundException($"Game with Id `{gameModel.Id}` was not found.");
 
         await ValidatePlatformsAsync(gameModel.Platforms);
 
-        var existingGame = await productCatalog.EnsureInGameStoreAsync(currentGame.Key);
+        var existingGame = await catalog.Products.EnsureInGameStoreAsync(currentGame.Key);
 
         // The key maps a game to its Northwind product, so it cannot be changed for Northwind games.
-        gameModel.Key = await productCatalog.HasNorthwindCounterpartAsync(existingGame)
+        gameModel.Key = await catalog.Products.HasNorthwindCounterpartAsync(existingGame)
             || string.Equals(gameModel.Key, existingGame.Key, StringComparison.Ordinal)
             ? existingGame.Key
             : await GenerateUniqueGameKeyAsync(gameModel.Key, gameModel.Name);
@@ -99,7 +97,7 @@ public class GameService(
         existingGame.SupplierID = publisher.Id;
 
         await _unitOfWork.SaveAsync();
-        await productCatalog.SyncUnitsInStockAsync([existingGame]);
+        await catalog.Products.SyncUnitsInStockAsync([existingGame]);
     }
 
     /// <summary>
@@ -107,16 +105,16 @@ public class GameService(
     /// </summary>
     public async Task DeleteGameAsync(string key)
     {
-        var gameEntity = await productCatalog.GetByKeyAsync(key)
+        var gameEntity = await catalog.Products.GetByKeyAsync(key)
             ?? throw new NotFoundException($"Game with Key '{key}' was not found.");
 
         var sqlGame = await _unitOfWork.ProductRepository.GetGameByKeyAsync(key);
 
         if (sqlGame is null)
         {
-            await productCatalog.MarkNorthwindProductDeletedAsync(gameEntity);
+            await catalog.Products.MarkNorthwindProductDeletedAsync(gameEntity);
         }
-        else if (await productCatalog.HasNorthwindCounterpartAsync(sqlGame))
+        else if (await catalog.Products.HasNorthwindCounterpartAsync(sqlGame))
         {
             sqlGame.IsDeleted = true;
         }
@@ -130,7 +128,7 @@ public class GameService(
 
     public async Task<string> GetGameFilePathAsync(string gameKey)
     {
-        if (await productCatalog.GetByKeyAsync(gameKey) == null)
+        if (await catalog.Products.GetByKeyAsync(gameKey) == null)
         {
             throw new NotFoundException($"Game with Key '{gameKey}' was not found.");
         }
@@ -149,13 +147,13 @@ public class GameService(
 
     public async Task<IList<GameModel>> GetAllGamesAsync()
     {
-        var gameEntities = await productCatalog.GetAllAsync();
+        var gameEntities = await catalog.Products.GetAllAsync();
         return _mapper.Map<IList<GameModel>>(gameEntities);
     }
 
     public async Task<IList<GenreModel>> GetGenresByGameKeyAsync(string key)
     {
-        var game = await productCatalog.GetByKeyAsync(key);
+        var game = await catalog.Products.GetByKeyAsync(key);
 
         var genres = game?.ProductCategories
             .Where(pc => pc.Category is not null)
@@ -174,9 +172,9 @@ public class GameService(
 
     public async Task<PublisherModel> GetPublisherByGameKeyAsync(string key)
     {
-        var game = await productCatalog.GetByKeyAsync(key);
+        var game = await catalog.Products.GetByKeyAsync(key);
 
-        var publisher = (game is null ? null : game.Supplier ?? await supplierCatalog.GetByIdAsync(game.SupplierID))
+        var publisher = (game is null ? null : game.Supplier ?? await catalog.Suppliers.GetByIdAsync(game.SupplierID))
             ?? throw new NotFoundException($"Game with Key '{key}' was not found or has no publisher.");
 
         return _mapper.Map<PublisherModel>(publisher);
@@ -184,7 +182,7 @@ public class GameService(
 
     public async Task<int> GetTotalGamesCountAsync()
     {
-        var games = await productCatalog.GetAllAsync();
+        var games = await catalog.Products.GetAllAsync();
 
         return games.Count;
     }
@@ -211,7 +209,7 @@ public class GameService(
 
         // Only the games that can reach the requested page are read from SQL; the page is cut after the merge.
         var sqlCandidates = await _pipeline.Sort(sqlGames, filter).Take(GetCandidateCount(filter)).ToListAsync();
-        var northwindGames = await productCatalog.GetNorthwindOnlyAsync(filter);
+        var northwindGames = await catalog.Products.GetNorthwindOnlyAsync(filter);
 
         var merged = _pipeline.Sort(sqlCandidates.Concat(northwindGames).AsQueryable(), filter);
         var games = _pipeline.Paginate(merged, filter).ToList();
@@ -251,7 +249,7 @@ public class GameService(
         string baseKey = gameKey;
         int counter = 1;
 
-        while (await productCatalog.KeyExistsAsync(gameKey))
+        while (await catalog.Products.KeyExistsAsync(gameKey))
         {
             gameKey = $"{baseKey}-{counter}";
             counter++;
@@ -277,19 +275,19 @@ public class GameService(
     {
         foreach (var genreId in genreIds)
         {
-            _ = await categoryCatalog.GetByIdAsync(genreId)
+            _ = await catalog.Categories.GetByIdAsync(genreId)
                 ?? throw new NotFoundException("Genre", genreId);
 
-            await categoryCatalog.EnsureInGameStoreAsync(genreId);
+            await catalog.Categories.EnsureInGameStoreAsync(genreId);
         }
     }
 
     private async Task<SupplierEntity> EnsurePublisherInGameStoreAsync(Guid publisherId)
     {
-        _ = await supplierCatalog.GetByIdAsync(publisherId)
+        _ = await catalog.Suppliers.GetByIdAsync(publisherId)
             ?? throw new NotFoundException($"Publisher with ID '{publisherId}' was not found.");
 
-        return await supplierCatalog.EnsureInGameStoreAsync(publisherId);
+        return await catalog.Suppliers.EnsureInGameStoreAsync(publisherId);
     }
 
     // The links are changed through the tracked game, so a copy of a Northwind game that is not saved yet works the same way.

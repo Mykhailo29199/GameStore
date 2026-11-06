@@ -1,4 +1,5 @@
 using AutoMapper;
+using BusinessLogicLayer.Catalog;
 using BusinessLogicLayer.Catalog.Interfaces;
 using BusinessLogicLayer.Models;
 using BusinessLogicLayer.Models.GameModels;
@@ -46,9 +47,7 @@ public class GameServiceTests
             _mapperMock.Object,
             _fileSystemMock.Object,
             new GameFilterPipeline([], new SortingStep(), new PaginationStep()),
-            _productCatalogMock.Object,
-            _categoryCatalogMock.Object,
-            _supplierCatalogMock.Object);
+            new StoreCatalog(_productCatalogMock.Object, _categoryCatalogMock.Object, _supplierCatalogMock.Object));
     }
 
     [Fact]
@@ -481,9 +480,7 @@ public class GameServiceTests
             _mapperMock.Object,
             _fileSystemMock.Object,
             new GameFilterPipeline([new NameFilterStep()], new SortingStep(), new PaginationStep()),
-            _productCatalogMock.Object,
-            _categoryCatalogMock.Object,
-            _supplierCatalogMock.Object);
+            new StoreCatalog(_productCatalogMock.Object, _categoryCatalogMock.Object, _supplierCatalogMock.Object));
     }
 
     private void SetupExistingReferences(SupplierEntity publisher)

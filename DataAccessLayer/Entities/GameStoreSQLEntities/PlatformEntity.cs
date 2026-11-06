@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using DataAccessLayer.Entities.GameStoreSQLEntities.Localization;
 
 namespace DataAccessLayer.Entities.GameStoreSQLEntities;
 
@@ -13,4 +14,6 @@ public class PlatformEntity
     public string Type { get; set; }
 
     public ICollection<ProductPlatformEntity> ProductPlatforms { get; set; } = new List<ProductPlatformEntity>();
+
+    public ICollection<PlatformTranslationEntity> Translations { get; set; } = new List<PlatformTranslationEntity>();
 }

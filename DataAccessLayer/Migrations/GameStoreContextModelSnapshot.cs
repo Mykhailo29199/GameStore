@@ -17,7 +17,7 @@ namespace DataAccessLayer.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.10")
+                .HasAnnotation("ProductVersion", "9.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -110,7 +110,7 @@ namespace DataAccessLayer.Migrations
 
             modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.CustomerEntity", b =>
                 {
-                    b.Property<Guid?>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
@@ -255,6 +255,119 @@ namespace DataAccessLayer.Migrations
                     b.HasIndex("TerritoryGuidId");
 
                     b.ToTable("EmployeeTerritories");
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.Localization.CategoryTranslationEntity", b =>
+                {
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("LanguageCode")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("CategoryId", "LanguageCode");
+
+                    b.ToTable("CategoryTranslations", (string)null);
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.Localization.LocalizedGameEntity", b =>
+                {
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double>("Discount")
+                        .HasColumnType("float");
+
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LanguageCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("UnitsInStock")
+                        .HasColumnType("int");
+
+                    b.ToTable((string)null);
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.Localization.PlatformTranslationEntity", b =>
+                {
+                    b.Property<Guid>("PlatformId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("LanguageCode")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("PlatformId", "LanguageCode");
+
+                    b.ToTable("PlatformTranslations", (string)null);
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.Localization.ProductTranslationEntity", b =>
+                {
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("LanguageCode")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(3000)
+                        .HasColumnType("nvarchar(3000)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("ProductId", "LanguageCode");
+
+                    b.ToTable("ProductTranslations", (string)null);
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.Localization.SupplierTranslationEntity", b =>
+                {
+                    b.Property<Guid>("SupplierId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("LanguageCode")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(3000)
+                        .HasColumnType("nvarchar(3000)");
+
+                    b.HasKey("SupplierId", "LanguageCode");
+
+                    b.ToTable("SupplierTranslations", (string)null);
                 });
 
             modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.OrderDetailsEntity", b =>
@@ -489,7 +602,7 @@ namespace DataAccessLayer.Migrations
 
             modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.RegionEntity", b =>
                 {
-                    b.Property<Guid?>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
@@ -824,7 +937,7 @@ namespace DataAccessLayer.Migrations
 
             modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.ShipperEntity", b =>
                 {
-                    b.Property<Guid?>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
@@ -911,7 +1024,7 @@ namespace DataAccessLayer.Migrations
 
             modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.TerritoryEntity", b =>
                 {
-                    b.Property<Guid?>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
@@ -1041,6 +1154,50 @@ namespace DataAccessLayer.Migrations
                     b.Navigation("Employee");
 
                     b.Navigation("Territory");
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.Localization.CategoryTranslationEntity", b =>
+                {
+                    b.HasOne("DataAccessLayer.Entities.GameStoreSQLEntities.CategoryEntity", "Category")
+                        .WithMany("Translations")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.Localization.PlatformTranslationEntity", b =>
+                {
+                    b.HasOne("DataAccessLayer.Entities.GameStoreSQLEntities.PlatformEntity", "Platform")
+                        .WithMany("Translations")
+                        .HasForeignKey("PlatformId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Platform");
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.Localization.ProductTranslationEntity", b =>
+                {
+                    b.HasOne("DataAccessLayer.Entities.GameStoreSQLEntities.ProductEntity", "Product")
+                        .WithMany("Translations")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.Localization.SupplierTranslationEntity", b =>
+                {
+                    b.HasOne("DataAccessLayer.Entities.GameStoreSQLEntities.SupplierEntity", "Supplier")
+                        .WithMany("Translations")
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Supplier");
                 });
 
             modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.OrderDetailsEntity", b =>
@@ -1176,6 +1333,8 @@ namespace DataAccessLayer.Migrations
                     b.Navigation("ProductCategories");
 
                     b.Navigation("SubGenres");
+
+                    b.Navigation("Translations");
                 });
 
             modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.EmployeeEntity", b =>
@@ -1193,6 +1352,8 @@ namespace DataAccessLayer.Migrations
             modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.PlatformEntity", b =>
                 {
                     b.Navigation("ProductPlatforms");
+
+                    b.Navigation("Translations");
                 });
 
             modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.ProductEntity", b =>
@@ -1205,6 +1366,8 @@ namespace DataAccessLayer.Migrations
                         .IsRequired();
 
                     b.Navigation("ProductPlatforms");
+
+                    b.Navigation("Translations");
                 });
 
             modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.RoleEntity", b =>
@@ -1222,6 +1385,8 @@ namespace DataAccessLayer.Migrations
             modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.SupplierEntity", b =>
                 {
                     b.Navigation("Products");
+
+                    b.Navigation("Translations");
                 });
 
             modelBuilder.Entity("DataAccessLayer.Entities.GameStoreSQLEntities.TerritoryEntity", b =>

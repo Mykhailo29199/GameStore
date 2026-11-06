@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using DataAccessLayer.Entities.CommonEntities;
+using DataAccessLayer.Entities.GameStoreSQLEntities.Localization;
 
 namespace DataAccessLayer.Entities.GameStoreSQLEntities;
 
@@ -32,4 +33,6 @@ public class ProductEntity : ProductBaseEntity
     public ProductFileEntity ProductFile { get; set; }
 
     public ICollection<CommentEntity> Comments { get; set; } = new List<CommentEntity>();
+
+    public ICollection<ProductTranslationEntity> Translations { get; set; } = new List<ProductTranslationEntity>();
 }

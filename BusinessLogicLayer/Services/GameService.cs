@@ -293,12 +293,9 @@ public class GameService(
 
     private static int GetCandidateCount(GameFilterModel filter)
     {
-        if (filter.PageSize == (int)PaginationOptions.All)
-        {
-            return int.MaxValue;
-        }
-
-        return (int)Math.Min((long)Math.Max(filter.Page, 1) * filter.PageSize, int.MaxValue);
+        return filter.PageSize == (int)PaginationOptions.All
+            ? int.MaxValue
+            : (int)Math.Min((long)Math.Max(filter.Page, 1) * filter.PageSize, int.MaxValue);
     }
 
     private async Task<string> GenerateUniqueGameKeyAsync(string gameKey, string gameName)

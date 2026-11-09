@@ -76,12 +76,9 @@ public partial class ProductCatalog(
     {
         var sqlProduct = await sqlUnitOfWork.ProductRepository.GetQueryable(includeDeleted).FirstOrDefaultAsync(p => p.Id == id);
 
-        if (sqlProduct is not null || !MongoIdConverter.TryGetObjectId(id, out var objectId))
-        {
-            return sqlProduct;
-        }
-
-        return await GetNorthwindOnlyAsync(await mongoUnitOfWork.ProductRepository.GetByIdAsync(objectId));
+        return sqlProduct is not null || !MongoIdConverter.TryGetObjectId(id, out var objectId)
+            ? sqlProduct
+            : await GetNorthwindOnlyAsync(await mongoUnitOfWork.ProductRepository.GetByIdAsync(objectId));
     }
 
     public async Task<ProductEntity> EnsureInGameStoreAsync(string key, bool includeDeleted = false)

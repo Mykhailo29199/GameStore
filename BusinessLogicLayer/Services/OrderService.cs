@@ -46,7 +46,7 @@ public class OrderService(
         {
             var details = await GetOrderDetailsAsync(orderId);
             model.Sum = OrderTotalCalculator.Total(
-                details.Select(d => ((decimal)d.Price, d.Quantity, (double?)d.Discount)));
+                details.Select(d => (d.Price, d.Quantity, (double?)d.Discount)));
         }
 
         return model;

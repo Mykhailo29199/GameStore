@@ -253,11 +253,11 @@ public class GameAutoMapping : Profile
 
     private static int ParsePageSize(string? pageCount)
     {
-        if (string.IsNullOrWhiteSpace(pageCount))
+        return pageCount?.Trim() switch
         {
-            return (int)PaginationOptions.Ten;
-        }
-
-        return pageCount == "All" ? (int)PaginationOptions.All : int.Parse(pageCount);
+            null or "" => (int)PaginationOptions.Ten,
+            "All" => (int)PaginationOptions.All,
+            var value => int.Parse(value),
+        };
     }
 }

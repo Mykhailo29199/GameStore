@@ -5,10 +5,13 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { catchError, of } from 'rxjs';
 import { APP_SETTINGS } from '../../../core/config/app-settings';
+import { TranslationKey } from '../../../core/i18n/dictionaries';
+import { LanguageService } from '../../../core/i18n/language.service';
 import { orderTotals } from '../../../core/pricing/pricing';
 import { PaymentMethod, VisaCard } from '../../../models/order.model';
 import { CartService } from '../../../services/cart.service';
 import { OrderService } from '../../../services/order.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 interface CardFields {
   readonly holder: string;
@@ -21,7 +24,7 @@ interface CardFields {
 const VISA = 'Visa';
 const PDF_TYPE = 'application/pdf';
 const INVOICE_FILE = 'invoice.pdf';
-const PAYMENT_FAILED = 'The payment could not be completed. Please try again later.';
+const PAYMENT_FAILED: TranslationKey = 'checkout.failed';
 
 function toCard(fields: CardFields): VisaCard | null {
   const card: VisaCard = {
@@ -49,13 +52,14 @@ function saveFile(file: Blob, name: string): void {
 
 @Component({
   selector: 'app-checkout',
-  imports: [CurrencyPipe, RouterLink],
+  imports: [CurrencyPipe, RouterLink, TranslatePipe],
   templateUrl: './checkout.component.html',
   styleUrl: './checkout.component.css',
 })
 export class CheckoutComponent {
   private readonly orders = inject(OrderService);
   private readonly cart = inject(CartService);
+  private readonly i18n = inject(LanguageService);
   private readonly taxPercent = inject(APP_SETTINGS).taxPercent;
 
   private readonly lines = toSignal(this.cart.getLines(), { initialValue: [] });
@@ -75,7 +79,7 @@ export class CheckoutComponent {
     const card = this.visaSelected() ? toCard(fields) : null;
 
     if (this.visaSelected() && !card) {
-      this.error.set('Fill in all card fields.');
+      this.error.set(this.i18n.translate('checkout.fillCard'));
       return;
     }
 
@@ -92,9 +96,9 @@ export class CheckoutComponent {
 
     if (file?.type === PDF_TYPE) {
       saveFile(file, INVOICE_FILE);
-      this.result.set('The invoice was downloaded. Pay it in your bank to finish the order.');
+      this.result.set(this.i18n.translate('checkout.invoice'));
     } else {
-      this.result.set(`The payment via ${this.selected()} was completed successfully.`);
+      this.result.set(this.i18n.translate('checkout.paid', { method: this.selected() }));
     }
 
     this.paying.set(false);
@@ -103,13 +107,13 @@ export class CheckoutComponent {
 
   private fail(error: unknown): void {
     this.paying.set(false);
-    this.error.set(PAYMENT_FAILED);
+    this.error.set(this.i18n.translate(PAYMENT_FAILED));
 
     if (error instanceof HttpErrorResponse && error.error instanceof Blob) {
       error.error
         .text()
         .then((text) => this.error.set(this.readDetail(text)))
-        .catch(() => this.error.set(PAYMENT_FAILED));
+        .catch(() => this.error.set(this.i18n.translate(PAYMENT_FAILED)));
     }
   }
 
@@ -117,9 +121,9 @@ export class CheckoutComponent {
     try {
       const problem = JSON.parse(text) as { Detail?: string; detail?: string };
 
-      return problem.Detail ?? problem.detail ?? PAYMENT_FAILED;
+      return problem.Detail ?? problem.detail ?? this.i18n.translate(PAYMENT_FAILED);
     } catch {
-      return PAYMENT_FAILED;
+      return this.i18n.translate(PAYMENT_FAILED);
     }
   }
 }

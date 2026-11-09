@@ -1,10 +1,11 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { AppComponent } from './app.component';
 
 describe('AppComponent', () => {
+  let fixture: ComponentFixture<AppComponent>;
   let element: HTMLElement;
 
   beforeEach(async () => {
@@ -14,7 +15,7 @@ describe('AppComponent', () => {
       providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
 
-    const fixture = TestBed.createComponent(AppComponent);
+    fixture = TestBed.createComponent(AppComponent);
     await fixture.whenStable();
     element = fixture.nativeElement as HTMLElement;
   });
@@ -43,5 +44,21 @@ describe('AppComponent', () => {
       '/orders',
       '/basket',
     ]);
+  });
+
+  it('switches the interface language in the header', async () => {
+    const polish = Array.from(
+      element.querySelectorAll<HTMLButtonElement>('.languages__option'),
+    ).find((button) => button.textContent?.trim() === 'PL');
+
+    polish?.click();
+    await fixture.whenStable();
+
+    const labels = Array.from(element.querySelectorAll('app-header .nav__link')).map((link) =>
+      link.textContent?.trim(),
+    );
+
+    expect(labels).toEqual(['Gry', 'Gatunki', 'Wydawcy', 'Zamówienia', 'Koszyk', 'Zaloguj']);
+    expect(polish?.getAttribute('aria-pressed')).toBe('true');
   });
 });

@@ -1,5 +1,7 @@
 ﻿using DataAccessLayer.Entities.GameStoreSQLEntities;
+using DataAccessLayer.Entities.GameStoreSQLEntities.Localization;
 using GameStore.Shared.Authorization;
+using GameStore.Shared.Localization;
 using Microsoft.EntityFrameworkCore;
 
 namespace DataAccessLayer.StoreContext;
@@ -46,6 +48,14 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
 
     public DbSet<RolePermissionEntity> RolePermissions { get; set; }
 
+    public DbSet<ProductTranslationEntity> ProductTranslations { get; set; }
+
+    public DbSet<CategoryTranslationEntity> CategoryTranslations { get; set; }
+
+    public DbSet<PlatformTranslationEntity> PlatformTranslations { get; set; }
+
+    public DbSet<SupplierTranslationEntity> SupplierTranslations { get; set; }
+
     // Entities from Northwind Legacy
     public DbSet<EmployeeEntity> Employees { get; set; }
 
@@ -56,6 +66,15 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
     public DbSet<EmployeeTerritoryEntity> EmployeeTerritories { get; set; }
 
     public DbSet<ShipperEntity> Shippers { get; set; }
+
+    /// <summary>
+    /// Calls the SQL function <c>dbo.GetLocalizedGames</c>, which returns the games in the given language
+    /// and falls back to English when a game has no translation.
+    /// </summary>
+    public IQueryable<LocalizedGameEntity> GetLocalizedGames(string languageCode)
+    {
+        return FromExpression(() => GetLocalizedGames(languageCode));
+    }
 
     // The Northwind int ids kept next to the Guid keys look like foreign keys of another type, so EF Core's warning about them is ignored.
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -260,6 +279,7 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
         });
 
         ConfigureAuthorization(modelBuilder);
+        ConfigureLocalization(modelBuilder);
 
         // ===================== EmployeeEntity =====================
         modelBuilder.Entity<EmployeeEntity>(entity =>
@@ -398,5 +418,70 @@ public class GameStoreContext(DbContextOptions<GameStoreContext> options) : DbCo
             entity.HasData(DefaultRoles.PermissionsByRole.SelectMany(role =>
                 role.Value.Select(permission => new RolePermissionEntity { RoleId = role.Key, Permission = permission })));
         });
+    }
+
+    // English data stays in the main tables; every other language is a row in the translation table of the entity.
+    // Translations are hidden together with their soft-deleted entity and removed with a deleted one.
+    private static void ConfigureLocalization(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ProductTranslationEntity>(entity =>
+        {
+            entity.ToTable("ProductTranslations");
+            entity.HasKey(t => new { t.ProductId, t.LanguageCode });
+            entity.HasQueryFilter(t => !t.Product.IsDeleted);
+
+            entity.HasOne(t => t.Product)
+                .WithMany(p => p.Translations)
+                .HasForeignKey(t => t.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<CategoryTranslationEntity>(entity =>
+        {
+            entity.ToTable("CategoryTranslations");
+            entity.HasKey(t => new { t.CategoryId, t.LanguageCode });
+            entity.HasQueryFilter(t => !t.Category.IsDeleted);
+
+            entity.HasOne(t => t.Category)
+                .WithMany(c => c.Translations)
+                .HasForeignKey(t => t.CategoryId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PlatformTranslationEntity>(entity =>
+        {
+            entity.ToTable("PlatformTranslations");
+            entity.HasKey(t => new { t.PlatformId, t.LanguageCode });
+
+            entity.HasOne(t => t.Platform)
+                .WithMany(p => p.Translations)
+                .HasForeignKey(t => t.PlatformId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SupplierTranslationEntity>(entity =>
+        {
+            entity.ToTable("SupplierTranslations");
+            entity.HasKey(t => new { t.SupplierId, t.LanguageCode });
+            entity.HasQueryFilter(t => !t.Supplier.IsDeleted);
+
+            entity.HasOne(t => t.Supplier)
+                .WithMany(s => s.Translations)
+                .HasForeignKey(t => t.SupplierId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // The function is created by the AddLocalization migration, so the result type has no table.
+        modelBuilder.Entity<LocalizedGameEntity>(entity =>
+        {
+            entity.HasNoKey();
+            entity.ToTable((string?)null);
+            entity.Property(g => g.UnitPrice).HasPrecision(MoneyPrecision, MoneyScale);
+            entity.Property(g => g.LanguageCode).HasMaxLength(Languages.CodeMaxLength);
+        });
+
+        modelBuilder.HasDbFunction(typeof(GameStoreContext).GetMethod(nameof(GetLocalizedGames), [typeof(string)])!)
+            .HasName("GetLocalizedGames")
+            .HasSchema("dbo");
     }
 }

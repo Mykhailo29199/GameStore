@@ -1,6 +1,6 @@
 <div class="container intro">
   <section class="intro__about">
-    <h2 class="page-title">Do You Know Who is John Rembo?</h2>
+    <h2 class="page-title">{{ 'main.aboutTitle' | t }}</h2>
     <p>
       Donec urna sapien, porta nec condimentum id, elementum in quam. Curabitur a aliquet turpis,
       sagittis eleifend sem. Nam quis est eget neque euismod fringilla et sit amet mauris. Proin
@@ -13,13 +13,13 @@
         <li class="intro__list-item">{{ highlight }}</li>
       }
     </ul>
-    <button class="btn intro__button" type="button">Learn More</button>
+    <button class="btn intro__button" type="button">{{ 'main.learnMore' | t }}</button>
   </section>
 
   <section class="intro__promo">
-    <h2 class="page-title">We Knocked Em&rsquo;ll</h2>
+    <h2 class="page-title">{{ 'main.promoTitle' | t }}</h2>
     <figure class="promo">
-      <img class="promo__image" src="VR.jfif" alt="Player wearing a Sony Playstation VR headset" />
+      <img class="promo__image" src="VR.jfif" [alt]="'main.promoAlt' | t" />
       <figcaption class="promo__caption">Sony<br />Playstation VR</figcaption>
     </figure>
   </section>

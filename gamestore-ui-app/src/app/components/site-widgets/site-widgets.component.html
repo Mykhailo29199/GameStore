@@ -1,52 +1,54 @@
-<section class="container widgets" aria-label="Updates and contacts">
+<section class="container widgets" [attr.aria-label]="'widgets.label' | t">
   <article class="widget">
-    <h3 class="widget__title">Get In Touch</h3>
+    <h3 class="widget__title">{{ 'widgets.contactTitle' | t }}</h3>
     <form class="widget__form" novalidate>
       <label class="field">
-        <span>Name</span>
+        <span>{{ 'common.name' | t }}</span>
         <input class="field__control" type="text" name="name" autocomplete="name" />
       </label>
       <label class="field">
-        <span>Email</span>
+        <span>{{ 'common.email' | t }}</span>
         <input class="field__control" type="email" name="email" autocomplete="email" />
       </label>
       <label class="field">
-        <span>Message</span>
+        <span>{{ 'widgets.message' | t }}</span>
         <textarea class="field__control" name="message" rows="4"></textarea>
       </label>
     </form>
     <div class="widget__actions">
-      <button class="btn" type="button">Submit</button>
+      <button class="btn" type="button">{{ 'widgets.submit' | t }}</button>
     </div>
   </article>
 
   <article class="widget">
-    <h3 class="widget__title">Twitter Updates</h3>
+    <h3 class="widget__title">{{ 'widgets.twitterTitle' | t }}</h3>
     <ul class="widget__list">
       @for (tweet of tweets; track tweet.title) {
         <li class="widget__item">
           <p class="tweet__title">{{ tweet.title }}</p>
           <span class="link">{{ tweet.link }}</span>
-          <p class="tweet__time">{{ tweet.posted }}</p>
+          <p class="tweet__time">{{ 'widgets.posted' | t }}</p>
         </li>
       }
     </ul>
     <div class="widget__actions">
-      <button class="btn" type="button">Follow Us</button>
+      <button class="btn" type="button">{{ 'widgets.follow' | t }}</button>
     </div>
   </article>
 
   <article class="widget">
-    <h3 class="widget__title">From the Blog</h3>
+    <h3 class="widget__title">{{ 'widgets.blogTitle' | t }}</h3>
     <ul class="widget__list">
       @for (post of posts; track post) {
         <li class="widget__item">
-          <p>{{ post }} <span class="link">Learn more</span></p>
+          <p>
+            {{ post }} <span class="link">{{ 'widgets.learnMore' | t }}</span>
+          </p>
         </li>
       }
     </ul>
     <div class="widget__actions">
-      <button class="btn" type="button">Visit Blog</button>
+      <button class="btn" type="button">{{ 'widgets.visitBlog' | t }}</button>
     </div>
   </article>
 </section>

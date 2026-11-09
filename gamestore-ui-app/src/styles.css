@@ -236,6 +236,12 @@ textarea.field__control {
   color: #1e8e3e;
 }
 
+.form-note {
+  color: var(--color-muted);
+  font-size: 14px;
+  margin-bottom: 18px;
+}
+
 .divider {
   border: 0;
   border-top: 1px solid var(--color-line);

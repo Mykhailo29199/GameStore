@@ -4,9 +4,11 @@ using BusinessLogicLayer.Models;
 using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Services;
 using DataAccessLayer.Entities.GameStoreSQLEntities;
+using DataAccessLayer.Repositories.Interfaces.SQLInterfaces;
 using DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
 using FluentAssertions;
 using GameStore.Shared.Exceptions;
+using GameStore.Shared.Localization;
 using Moq;
 using Xunit;
 using static GameStoreUnitTests.GameStore.Services.Tests.TestConstants;
@@ -174,6 +176,25 @@ public class PlatformServiceTests
 
         // Assert
         ExistingPlatform1.Type.Should().Be("UpdatedType");
+        _unitOfWorkMock.Verify(uow => uow.SaveAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdatePlatformAsync_WhenLanguageIsPolish_ShouldSaveTranslationAndKeepEnglishType()
+    {
+        // Arrange
+        var platform = new PlatformEntity { Id = ExistingPlatformId, Type = "Console" };
+        var service = new PlatformService(_unitOfWorkMock.Object, _mapperMock.Object, TestLocalization.CreateLocalizer(_unitOfWorkMock, Languages.Polish));
+
+        _unitOfWorkMock.Setup(uow => uow.PlatformRepository.GetByIdAsync(ExistingPlatformId)).ReturnsAsync(platform);
+        _unitOfWorkMock.Setup(uow => uow.TranslationRepository).Returns(Mock.Of<ITranslationSqlRepository>());
+
+        // Act
+        await service.UpdatePlatformAsync(new PlatformModel { Id = ExistingPlatformId, Type = "Konsola" });
+
+        // Assert
+        platform.Type.Should().Be("Console");
+        platform.Translations.Should().ContainSingle(t => t.LanguageCode == Languages.Polish && t.Type == "Konsola");
         _unitOfWorkMock.Verify(uow => uow.SaveAsync(), Times.Once);
     }
 

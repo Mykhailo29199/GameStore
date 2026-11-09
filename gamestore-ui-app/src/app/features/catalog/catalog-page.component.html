@@ -1,18 +1,27 @@
 <section class="container">
   <header class="toolbar">
-    <h2 class="page-title">{{ config().title }}</h2>
-    @if (canAdd() && !draft()) {
-      <button class="btn" type="button" (click)="edit(null)">Add {{ config().singular }}</button>
+    <h2 class="page-title">{{ config().title | t }}</h2>
+    @if (canAdd() && !draft() && languageIsDefault()) {
+      <button class="btn" type="button" (click)="edit(null)">
+        {{ config().addTitle | t }}
+      </button>
     }
   </header>
 
+  @if (canAdd() && !languageIsDefault()) {
+    <app-create-in-english />
+  }
+
   @if (draft(); as current) {
     <form class="panel" novalidate (submit)="$event.preventDefault(); save()">
-      <h3 class="panel__title">{{ current.id ? 'Edit' : 'New' }} {{ config().singular }}</h3>
+      <h3 class="panel__title">
+        {{ (current.id ? config().editTitle : config().newTitle) | t }}
+      </h3>
+      <p class="form-note">{{ 'catalog.languageNote' | t: { language: languageName() } }}</p>
       <div class="form-grid">
         @for (field of config().fields; track field.key) {
           <label class="field" [class.form-grid__wide]="field.control === 'textarea'">
-            <span>{{ field.label }}</span>
+            <span>{{ field.label | t }}</span>
             @switch (field.control) {
               @case ('textarea') {
                 <textarea
@@ -29,9 +38,14 @@
                   class="field__control select"
                   (change)="setValue(field.key, select.value)"
                 >
-                  <option value="" [selected]="!current.values[field.key]">None</option>
+                  <option value="" [selected]="!current.values[field.key]">
+                    {{ 'common.none' | t }}
+                  </option>
                   @for (option of parentOptions(); track option.id) {
-                    <option [value]="option.id" [selected]="option.id === current.values[field.key]">
+                    <option
+                      [value]="option.id"
+                      [selected]="option.id === current.values[field.key]"
+                    >
                       {{ title(option) }}
                     </option>
                   }
@@ -54,8 +68,10 @@
         <p class="form-error" role="alert">{{ error() }}</p>
       }
       <div class="panel__actions">
-        <button class="btn btn--ghost" type="button" (click)="draft.set(null)">Cancel</button>
-        <button class="btn" type="submit">Save</button>
+        <button class="btn btn--ghost" type="button" (click)="draft.set(null)">
+          {{ 'common.cancel' | t }}
+        </button>
+        <button class="btn" type="submit">{{ 'common.save' | t }}</button>
       </div>
     </form>
   } @else if (error()) {
@@ -64,7 +80,7 @@
 
   @if (items(); as list) {
     @if (list.length === 0) {
-      <p class="message">Nothing here yet.</p>
+      <p class="message">{{ 'catalog.empty' | t }}</p>
     } @else {
       <ul class="rows">
         @for (item of list; track item.id) {
@@ -76,9 +92,13 @@
               }
             </div>
             <div class="row__actions">
-              <a class="link" routerLink="/games" [queryParams]="gamesQuery(item)">Games</a>
+              <a class="link" routerLink="/games" [queryParams]="gamesQuery(item)">{{
+                'common.games' | t
+              }}</a>
               @if (canUpdate()) {
-                <button class="link" type="button" (click)="edit(item)">Edit</button>
+                <button class="link" type="button" (click)="edit(item)">
+                  {{ 'common.edit' | t }}
+                </button>
               }
               @if (canDelete()) {
                 <app-confirm-button (confirmed)="remove(item)" />
@@ -89,6 +109,6 @@
       </ul>
     }
   } @else {
-    <p class="message">Loading&hellip;</p>
+    <p class="message">{{ 'common.loading' | t }}</p>
   }
 </section>

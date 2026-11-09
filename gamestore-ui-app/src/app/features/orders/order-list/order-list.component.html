@@ -1,6 +1,6 @@
 <section class="container">
   <header class="toolbar">
-    <h2 class="page-title">{{ history() ? 'Order History' : 'Orders' }}</h2>
+    <h2 class="page-title">{{ (history() ? 'orders.historyTitle' : 'orders.title') | t }}</h2>
     @if (history()) {
       <form
         class="row__actions"
@@ -8,14 +8,14 @@
         (submit)="$event.preventDefault(); load(true, start.value, end.value)"
       >
         <label class="field">
-          <span>From</span>
+          <span>{{ 'common.from' | t }}</span>
           <input #start class="field__control" type="date" />
         </label>
         <label class="field">
-          <span>To</span>
+          <span>{{ 'common.to' | t }}</span>
           <input #end class="field__control" type="date" />
         </label>
-        <button class="btn" type="submit">Show</button>
+        <button class="btn" type="submit">{{ 'orders.show' | t }}</button>
       </form>
     }
   </header>
@@ -26,26 +26,27 @@
 
   @if (orders(); as list) {
     @if (list.length === 0) {
-      <p class="message">There are no orders.</p>
+      <p class="message">{{ 'orders.empty' | t }}</p>
     } @else {
       <ul class="rows">
         @for (order of list; track order.id) {
           <li class="row">
             <div class="row__main">
-              <h3 class="row__title">Order {{ order.id }}</h3>
+              <h3 class="row__title">{{ 'orders.order' | t: { id: order.id } }}</h3>
               <p class="row__note">
-                {{ order.date | date: 'mediumDate' }} &middot; Customer {{ order.customerId }}
-                &middot; <strong>{{ order.status }}</strong>
+                {{ order.date | date: 'mediumDate' }} &middot;
+                {{ 'orders.customer' | t: { id: order.customerId } }} &middot;
+                <strong>{{ order.status | tv: 'status' }}</strong>
               </p>
             </div>
             <div class="row__actions">
-              <a class="link" [routerLink]="['/orders', order.id]">Details</a>
+              <a class="link" [routerLink]="['/orders', order.id]">{{ 'orders.details' | t }}</a>
             </div>
           </li>
         }
       </ul>
     }
   } @else {
-    <p class="message">Loading&hellip;</p>
+    <p class="message">{{ 'common.loading' | t }}</p>
   }
 </section>

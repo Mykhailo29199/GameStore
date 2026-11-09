@@ -1,5 +1,7 @@
 import { Component, computed, effect, inject } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { filter, map } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { Permissions } from '../../core/auth/permissions';
 import { TranslationKey } from '../../core/i18n/dictionaries';
@@ -38,6 +40,15 @@ export class HeaderComponent {
   protected readonly language = inject(LanguageService);
   protected readonly languages = LANGUAGES;
 
+  // The big banner from the mock-ups is shown on the main page; other pages get a compact header.
+  protected readonly isHome = toSignal(
+    this.router.events.pipe(
+      filter((event) => event instanceof NavigationEnd),
+      map(() => this.isHomeUrl()),
+    ),
+    { initialValue: this.isHomeUrl() },
+  );
+
   protected readonly links: readonly NavLink[] = [
     { label: 'nav.games', path: '/games' },
     { label: 'nav.genres', path: '/genres' },
@@ -59,6 +70,10 @@ export class HeaderComponent {
         this.cart.clearCount();
       }
     });
+  }
+
+  private isHomeUrl(): boolean {
+    return this.router.url.split(/[?#]/)[0] === '/';
   }
 
   protected logout(): void {

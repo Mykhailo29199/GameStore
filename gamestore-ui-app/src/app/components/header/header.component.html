@@ -1,4 +1,4 @@
-<header class="hero">
+<header class="hero" [class.hero--compact]="!isHome()">
   <div class="container hero__inner">
     <div>
       <nav class="nav" [attr.aria-label]="'nav.main' | t">
@@ -69,9 +69,11 @@
       }
     </div>
 
-    <div class="hero__content">
-      <h1 class="hero__title">{{ 'hero.title' | t }}</h1>
-      <p class="hero__subtitle">{{ 'hero.subtitle' | t }}</p>
-    </div>
+    @if (isHome()) {
+      <div class="hero__content">
+        <h1 class="hero__title">{{ 'hero.title' | t }}</h1>
+        <p class="hero__subtitle">{{ 'hero.subtitle' | t }}</p>
+      </div>
+    }
   </div>
 </header>

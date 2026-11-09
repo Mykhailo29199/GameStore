@@ -1,8 +1,8 @@
 <div class="container cart">
   <section class="cart__main">
     <header class="cart__header">
-      <h2 class="page-title">Cart</h2>
-      <span class="cart__count">{{ totals().itemCount }} items</span>
+      <h2 class="page-title">{{ 'cart.title' | t }}</h2>
+      <span class="cart__count">{{ 'cart.items' | t: { count: totals().itemCount } }}</span>
     </header>
 
     @if (error()) {
@@ -12,7 +12,8 @@
     @if (lines(); as items) {
       @if (items.length === 0) {
         <p class="cart__message">
-          Your cart is empty. <a class="link" routerLink="/games">Go to the game list</a>
+          {{ 'cart.empty' | t }}
+          <a class="link" routerLink="/games">{{ 'cart.goToList' | t }}</a>
         </p>
       }
       <ul>
@@ -32,7 +33,7 @@
                 <button
                   class="quantity__button"
                   type="button"
-                  aria-label="Decrease quantity"
+                  [attr.aria-label]="'cart.decrease' | t"
                   [disabled]="busy()"
                   (click)="decrease(line)"
                 >
@@ -42,7 +43,7 @@
                 <button
                   class="quantity__button quantity__button--plus"
                   type="button"
-                  aria-label="Increase quantity"
+                  [attr.aria-label]="'cart.increase' | t"
                   [disabled]="busy()"
                   (click)="increase(line)"
                 >
@@ -50,35 +51,40 @@
                 </button>
               </div>
             </div>
-            <button class="link cart__remove" type="button" [disabled]="busy()" (click)="remove(line)">
-              Remove
+            <button
+              class="link cart__remove"
+              type="button"
+              [disabled]="busy()"
+              (click)="remove(line)"
+            >
+              {{ 'common.remove' | t }}
             </button>
           </li>
         }
       </ul>
     } @else {
-      <p class="cart__message">Loading the cart&hellip;</p>
+      <p class="cart__message">{{ 'cart.loading' | t }}</p>
     }
   </section>
 
   <aside class="summary">
-    <h3 class="summary__title">Order Summary</h3>
+    <h3 class="summary__title">{{ 'summary.title' | t }}</h3>
     <dl class="summary__rows">
       <div class="summary__row">
-        <dt>Subtotal</dt>
+        <dt>{{ 'summary.subtotal' | t }}</dt>
         <dd>{{ totals().subtotal | currency }}</dd>
       </div>
       <div class="summary__row">
-        <dt>Taxes</dt>
+        <dt>{{ 'summary.taxes' | t }}</dt>
         <dd>{{ totals().taxes | currency }}</dd>
       </div>
       <div class="summary__row summary__row--total">
-        <dt>Total</dt>
+        <dt>{{ 'summary.total' | t }}</dt>
         <dd>{{ totals().total | currency }}</dd>
       </div>
     </dl>
     @if (totals().itemCount > 0) {
-      <a class="btn summary__checkout" routerLink="/order">Checkout</a>
+      <a class="btn summary__checkout" routerLink="/order">{{ 'cart.checkout' | t }}</a>
     }
   </aside>
 </div>

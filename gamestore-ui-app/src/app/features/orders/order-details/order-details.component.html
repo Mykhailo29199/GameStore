@@ -2,16 +2,17 @@
   <section>
     <header class="toolbar">
       <div>
-        <h2 class="page-title">Order</h2>
+        <h2 class="page-title">{{ 'orders.orderTitle' | t }}</h2>
         @if (order(); as current) {
           <p class="row__note">
-            {{ current.id }} &middot; {{ current.date | date: 'mediumDate' }} &middot; Customer
-            {{ current.customerId }} &middot; <strong>{{ current.status }}</strong>
+            {{ current.id }} &middot; {{ current.date | date: 'mediumDate' }} &middot;
+            {{ 'orders.customer' | t: { id: current.customerId } }} &middot;
+            <strong>{{ current.status | tv: 'status' }}</strong>
           </p>
         }
       </div>
       @if (shippable()) {
-        <app-confirm-button label="Ship" (confirmed)="ship()" />
+        <app-confirm-button label="orders.ship" (confirmed)="ship()" />
       }
     </header>
 
@@ -24,7 +25,7 @@
 
     @if (lines(); as items) {
       @if (items.length === 0) {
-        <p class="message">The order has no games.</p>
+        <p class="message">{{ 'orders.noGames' | t }}</p>
       }
       <ul class="rows">
         @for (line of items; track line.id) {
@@ -44,19 +45,19 @@
                 <button
                   class="link"
                   type="button"
-                  aria-label="Decrease quantity"
+                  [attr.aria-label]="'cart.decrease' | t"
                   [disabled]="line.quantity < 2"
                   (click)="changeQuantity(line, -1)"
                 >
                   &minus;
                 </button>
               }
-              <span>Qty {{ line.quantity }}</span>
+              <span>{{ 'orders.quantity' | t: { count: line.quantity } }}</span>
               @if (editable()) {
                 <button
                   class="link"
                   type="button"
-                  aria-label="Increase quantity"
+                  [attr.aria-label]="'cart.increase' | t"
                   (click)="changeQuantity(line, 1)"
                 >
                   +
@@ -64,14 +65,14 @@
               }
               <strong>{{ total(line) | currency }}</strong>
               @if (editable()) {
-                <app-confirm-button label="Remove" (confirmed)="remove(line)" />
+                <app-confirm-button label="common.remove" (confirmed)="remove(line)" />
               }
             </div>
           </li>
         }
       </ul>
     } @else {
-      <p class="message">Loading&hellip;</p>
+      <p class="message">{{ 'common.loading' | t }}</p>
     }
 
     @if (editable()) {
@@ -81,34 +82,34 @@
         (submit)="$event.preventDefault(); addGame(game.value)"
       >
         <label class="field">
-          <span>Add a game to the order</span>
+          <span>{{ 'orders.addGameLabel' | t }}</span>
           <select #game class="field__control select">
-            <option value="">Choose a game</option>
+            <option value="">{{ 'orders.chooseGame' | t }}</option>
             @for (option of games(); track option.id) {
               <option [value]="option.key">{{ option.name }}</option>
             }
           </select>
         </label>
         <div class="panel__actions">
-          <button class="btn" type="submit">Add Game</button>
+          <button class="btn" type="submit">{{ 'orders.addGame' | t }}</button>
         </div>
       </form>
     }
   </section>
 
   <aside class="summary">
-    <h3 class="summary__title">Order Summary</h3>
+    <h3 class="summary__title">{{ 'summary.title' | t }}</h3>
     <dl class="summary__rows">
       <div class="summary__row">
-        <dt>Subtotal</dt>
+        <dt>{{ 'summary.subtotal' | t }}</dt>
         <dd>{{ totals().subtotal | currency }}</dd>
       </div>
       <div class="summary__row">
-        <dt>Taxes</dt>
+        <dt>{{ 'summary.taxes' | t }}</dt>
         <dd>{{ totals().taxes | currency }}</dd>
       </div>
       <div class="summary__row summary__row--total">
-        <dt>Total</dt>
+        <dt>{{ 'summary.total' | t }}</dt>
         <dd>{{ totals().total | currency }}</dd>
       </div>
     </dl>

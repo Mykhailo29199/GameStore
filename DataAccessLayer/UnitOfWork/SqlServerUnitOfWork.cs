@@ -1,7 +1,9 @@
-﻿using DataAccessLayer.Repositories.Interfaces.SQLInterfaces;
+﻿using System.Data;
+using DataAccessLayer.Repositories.Interfaces.SQLInterfaces;
 using DataAccessLayer.Repositories.SQLRepositories;
 using DataAccessLayer.StoreContext;
 using DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace DataAccessLayer.UnitOfWork;
 
@@ -23,6 +25,7 @@ public class SqlServerUnitOfWork : ISqlServerUnitOfWork
     private IBanSqlRepository? _banRepository;
     private IUserSqlRepository? _userRepository;
     private IRoleSqlRepository? _roleRepository;
+    private ITranslationSqlRepository? _translationRepository;
 
     public SqlServerUnitOfWork(GameStoreContext context)
     {
@@ -70,6 +73,9 @@ public class SqlServerUnitOfWork : ISqlServerUnitOfWork
     public IRoleSqlRepository RoleRepository =>
         _roleRepository ??= new RoleSqlRepository(Context);
 
+    public ITranslationSqlRepository TranslationRepository =>
+        _translationRepository ??= new TranslationSqlRepository(Context);
+
     public async Task CreateTransactionAsync() =>
         await Context.Database.BeginTransactionAsync();
 
@@ -81,6 +87,33 @@ public class SqlServerUnitOfWork : ISqlServerUnitOfWork
 
     public async Task SaveAsync() =>
         await Context.SaveChangesAsync();
+
+    public async Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> action, IsolationLevel isolationLevel)
+    {
+        // A call inside another transaction joins it, so the outer call decides when to commit.
+        if (Context.Database.CurrentTransaction is not null)
+        {
+            return await action();
+        }
+
+        await using var transaction = await Context.Database.BeginTransactionAsync(isolationLevel);
+
+        var result = await action();
+        await transaction.CommitAsync();
+
+        return result;
+    }
+
+    public async Task ExecuteInTransactionAsync(Func<Task> action, IsolationLevel isolationLevel)
+    {
+        await ExecuteInTransactionAsync(
+            async () =>
+            {
+                await action();
+                return true;
+            },
+            isolationLevel);
+    }
 
     public void Dispose()
     {

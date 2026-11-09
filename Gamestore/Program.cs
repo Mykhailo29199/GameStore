@@ -18,6 +18,7 @@ using DataAccessLayer.UnitOfWork.UnitOfWorkInterfaces;
 using GameStore.Shared.FileSystem;
 using GameStore.Shared.Logging;
 using GameStore.Shared.Options;
+using Gamestore.WebAPI.Localization;
 using Gamestore.WebAPI.Mapper;
 using Gamestore.WebAPI.Middlewares;
 using Gamestore.WebAPI.Security;
@@ -97,6 +98,7 @@ builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 builder.Services.AddGameStoreAuthorization(builder.Configuration);
+builder.Services.AddGameStoreLocalization();
 
 // External authorization microservice
 builder.Services.AddHttpClient(ExternalAuthClient.HttpClientName, client =>
@@ -183,6 +185,8 @@ app.UseHttpsRedirection();
 
 app.UseRouting();
 app.UseCors("AllowFrontend"); // This allows Angular to interact with the API without errors
+
+app.UseGameStoreLocalization();
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
 

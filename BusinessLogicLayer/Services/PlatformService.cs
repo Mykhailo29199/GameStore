@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using BusinessLogicLayer.Localization;
 using BusinessLogicLayer.Models;
 using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Services.Interaces;
@@ -8,7 +9,7 @@ using GameStore.Shared.Exceptions;
 
 namespace BusinessLogicLayer.Services;
 
-public class PlatformService(ISqlServerUnitOfWork unitOfWork, IMapper mapper) : IPlatformService
+public class PlatformService(ISqlServerUnitOfWork unitOfWork, IMapper mapper, IContentLocalizer localizer) : IPlatformService
 {
     private readonly ISqlServerUnitOfWork _unitOfWork = unitOfWork;
     private readonly IMapper _mapper = mapper;
@@ -31,6 +32,12 @@ public class PlatformService(ISqlServerUnitOfWork unitOfWork, IMapper mapper) : 
 
         var platformEntity = _mapper.Map<PlatformEntity>(platformModel);
 
+        // English data is required, so a platform added in another language also gets it as the English version.
+        if (!localizer.IsDefaultLanguage)
+        {
+            await localizer.SavePlatformTranslationAsync(platformEntity, platformType);
+        }
+
         await _unitOfWork.PlatformRepository.AddAsync(platformEntity);
 
         await _unitOfWork.SaveAsync();
@@ -42,6 +49,7 @@ public class PlatformService(ISqlServerUnitOfWork unitOfWork, IMapper mapper) : 
             ?? throw new NotFoundException($"Platform with id '{platformId}' does not exist.");
 
         var platformModel = _mapper.Map<PlatformModel>(platformEntity);
+        await localizer.LocalizePlatformsAsync([platformModel]);
 
         return platformModel;
     }
@@ -51,22 +59,34 @@ public class PlatformService(ISqlServerUnitOfWork unitOfWork, IMapper mapper) : 
         var platformEntities = await _unitOfWork.PlatformRepository.GetAllAsync();
 
         var platformModels = _mapper.Map<List<PlatformModel>>(platformEntities);
+        await localizer.LocalizePlatformsAsync(platformModels);
 
         return platformModels;
     }
 
+    /// <summary>
+    /// The type is saved in the language of the request.
+    /// </summary>
     public async Task UpdatePlatformAsync(PlatformModel platformModel)
     {
         var platformEntity = await _unitOfWork.PlatformRepository.GetByIdAsync(platformModel.Id)
             ?? throw new NotFoundException($"Platform with id '{platformModel.Id}' does not exist.");
 
-        _mapper.Map(platformModel, platformEntity);
-
-        await _unitOfWork.PlatformRepository.UpdateAsync(platformEntity);
+        if (localizer.IsDefaultLanguage)
+        {
+            platformEntity.Type = platformModel.Type;
+        }
+        else
+        {
+            await localizer.SavePlatformTranslationAsync(platformEntity, platformModel.Type);
+        }
 
         await _unitOfWork.SaveAsync();
     }
 
+    /// <summary>
+    /// The translations of the platform are removed by the database cascade.
+    /// </summary>
     public async Task DeletePlatformAsync(Guid platformId)
     {
         var platformEntity = await _unitOfWork.PlatformRepository.GetByIdAsync(platformId)
@@ -84,6 +104,7 @@ public class PlatformService(ISqlServerUnitOfWork unitOfWork, IMapper mapper) : 
         var gameEntities = await _unitOfWork.ProductPlatformRepository.GetGamesByPlatformIdAsync(platformId);
 
         var gameModels = _mapper.Map<List<GameModel>>(gameEntities);
+        await localizer.LocalizeGamesAsync(gameModels);
 
         return gameModels;
     }

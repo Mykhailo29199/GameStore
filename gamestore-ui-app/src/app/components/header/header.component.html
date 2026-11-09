@@ -1,19 +1,19 @@
 <header class="hero">
   <div class="container hero__inner">
     <div>
-      <nav class="nav" aria-label="Main">
+      <nav class="nav" [attr.aria-label]="'nav.main' | t">
         <a class="nav__logo" routerLink="/">GameStore</a>
         <ul class="nav__links">
           @for (link of links; track link.path) {
             <li>
               <a class="nav__link" [routerLink]="link.path" routerLinkActive="nav__link--active">
-                {{ link.label }}
+                {{ link.label | t }}
               </a>
             </li>
           }
           <li>
             <a class="nav__link" routerLink="/basket" routerLinkActive="nav__link--active">
-              Cart
+              {{ 'nav.cart' | t }}
               @if (cart.itemCount() > 0) {
                 ({{ cart.itemCount() }})
               }
@@ -21,20 +21,45 @@
           </li>
           @if (auth.isAuthenticated()) {
             <li class="nav__user">{{ auth.userName() }}</li>
-            <li><button class="nav__link" type="button" (click)="logout()">Logout</button></li>
+            <li>
+              <button class="nav__link" type="button" (click)="logout()">
+                {{ 'nav.logout' | t }}
+              </button>
+            </li>
           } @else {
             <li>
-              <a class="nav__link" routerLink="/login" routerLinkActive="nav__link--active">Login</a>
+              <a class="nav__link" routerLink="/login" routerLinkActive="nav__link--active">
+                {{ 'nav.login' | t }}
+              </a>
             </li>
           }
+          <li class="languages" role="group" [attr.aria-label]="'language.label' | t">
+            @for (option of languages; track option.code) {
+              <button
+                class="languages__option"
+                type="button"
+                [class.languages__option--current]="option.code === language.current()"
+                [attr.aria-pressed]="option.code === language.current()"
+                [attr.lang]="option.code"
+                [title]="option.name"
+                (click)="language.use(option.code)"
+              >
+                {{ option.label }}
+              </button>
+            }
+          </li>
         </ul>
       </nav>
 
       @if (manageLinks().length > 0) {
-        <nav class="manage" aria-label="Management">
+        <nav class="manage" [attr.aria-label]="'nav.management' | t">
           @for (link of manageLinks(); track link.path) {
-            <a class="manage__link" [routerLink]="link.path" routerLinkActive="manage__link--active">
-              {{ link.label }}
+            <a
+              class="manage__link"
+              [routerLink]="link.path"
+              routerLinkActive="manage__link--active"
+            >
+              {{ link.label | t }}
             </a>
           }
         </nav>
@@ -42,8 +67,8 @@
     </div>
 
     <div class="hero__content">
-      <h1 class="hero__title">What Can Make Your Life Easier?</h1>
-      <p class="hero__subtitle">Empowered Solutions with Simple Process</p>
+      <h1 class="hero__title">{{ 'hero.title' | t }}</h1>
+      <p class="hero__subtitle">{{ 'hero.subtitle' | t }}</p>
     </div>
   </div>
 </header>

@@ -2,6 +2,8 @@ import { Component, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { apiErrorMessage } from '../../../core/http/api-error';
+import { LanguageService } from '../../../core/i18n/language.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 export type AuthMode = 'login' | 'register';
 
@@ -10,13 +12,14 @@ const DEFAULT_RETURN_URL = '/games';
 
 @Component({
   selector: 'app-login',
-  imports: [RouterLink],
+  imports: [RouterLink, TranslatePipe],
   templateUrl: './login.component.html',
   styleUrl: './login.component.css',
 })
 export class LoginComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly i18n = inject(LanguageService);
 
   readonly mode = input<AuthMode>('login');
   readonly returnUrl = input<string>();
@@ -45,14 +48,14 @@ export class LoginComponent {
       },
       error: (error: unknown) => {
         this.sending.set(false);
-        this.error.set(apiErrorMessage(error, 'Please check the login and the password.'));
+        this.error.set(apiErrorMessage(error, this.i18n.translate('auth.checkCredentials')));
       },
     });
   }
 
   private validate(name: string, password: string, confirmation: string): string {
     if (!name || !password) {
-      return 'Enter the login and the password.';
+      return this.i18n.translate('auth.enterCredentials');
     }
 
     if (!this.registering()) {
@@ -60,9 +63,9 @@ export class LoginComponent {
     }
 
     if (password.length < MIN_PASSWORD_LENGTH) {
-      return `The password must contain at least ${MIN_PASSWORD_LENGTH} characters.`;
+      return this.i18n.translate('common.passwordLength', { count: MIN_PASSWORD_LENGTH });
     }
 
-    return password === confirmation ? '' : 'The passwords do not match.';
+    return password === confirmation ? '' : this.i18n.translate('auth.passwordsMismatch');
   }
 }

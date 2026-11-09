@@ -1,6 +1,7 @@
 using AutoMapper;
 using BusinessLogicLayer.Catalog;
 using BusinessLogicLayer.Catalog.Interfaces;
+using BusinessLogicLayer.Localization;
 using BusinessLogicLayer.Models;
 using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Services.Interaces;
@@ -14,7 +15,8 @@ public class GenreService(
     ISqlServerUnitOfWork unitOfWork,
     IMapper mapper,
     ICategoryCatalog categoryCatalog,
-    IProductCatalog productCatalog) : IGenreService
+    IProductCatalog productCatalog,
+    IContentLocalizer localizer) : IGenreService
 {
     private readonly ISqlServerUnitOfWork _unitOfWork = unitOfWork;
     private readonly IMapper _mapper = mapper;
@@ -46,6 +48,13 @@ public class GenreService(
         }
 
         var genreEntity = _mapper.Map<CategoryEntity>(genreModel);
+
+        // English data is required, so a genre added in another language also gets it as the English version.
+        if (!localizer.IsDefaultLanguage)
+        {
+            await localizer.SaveGenreTranslationAsync(genreEntity, genreModel.Name);
+        }
+
         await _unitOfWork.CategoryRepository.AddAsync(genreEntity);
 
         await _unitOfWork.SaveAsync();
@@ -57,6 +66,8 @@ public class GenreService(
             ?? throw new NotFoundException($"Genre with Id {genreId} does not exist.");
 
         var genreModel = _mapper.Map<GenreModel>(genreEntity);
+        await localizer.LocalizeGenresAsync([genreModel]);
+
         return genreModel;
     }
 
@@ -64,6 +75,8 @@ public class GenreService(
     {
         var genreEntities = await categoryCatalog.GetAllAsync();
         var genreModels = _mapper.Map<List<GenreModel>>(genreEntities);
+        await localizer.LocalizeGenresAsync(genreModels);
+
         return genreModels;
     }
 
@@ -76,11 +89,14 @@ public class GenreService(
             .FindAsync(g => g.ParentCategoryId == parentGenreId);
 
         var genreModels = _mapper.Map<List<GenreModel>>(genreEntities);
+        await localizer.LocalizeGenresAsync(genreModels);
+
         return genreModels;
     }
 
     /// <summary>
     /// A Northwind genre is copied to the Game Store database and the copy is updated; Northwind data stays untouched.
+    /// The name is saved in the language of the request.
     /// </summary>
     public async Task UpdateGenreAsync(GenreModel genreModel)
     {
@@ -113,7 +129,15 @@ public class GenreService(
             await categoryCatalog.EnsureInGameStoreAsync(genreModel.ParentGenreId.Value);
         }
 
-        existingGenreEntity.Name = genreModel.Name;
+        if (localizer.IsDefaultLanguage)
+        {
+            existingGenreEntity.Name = genreModel.Name;
+        }
+        else
+        {
+            await localizer.SaveGenreTranslationAsync(existingGenreEntity, genreModel.Name);
+        }
+
         existingGenreEntity.ParentCategoryId = genreModel.ParentGenreId;
 
         await _unitOfWork.SaveAsync();
@@ -121,6 +145,7 @@ public class GenreService(
 
     /// <summary>
     /// Genres that exist in Northwind are soft-deleted in the Game Store database, so the Northwind original stays hidden.
+    /// All translations of the genre are removed in the same operation: by the database cascade or explicitly.
     /// </summary>
     public async Task DeleteGenreAsync(Guid id)
     {
@@ -137,6 +162,7 @@ public class GenreService(
         else
         {
             var gameStoreGenre = await categoryCatalog.EnsureInGameStoreAsync(id);
+            await localizer.RemoveTranslationsAsync(gameStoreGenre);
             gameStoreGenre.IsDeleted = true;
         }
 
@@ -153,14 +179,16 @@ public class GenreService(
             .ToList();
 
         var gameModels = _mapper.Map<List<GameModel>>(gameEntities);
+        await localizer.LocalizeGamesAsync(gameModels);
 
         return gameModels;
     }
 
+    // Names are compared in the language of the request, as the user sees them.
     private async Task EnsureNameIsUniqueAsync(GenreModel genreModel)
     {
         var name = NorthwindResolver.Normalize(genreModel.Name);
-        var genres = await categoryCatalog.GetAllAsync();
+        var genres = await GetAllGenresAsync();
 
         if (genres.Any(g => g.Id != genreModel.Id && NorthwindResolver.Normalize(g.Name) == name))
         {

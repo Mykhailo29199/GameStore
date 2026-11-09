@@ -4,14 +4,16 @@
     novalidate
     (submit)="$event.preventDefault(); submit(login.value, password.value, confirmation.value)"
   >
-    <h2 class="page-title">{{ registering() ? 'Create Account' : 'Log In' }}</h2>
+    <h2 class="page-title">
+      {{ (registering() ? 'auth.createAccountTitle' : 'auth.logInTitle') | t }}
+    </h2>
 
     <label class="field">
-      <span>Login</span>
+      <span>{{ 'auth.login' | t }}</span>
       <input #login class="field__control" type="text" name="login" autocomplete="username" />
     </label>
     <label class="field">
-      <span>Password</span>
+      <span>{{ 'auth.password' | t }}</span>
       <input
         #password
         class="field__control"
@@ -21,7 +23,7 @@
       />
     </label>
     <label class="field" [hidden]="!registering()">
-      <span>Repeat password</span>
+      <span>{{ 'auth.repeatPassword' | t }}</span>
       <input
         #confirmation
         class="field__control"
@@ -37,12 +39,16 @@
 
     <div class="auth__actions">
       @if (registering()) {
-        <a class="link" routerLink="/login" queryParamsHandling="preserve">I already have an account</a>
+        <a class="link" routerLink="/login" queryParamsHandling="preserve">
+          {{ 'auth.haveAccount' | t }}
+        </a>
       } @else {
-        <a class="link" routerLink="/register" queryParamsHandling="preserve">Create an account</a>
+        <a class="link" routerLink="/register" queryParamsHandling="preserve">
+          {{ 'auth.createAccount' | t }}
+        </a>
       }
       <button class="btn" type="submit" [disabled]="sending()">
-        {{ registering() ? 'Register' : 'Log In' }}
+        {{ (registering() ? 'auth.register' : 'auth.logIn') | t }}
       </button>
     </div>
   </form>

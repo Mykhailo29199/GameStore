@@ -6,6 +6,7 @@ import { ConfirmButtonComponent } from '../../components/confirm-button/confirm-
 import { AuthService } from '../../core/auth/auth.service';
 import { APP_SETTINGS } from '../../core/config/app-settings';
 import { apiErrorMessage } from '../../core/http/api-error';
+import { LanguageService } from '../../core/i18n/language.service';
 import {
   CATALOG_CONFIGS,
   CatalogItem,
@@ -15,6 +16,8 @@ import {
   toCatalogItem,
   toCatalogPayload,
 } from './catalog-config';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
+import { CreateInEnglishComponent } from '../../components/create-in-english/create-in-english.component';
 
 interface Draft {
   readonly id: string | null;
@@ -23,17 +26,20 @@ interface Draft {
 
 @Component({
   selector: 'app-catalog-page',
-  imports: [RouterLink, ConfirmButtonComponent],
+  imports: [RouterLink, ConfirmButtonComponent, TranslatePipe, CreateInEnglishComponent],
   templateUrl: './catalog-page.component.html',
 })
 export class CatalogPageComponent {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
+  private readonly i18n = inject(LanguageService);
   private readonly apiUrl = inject(APP_SETTINGS).apiUrl;
 
   readonly kind = input.required<CatalogKind>();
 
   protected readonly config = computed(() => CATALOG_CONFIGS[this.kind()]);
+  protected readonly languageName = this.i18n.currentName;
+  protected readonly languageIsDefault = this.i18n.isDefault;
   protected readonly items = signal<CatalogItem[] | null>(null);
   protected readonly draft = signal<Draft | null>(null);
   protected readonly error = signal('');
@@ -89,7 +95,9 @@ export class CatalogPageComponent {
 
     const missing = missingField(this.config(), draft.values);
     if (missing) {
-      this.error.set(`${missing.label} is required.`);
+      this.error.set(
+        this.i18n.translate('common.fieldRequired', { field: this.i18n.translate(missing.label) }),
+      );
       return;
     }
 
@@ -110,7 +118,7 @@ export class CatalogPageComponent {
 
     const parent = (this.items() ?? []).find((item) => item.id === value);
 
-    return parent ? `Parent: ${this.title(parent)}` : '';
+    return parent ? this.i18n.translate('catalog.parent', { name: this.title(parent) }) : '';
   }
 
   private run(request: Observable<void>): void {
@@ -121,19 +129,17 @@ export class CatalogPageComponent {
         this.load();
       },
       error: (error: unknown) =>
-        this.error.set(apiErrorMessage(error, 'The change could not be saved.')),
+        this.error.set(apiErrorMessage(error, this.i18n.translate('common.saveFailed'))),
     });
   }
 
   private load(): void {
     const config = this.config();
 
-    this.http
-      .get<Record<string, string | null>[]>(`${this.apiUrl}/${config.listPath}`)
-      .subscribe({
-        next: (records) =>
-          this.items.set(records.map((record) => toCatalogItem(record, config.fields))),
-        error: () => this.items.set([]),
-      });
+    this.http.get<Record<string, string | null>[]>(`${this.apiUrl}/${config.listPath}`).subscribe({
+      next: (records) =>
+        this.items.set(records.map((record) => toCatalogItem(record, config.fields))),
+      error: () => this.items.set([]),
+    });
   }
 }

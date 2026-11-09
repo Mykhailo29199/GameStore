@@ -1,13 +1,14 @@
 <div class="container checkout">
   <section class="checkout__main">
-    <h2 class="page-title">Checkout</h2>
+    <h2 class="page-title">{{ 'checkout.title' | t }}</h2>
 
     @if (result()) {
       <output class="form-success checkout__result">{{ result() }}</output>
-      <a class="btn" routerLink="/games">Continue Shopping</a>
+      <a class="btn" routerLink="/games">{{ 'checkout.continue' | t }}</a>
     } @else if (totals().itemCount === 0) {
       <p class="checkout__result">
-        Your cart is empty. <a class="link" routerLink="/games">Go to the game list</a>
+        {{ 'cart.empty' | t }}
+        <a class="link" routerLink="/games">{{ 'cart.goToList' | t }}</a>
       </p>
     } @else {
       <form
@@ -20,12 +21,12 @@
             cardNumber: cardNumber.value,
             month: month.value,
             year: year.value,
-            cvv: cvv.value
+            cvv: cvv.value,
           })
         "
       >
         <fieldset class="checkout__methods">
-          <legend class="checkout__legend">Payment method</legend>
+          <legend class="checkout__legend">{{ 'checkout.method' | t }}</legend>
           @for (method of methods(); track method.title) {
             <label class="method" [class.method--selected]="selected() === method.title">
               <input
@@ -45,13 +46,13 @@
         </fieldset>
 
         <fieldset class="checkout__card" [hidden]="!visaSelected()">
-          <legend class="checkout__legend">Card details</legend>
+          <legend class="checkout__legend">{{ 'checkout.card' | t }}</legend>
           <label class="field checkout__wide">
-            <span>Card holder</span>
+            <span>{{ 'checkout.holder' | t }}</span>
             <input #holder class="field__control" type="text" autocomplete="cc-name" />
           </label>
           <label class="field checkout__wide">
-            <span>Card number</span>
+            <span>{{ 'checkout.number' | t }}</span>
             <input
               #cardNumber
               class="field__control"
@@ -61,31 +62,31 @@
             />
           </label>
           <label class="field">
-            <span>Month</span>
+            <span>{{ 'checkout.month' | t }}</span>
             <input
               #month
               class="field__control"
               type="text"
               inputmode="numeric"
               maxlength="2"
-              placeholder="MM"
+              [placeholder]="'checkout.monthPlaceholder' | t"
               autocomplete="cc-exp-month"
             />
           </label>
           <label class="field">
-            <span>Year</span>
+            <span>{{ 'checkout.year' | t }}</span>
             <input
               #year
               class="field__control"
               type="text"
               inputmode="numeric"
               maxlength="4"
-              placeholder="YYYY"
+              [placeholder]="'checkout.yearPlaceholder' | t"
               autocomplete="cc-exp-year"
             />
           </label>
           <label class="field">
-            <span>CVV</span>
+            <span>{{ 'checkout.cvv' | t }}</span>
             <input
               #cvv
               class="field__control"
@@ -102,26 +103,28 @@
         }
 
         <div class="checkout__actions">
-          <a class="btn btn--ghost" routerLink="/basket">Back to Cart</a>
-          <button class="btn" type="submit" [disabled]="!selected() || paying()">Pay</button>
+          <a class="btn btn--ghost" routerLink="/basket">{{ 'checkout.back' | t }}</a>
+          <button class="btn" type="submit" [disabled]="!selected() || paying()">
+            {{ 'checkout.pay' | t }}
+          </button>
         </div>
       </form>
     }
   </section>
 
   <aside class="summary">
-    <h3 class="summary__title">Order Summary</h3>
+    <h3 class="summary__title">{{ 'summary.title' | t }}</h3>
     <dl class="summary__rows">
       <div class="summary__row">
-        <dt>Subtotal</dt>
+        <dt>{{ 'summary.subtotal' | t }}</dt>
         <dd>{{ totals().subtotal | currency }}</dd>
       </div>
       <div class="summary__row">
-        <dt>Taxes</dt>
+        <dt>{{ 'summary.taxes' | t }}</dt>
         <dd>{{ totals().taxes | currency }}</dd>
       </div>
       <div class="summary__row summary__row--total">
-        <dt>Total</dt>
+        <dt>{{ 'summary.total' | t }}</dt>
         <dd>{{ totals().total | currency }}</dd>
       </div>
     </dl>

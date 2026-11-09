@@ -1,11 +1,12 @@
 import { Permissions } from '../../core/auth/permissions';
+import { TranslationKey } from '../../core/i18n/dictionaries';
 
 export type CatalogKind = 'genres' | 'platforms' | 'publishers';
 export type CatalogValues = Record<string, string>;
 
 export interface CatalogField {
   readonly key: string;
-  readonly label: string;
+  readonly label: TranslationKey;
   readonly control: 'text' | 'textarea' | 'parent';
   readonly required: boolean;
 }
@@ -16,8 +17,10 @@ export interface CatalogItem {
 }
 
 export interface CatalogConfig {
-  readonly title: string;
-  readonly singular: string;
+  readonly title: TranslationKey;
+  readonly addTitle: TranslationKey;
+  readonly newTitle: TranslationKey;
+  readonly editTitle: TranslationKey;
   readonly listPath: string;
   readonly itemPath: string;
   readonly wrapper: string;
@@ -29,40 +32,51 @@ export interface CatalogConfig {
 
 export const CATALOG_CONFIGS: Readonly<Record<CatalogKind, CatalogConfig>> = {
   genres: {
-    title: 'Genres',
-    singular: 'Genre',
+    title: 'catalog.genres.title',
+    addTitle: 'catalog.genres.add',
+    newTitle: 'catalog.genres.new',
+    editTitle: 'catalog.genres.edit',
     listPath: 'genres',
     itemPath: 'genre',
     wrapper: 'genre',
     fields: [
-      { key: 'name', label: 'Name', control: 'text', required: true },
-      { key: 'parent', label: 'Parent genre', control: 'parent', required: false },
+      { key: 'name', label: 'catalog.field.name', control: 'text', required: true },
+      { key: 'parent', label: 'catalog.field.parent', control: 'parent', required: false },
     ],
     addPermission: Permissions.AddGenre,
     updatePermission: Permissions.UpdateGenre,
     deletePermission: Permissions.DeleteGenre,
   },
   platforms: {
-    title: 'Platforms',
-    singular: 'Platform',
+    title: 'catalog.platforms.title',
+    addTitle: 'catalog.platforms.add',
+    newTitle: 'catalog.platforms.new',
+    editTitle: 'catalog.platforms.edit',
     listPath: 'platforms',
     itemPath: 'platform',
     wrapper: 'platform',
-    fields: [{ key: 'type', label: 'Type', control: 'text', required: true }],
+    fields: [{ key: 'type', label: 'catalog.field.type', control: 'text', required: true }],
     addPermission: Permissions.AddPlatform,
     updatePermission: Permissions.UpdatePlatform,
     deletePermission: Permissions.DeletePlatform,
   },
   publishers: {
-    title: 'Publishers',
-    singular: 'Publisher',
+    title: 'catalog.publishers.title',
+    addTitle: 'catalog.publishers.add',
+    newTitle: 'catalog.publishers.new',
+    editTitle: 'catalog.publishers.edit',
     listPath: 'publishers',
     itemPath: 'publisher',
     wrapper: 'publisher',
     fields: [
-      { key: 'companyName', label: 'Company name', control: 'text', required: true },
-      { key: 'homePage', label: 'Home page', control: 'text', required: false },
-      { key: 'description', label: 'Description', control: 'textarea', required: false },
+      { key: 'companyName', label: 'catalog.field.companyName', control: 'text', required: true },
+      { key: 'homePage', label: 'catalog.field.homePage', control: 'text', required: false },
+      {
+        key: 'description',
+        label: 'catalog.field.description',
+        control: 'textarea',
+        required: false,
+      },
     ],
     addPermission: Permissions.AddPublisher,
     updatePermission: Permissions.UpdatePublisher,

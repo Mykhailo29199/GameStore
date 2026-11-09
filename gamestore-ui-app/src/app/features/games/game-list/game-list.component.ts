@@ -14,6 +14,7 @@ import { CatalogService } from '../../../services/catalog.service';
 import { GameService } from '../../../services/game.service';
 import { GameCardComponent } from '../game-card/game-card.component';
 import { GameFiltersComponent } from '../game-filters/game-filters.component';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 interface GamesState {
   readonly response: FilteredGamesResponseDTO | null;
@@ -29,7 +30,7 @@ function orEmpty<T>(source: Observable<T[]>): Observable<T[]> {
 
 @Component({
   selector: 'app-game-list',
-  imports: [GameCardComponent, GameFiltersComponent, PaginationComponent],
+  imports: [GameCardComponent, GameFiltersComponent, PaginationComponent, TranslatePipe],
   templateUrl: './game-list.component.html',
   styleUrl: './game-list.component.css',
 })

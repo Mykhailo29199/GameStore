@@ -9,20 +9,31 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { Permissions } from '../../../core/auth/permissions';
 import { APP_SETTINGS } from '../../../core/config/app-settings';
 import { apiErrorMessage } from '../../../core/http/api-error';
+import { LanguageService } from '../../../core/i18n/language.service';
 import { lineTotal, orderTotals } from '../../../core/pricing/pricing';
 import { GameWithIdDTO } from '../../../models/games/game-filter.model';
 import { Order, OrderLine, canEditOrder, canShipOrder } from '../../../models/order.model';
 import { GameService } from '../../../services/game.service';
 import { OrderService } from '../../../services/order.service';
+import { TranslatePipe, TranslateValuePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-order-details',
-  imports: [CurrencyPipe, DatePipe, RouterLink, PriceComponent, ConfirmButtonComponent],
+  imports: [
+    CurrencyPipe,
+    DatePipe,
+    RouterLink,
+    PriceComponent,
+    ConfirmButtonComponent,
+    TranslatePipe,
+    TranslateValuePipe,
+  ],
   templateUrl: './order-details.component.html',
 })
 export class OrderDetailsComponent {
   private readonly orderService = inject(OrderService);
   private readonly auth = inject(AuthService);
+  private readonly i18n = inject(LanguageService);
   private readonly taxPercent = inject(APP_SETTINGS).taxPercent;
 
   readonly id = input.required<string>();
@@ -69,7 +80,7 @@ export class OrderDetailsComponent {
   }
 
   protected ship(): void {
-    this.run(this.orderService.ship(this.id()), 'The order was shipped.');
+    this.run(this.orderService.ship(this.id()), this.i18n.translate('orders.shipped'));
   }
 
   private run(request: Observable<void>, success: string): void {
@@ -81,14 +92,14 @@ export class OrderDetailsComponent {
         this.load(this.id());
       },
       error: (error: unknown) =>
-        this.error.set(apiErrorMessage(error, 'The order could not be changed.')),
+        this.error.set(apiErrorMessage(error, this.i18n.translate('orders.changeFailed'))),
     });
   }
 
   private load(id: string): void {
     this.orderService.getOrder(id).subscribe({
       next: (order) => this.order.set(order),
-      error: () => this.error.set('The order was not found.'),
+      error: () => this.error.set(this.i18n.translate('orders.notFound')),
     });
     this.orderService.getOrderLines(id).subscribe({
       next: (lines) => this.lines.set(lines),

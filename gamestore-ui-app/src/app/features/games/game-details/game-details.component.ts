@@ -12,6 +12,7 @@ import { Permissions } from '../../../core/auth/permissions';
 import { APP_SETTINGS } from '../../../core/config/app-settings';
 import { gameGalleryUrls } from '../../../core/games/game-cover';
 import { apiErrorMessage } from '../../../core/http/api-error';
+import { LanguageService } from '../../../core/i18n/language.service';
 import { discountedPrice, priceWithTax, taxAmount } from '../../../core/pricing/pricing';
 import { ReactionsStore } from '../../../core/reactions/reactions.store';
 import { Genre, Platform, Publisher } from '../../../models/catalog.model';
@@ -20,6 +21,7 @@ import { CartService } from '../../../services/cart.service';
 import { GameService } from '../../../services/game.service';
 import { GameCommentsComponent } from '../game-comments/game-comments.component';
 import { GameGalleryComponent } from '../game-gallery/game-gallery.component';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 interface GameView {
   readonly game: GameWithIdDTO;
@@ -45,6 +47,7 @@ type ViewState = GameView | 'loading' | 'missing';
     GameGalleryComponent,
     GameCommentsComponent,
     ConfirmButtonComponent,
+    TranslatePipe,
   ],
   templateUrl: './game-details.component.html',
   styleUrl: './game-details.component.css',
@@ -54,6 +57,7 @@ export class GameDetailsComponent {
   private readonly cart = inject(CartService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly i18n = inject(LanguageService);
   protected readonly reactions = inject(ReactionsStore);
   protected readonly taxPercent = inject(APP_SETTINGS).taxPercent;
 
@@ -95,10 +99,10 @@ export class GameDetailsComponent {
 
     this.adding.set(true);
     this.cart.addGame(this.key()).subscribe({
-      next: () => this.finishAdding({ text: 'The game was added to your cart.', failed: false }),
+      next: () => this.finishAdding({ text: this.i18n.translate('game.added'), failed: false }),
       error: (error: unknown) =>
         this.finishAdding({
-          text: apiErrorMessage(error, 'The game could not be added to the cart.'),
+          text: apiErrorMessage(error, this.i18n.translate('game.addFailed')),
           failed: true,
         }),
     });
@@ -111,7 +115,7 @@ export class GameDetailsComponent {
       },
       error: (error: unknown) =>
         this.cartMessage.set({
-          text: apiErrorMessage(error, 'The game could not be deleted.'),
+          text: apiErrorMessage(error, this.i18n.translate('game.deleteFailed')),
           failed: true,
         }),
     });

@@ -1,12 +1,14 @@
 import { Component, input, output } from '@angular/core';
 import { Genre, Platform, Publisher } from '../../../models/catalog.model';
 import { GameFilterDTO, GameFilterOptions } from '../../../models/games/game-filter.model';
+import { TranslatePipe, TranslateValuePipe } from '../../../core/i18n/translate.pipe';
 
 type ListKey = 'genres' | 'platforms' | 'publishers';
 type PriceKey = 'minPrice' | 'maxPrice';
 
 @Component({
   selector: 'app-game-filters',
+  imports: [TranslatePipe, TranslateValuePipe],
   templateUrl: './game-filters.component.html',
   styleUrl: './game-filters.component.css',
 })

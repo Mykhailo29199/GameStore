@@ -5,7 +5,7 @@
     @if (!nested()) {
       <app-star-rating
         class="comment__rating"
-        label="Comment rating"
+        label="comments.rating"
         [value]="reactions.commentRating(comment().id)"
         (valueChange)="reactions.rateComment(comment().id, $event)"
       />
@@ -25,16 +25,26 @@
       [attr.aria-pressed]="reactions.isLiked(comment().id)"
       (click)="reactions.toggleLike(comment().id)"
     >
-      {{ reactions.isLiked(comment().id) ? 'Liked (1)' : 'Like' }}
+      {{ (reactions.isLiked(comment().id) ? 'comments.liked' : 'comments.like') | t }}
     </button>
-    <button class="link" type="button" (click)="respond.emit({ comment: comment(), action: 'Reply' })">
-      Reply
+    <button
+      class="link"
+      type="button"
+      (click)="respond.emit({ comment: comment(), action: 'Reply' })"
+    >
+      {{ 'comments.reply' | t }}
     </button>
-    <button class="link" type="button" (click)="respond.emit({ comment: comment(), action: 'Quote' })">
-      Quote
+    <button
+      class="link"
+      type="button"
+      (click)="respond.emit({ comment: comment(), action: 'Quote' })"
+    >
+      {{ 'comments.quote' | t }}
     </button>
     @if (canBan) {
-      <button class="link" type="button" (click)="ban.emit(comment())">Ban</button>
+      <button class="link" type="button" (click)="ban.emit(comment())">
+        {{ 'comments.ban' | t }}
+      </button>
     }
     @if (canDelete) {
       <app-confirm-button (confirmed)="remove.emit(comment())" />

@@ -1,8 +1,8 @@
 <section class="container">
   <header class="toolbar">
-    <h2 class="page-title">{{ config().title }}</h2>
+    <h2 class="page-title">{{ config().title | t }}</h2>
     @if (!draft()) {
-      <button class="btn" type="button" (click)="create()">Add {{ config().singular }}</button>
+      <button class="btn" type="button" (click)="create()">{{ config().addTitle | t }}</button>
     }
   </header>
 
@@ -12,19 +12,21 @@
       novalidate
       (submit)="$event.preventDefault(); save(name.value, password.value)"
     >
-      <h3 class="panel__title">{{ current.id ? 'Edit' : 'New' }} {{ config().singular }}</h3>
+      <h3 class="panel__title">
+        {{ (current.id ? config().editTitle : config().newTitle) | t }}
+      </h3>
       <div class="form-grid">
         <label class="field">
-          <span>Name</span>
+          <span>{{ 'common.name' | t }}</span>
           <input #name class="field__control" type="text" [value]="current.name" />
         </label>
         <label class="field" [hidden]="!config().hasPassword">
-          <span>{{ current.id ? 'New password (optional)' : 'Password' }}</span>
+          <span>{{ (current.id ? 'access.newPassword' : 'auth.password') | t }}</span>
           <input #password class="field__control" type="password" autocomplete="new-password" />
         </label>
       </div>
       <fieldset class="choices">
-        <legend>{{ config().optionsTitle }}</legend>
+        <legend>{{ config().optionsTitle | t }}</legend>
         @for (option of options(); track option.value) {
           <label class="choice">
             <input
@@ -42,8 +44,10 @@
         <p class="form-error" role="alert">{{ error() }}</p>
       }
       <div class="panel__actions">
-        <button class="btn btn--ghost" type="button" (click)="draft.set(null)">Cancel</button>
-        <button class="btn" type="submit">Save</button>
+        <button class="btn btn--ghost" type="button" (click)="draft.set(null)">
+          {{ 'common.cancel' | t }}
+        </button>
+        <button class="btn" type="submit">{{ 'common.save' | t }}</button>
       </div>
     </form>
   } @else if (error()) {
@@ -58,13 +62,13 @@
             <h3 class="row__title">{{ item.name }}</h3>
           </div>
           <div class="row__actions">
-            <button class="link" type="button" (click)="edit(item)">Edit</button>
+            <button class="link" type="button" (click)="edit(item)">{{ 'common.edit' | t }}</button>
             <app-confirm-button (confirmed)="remove(item)" />
           </div>
         </li>
       }
     </ul>
   } @else {
-    <p class="message">Loading&hellip;</p>
+    <p class="message">{{ 'common.loading' | t }}</p>
   }
 </section>

@@ -133,3 +133,29 @@
   color: var(--color-accent);
   opacity: 1;
 }
+
+.languages {
+  display: flex;
+  gap: 4px;
+}
+
+.languages__option {
+  border: 1px solid transparent;
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 2px 6px;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.languages__option:hover,
+.languages__option:focus-visible {
+  color: var(--color-accent);
+}
+
+.languages__option--current {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}

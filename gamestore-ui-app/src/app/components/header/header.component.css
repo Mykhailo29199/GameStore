@@ -135,8 +135,12 @@
 }
 
 .languages {
+  border: 0;
   display: flex;
   gap: 4px;
+  margin: 0;
+  min-width: 0;
+  padding: 0;
 }
 
 .languages__option {

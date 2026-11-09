@@ -33,20 +33,23 @@
               </a>
             </li>
           }
-          <li class="languages" role="group" [attr.aria-label]="'language.label' | t">
-            @for (option of languages; track option.code) {
-              <button
-                class="languages__option"
-                type="button"
-                [class.languages__option--current]="option.code === language.current()"
-                [attr.aria-pressed]="option.code === language.current()"
-                [attr.lang]="option.code"
-                [title]="option.name"
-                (click)="language.use(option.code)"
-              >
-                {{ option.label }}
-              </button>
-            }
+          <li>
+            <fieldset class="languages">
+              <legend class="visually-hidden">{{ 'language.label' | t }}</legend>
+              @for (option of languages; track option.code) {
+                <button
+                  class="languages__option"
+                  type="button"
+                  [class.languages__option--current]="option.code === language.current()"
+                  [attr.aria-pressed]="option.code === language.current()"
+                  [attr.lang]="option.code"
+                  [title]="option.name"
+                  (click)="language.use(option.code)"
+                >
+                  {{ option.label }}
+                </button>
+              }
+            </fieldset>
           </li>
         </ul>
       </nav>

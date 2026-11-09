@@ -6,6 +6,7 @@ import { Permissions } from '../../../core/auth/permissions';
 import { initialsOf, parseCommentBody } from '../../../core/comments/comment-text';
 import { ReactionsStore } from '../../../core/reactions/reactions.store';
 import { CommentAction, GameComment } from '../../../models/comment.model';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 export interface CommentResponse {
   readonly comment: GameComment;
@@ -14,7 +15,7 @@ export interface CommentResponse {
 
 @Component({
   selector: 'app-comment-item',
-  imports: [StarRatingComponent, ConfirmButtonComponent],
+  imports: [StarRatingComponent, ConfirmButtonComponent, TranslatePipe],
   templateUrl: './comment-item.component.html',
   styleUrl: './comment-item.component.css',
 })

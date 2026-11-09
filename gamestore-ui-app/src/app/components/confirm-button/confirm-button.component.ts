@@ -1,18 +1,23 @@
 import { Component, input, output, signal } from '@angular/core';
+import { TranslationKey } from '../../core/i18n/dictionaries';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-confirm-button',
+  imports: [TranslatePipe],
   template: `
     @if (asking()) {
       <span class="confirm">
         <button class="link confirm__yes" type="button" (click)="confirm()">
-          Confirm {{ label().toLowerCase() }}
+          {{ 'common.confirm' | t }} {{ (label() | t).toLowerCase() }}
         </button>
-        <button class="link" type="button" (click)="asking.set(false)">Cancel</button>
+        <button class="link" type="button" (click)="asking.set(false)">
+          {{ 'common.cancel' | t }}
+        </button>
       </span>
     } @else {
       <button class="link" type="button" [disabled]="disabled()" (click)="asking.set(true)">
-        {{ label() }}
+        {{ label() | t }}
       </button>
     }
   `,
@@ -29,7 +34,7 @@ import { Component, input, output, signal } from '@angular/core';
   `,
 })
 export class ConfirmButtonComponent {
-  readonly label = input('Delete');
+  readonly label = input<TranslationKey>('common.delete');
   readonly disabled = input(false);
   readonly confirmed = output<void>();
 

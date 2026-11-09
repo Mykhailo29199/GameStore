@@ -1,6 +1,8 @@
+using System.Data;
 using System.Text.RegularExpressions;
 using AutoMapper;
 using BusinessLogicLayer.Catalog.Interfaces;
+using BusinessLogicLayer.Localization;
 using BusinessLogicLayer.Models;
 using BusinessLogicLayer.Models.GameModels;
 using BusinessLogicLayer.Pipelines;
@@ -25,7 +27,8 @@ public class GameService(
     IFileSystem fileSystem,
     GameFilterPipeline pipeline,
     IStoreCatalog catalog,
-    ICurrentUser currentUser) : IGameService
+    ICurrentUser currentUser,
+    IContentLocalizer localizer) : IGameService
 {
     private readonly ISqlServerUnitOfWork _unitOfWork = unitOfWork;
     private readonly IMapper _mapper = mapper;
@@ -45,73 +48,60 @@ public class GameService(
         ProductEntity gameEntity = _mapper.Map<ProductEntity>(gameModel);
         gameEntity.SupplierID = publisher.Id;
 
+        // English data is required, so a game added in another language also gets it as the English version.
+        if (!localizer.IsDefaultLanguage)
+        {
+            await localizer.SaveGameTranslationAsync(gameEntity, gameModel.Name, gameModel.Description);
+        }
+
         await _unitOfWork.ProductRepository.AddAsync(gameEntity);
         await _unitOfWork.SaveAsync();
     }
 
+    /// <summary>
+    /// The game and its translation are read in one transaction, so they cannot be changed in between.
+    /// </summary>
     public async Task<GameModel> GetGameByKeyAsync(string key)
     {
-        await catalog.Products.IncreaseViewsAsync(key);
-        await _unitOfWork.SaveAsync();
+        return await _unitOfWork.ExecuteInTransactionAsync(
+            async () =>
+            {
+                await catalog.Products.IncreaseViewsAsync(key);
+                await _unitOfWork.SaveAsync();
 
-        var gameEntity = await catalog.Products.GetByKeyAsync(key, CanSeeDeletedGames)
-            ?? throw new NotFoundException($"Game with Key '{key}' was not found.");
+                var gameEntity = await catalog.Products.GetByKeyAsync(key, CanSeeDeletedGames)
+                    ?? throw new NotFoundException($"Game with Key '{key}' was not found.");
 
-        return _mapper.Map<GameModel>(gameEntity);
+                return await LocalizeAsync(_mapper.Map<GameModel>(gameEntity));
+            },
+            IsolationLevel.RepeatableRead);
     }
 
     public async Task<GameModel> GetGameByIdAsync(Guid gameId)
     {
-        var gameEntity = await catalog.Products.GetByIdAsync(gameId, CanSeeDeletedGames);
+        return await _unitOfWork.ExecuteInTransactionAsync(
+            async () =>
+            {
+                var gameEntity = await catalog.Products.GetByIdAsync(gameId, CanSeeDeletedGames)
+                    ?? throw new NotFoundException($"Game with Id '{gameId}' was not found.");
 
-        return gameEntity != null
-            ? _mapper.Map<GameModel>(gameEntity)
-            : throw new NotFoundException($"Game with Id '{gameId}' was not found.");
+                return await LocalizeAsync(_mapper.Map<GameModel>(gameEntity));
+            },
+            IsolationLevel.RepeatableRead);
     }
 
     /// <summary>
     /// A Northwind game is copied to the Game Store database and the copy is updated; Northwind data stays untouched.
+    /// The name and description are saved in the language of the request.
     /// </summary>
     public async Task UpdateGameAsync(GameModel gameModel)
     {
-        var currentGame = await catalog.Products.GetByIdAsync(gameModel.Id, includeDeleted: true)
-            ?? throw new NotFoundException($"Game with Id `{gameModel.Id}` was not found.");
-
-        if (currentGame.IsDeleted && !currentUser.HasPermission(Permissions.UpdateDeletedGame))
-        {
-            throw new ForbiddenException("Deleted games can be edited only by an administrator.");
-        }
-
-        await ValidatePlatformsAsync(gameModel.Platforms);
-
-        var existingGame = await catalog.Products.EnsureInGameStoreAsync(currentGame.Key, includeDeleted: true);
-
-        // The key maps a game to its Northwind product, so it cannot be changed for Northwind games.
-        gameModel.Key = await catalog.Products.HasNorthwindCounterpartAsync(existingGame)
-            || string.Equals(gameModel.Key, existingGame.Key, StringComparison.Ordinal)
-            ? existingGame.Key
-            : await GenerateUniqueGameKeyAsync(gameModel.Key, gameModel.Name);
-
-        await EnsureGenresInGameStoreAsync(gameModel.Genres);
-        var publisher = await EnsurePublisherInGameStoreAsync(gameModel.Publisher);
-
-        UpdateGenres(existingGame, gameModel.Genres);
-        UpdatePlatforms(existingGame, gameModel.Platforms);
-
-        existingGame.ProductName = gameModel.Name;
-        existingGame.Key = gameModel.Key;
-        existingGame.Description = gameModel.Description;
-        existingGame.UnitPrice = gameModel.Price;
-        existingGame.UnitsInStock = gameModel.UnitInStock;
-        existingGame.Discount = gameModel.Discount;
-        existingGame.SupplierID = publisher.Id;
-
-        await _unitOfWork.SaveAsync();
-        await catalog.Products.SyncUnitsInStockAsync([existingGame]);
+        await _unitOfWork.ExecuteInTransactionAsync(() => UpdateGameInTransactionAsync(gameModel), IsolationLevel.RepeatableRead);
     }
 
     /// <summary>
     /// Games are soft-deleted: administrators can still see and edit them, and a deleted Northwind game stays hidden.
+    /// All translations of the game are removed in the same operation.
     /// </summary>
     public async Task DeleteGameAsync(string key)
     {
@@ -126,6 +116,7 @@ public class GameService(
         }
         else
         {
+            await localizer.RemoveTranslationsAsync(sqlGame);
             sqlGame.IsDeleted = true;
         }
 
@@ -154,36 +145,49 @@ public class GameService(
     public async Task<IList<GameModel>> GetAllGamesAsync()
     {
         var gameEntities = await catalog.Products.GetAllAsync(CanSeeDeletedGames);
-        return _mapper.Map<IList<GameModel>>(gameEntities);
+        var games = _mapper.Map<List<GameModel>>(gameEntities);
+
+        await localizer.LocalizeGamesAsync(games);
+
+        return games;
     }
 
     public async Task<IList<GenreModel>> GetGenresByGameKeyAsync(string key)
     {
         var game = await catalog.Products.GetByKeyAsync(key, CanSeeDeletedGames);
 
-        var genres = game?.ProductCategories
+        var genreEntities = game?.ProductCategories
             .Where(pc => pc.Category is not null)
             .Select(pc => pc.Category)
             .ToList() ?? [];
 
-        return _mapper.Map<IList<GenreModel>>(genres);
+        var genres = _mapper.Map<List<GenreModel>>(genreEntities);
+        await localizer.LocalizeGenresAsync(genres);
+
+        return genres;
     }
 
     public async Task<IList<PlatformModel>> GetPlatformsByGameKeyAsync(string key)
     {
-        var platforms = await _unitOfWork.ProductRepository.GetPlatformsByGameKeyAsync(key);
+        var platformEntities = await _unitOfWork.ProductRepository.GetPlatformsByGameKeyAsync(key);
 
-        return _mapper.Map<IList<PlatformModel>>(platforms);
+        var platforms = _mapper.Map<List<PlatformModel>>(platformEntities);
+        await localizer.LocalizePlatformsAsync(platforms);
+
+        return platforms;
     }
 
     public async Task<PublisherModel> GetPublisherByGameKeyAsync(string key)
     {
         var game = await catalog.Products.GetByKeyAsync(key, CanSeeDeletedGames);
 
-        var publisher = (game is null ? null : game.Supplier ?? await catalog.Suppliers.GetByIdAsync(game.SupplierID))
+        var publisherEntity = (game is null ? null : game.Supplier ?? await catalog.Suppliers.GetByIdAsync(game.SupplierID))
             ?? throw new NotFoundException($"Game with Key '{key}' was not found or has no publisher.");
 
-        return _mapper.Map<PublisherModel>(publisher);
+        var publisher = _mapper.Map<PublisherModel>(publisherEntity);
+        await localizer.LocalizePublishersAsync([publisher]);
+
+        return publisher;
     }
 
     public async Task<int> GetTotalGamesCountAsync()
@@ -221,14 +225,70 @@ public class GameService(
         var games = _pipeline.Paginate(merged, filter).ToList();
         var totalCount = sqlCount + northwindGames.Count;
 
+        var gameModels = _mapper.Map<List<GameModel>>(games);
+        await localizer.LocalizeGamesAsync(gameModels);
+
         return new FilteredGamesResponseModel
         {
-            Games = _mapper.Map<List<GameModel>>(games),
+            Games = gameModels,
             CurrentPage = filter.Page,
             TotalPages = filter.PageSize == (int)PaginationOptions.All
                 ? 1
                 : (int)Math.Ceiling(totalCount / (double)filter.PageSize),
         };
+    }
+
+    private async Task UpdateGameInTransactionAsync(GameModel gameModel)
+    {
+        var currentGame = await catalog.Products.GetByIdAsync(gameModel.Id, includeDeleted: true)
+            ?? throw new NotFoundException($"Game with Id `{gameModel.Id}` was not found.");
+
+        if (currentGame.IsDeleted && !currentUser.HasPermission(Permissions.UpdateDeletedGame))
+        {
+            throw new ForbiddenException("Deleted games can be edited only by an administrator.");
+        }
+
+        await ValidatePlatformsAsync(gameModel.Platforms);
+
+        var existingGame = await catalog.Products.EnsureInGameStoreAsync(currentGame.Key, includeDeleted: true);
+
+        // The key maps a game to its Northwind product, so it cannot be changed for Northwind games.
+        gameModel.Key = await catalog.Products.HasNorthwindCounterpartAsync(existingGame)
+            || string.Equals(gameModel.Key, existingGame.Key, StringComparison.Ordinal)
+            ? existingGame.Key
+            : await GenerateUniqueGameKeyAsync(gameModel.Key, gameModel.Name);
+
+        await EnsureGenresInGameStoreAsync(gameModel.Genres);
+        var publisher = await EnsurePublisherInGameStoreAsync(gameModel.Publisher);
+
+        UpdateGenres(existingGame, gameModel.Genres);
+        UpdatePlatforms(existingGame, gameModel.Platforms);
+
+        if (localizer.IsDefaultLanguage)
+        {
+            existingGame.ProductName = gameModel.Name;
+            existingGame.Description = gameModel.Description;
+        }
+        else
+        {
+            await localizer.SaveGameTranslationAsync(existingGame, gameModel.Name, gameModel.Description);
+        }
+
+        existingGame.Key = gameModel.Key;
+        existingGame.UnitPrice = gameModel.Price;
+        existingGame.UnitsInStock = gameModel.UnitInStock;
+        existingGame.Discount = gameModel.Discount;
+        existingGame.SupplierID = publisher.Id;
+
+        await _unitOfWork.SaveAsync();
+        await catalog.Products.SyncUnitsInStockAsync([existingGame]);
+    }
+
+    private async Task<GameModel> LocalizeAsync(GameModel game)
+    {
+        await localizer.LocalizeGamesAsync([game]);
+
+        return game;
     }
 
     private static int GetCandidateCount(GameFilterModel filter)

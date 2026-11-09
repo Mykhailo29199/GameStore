@@ -1,10 +1,10 @@
 @if (total() > 1) {
-  <nav class="pagination" aria-label="Pages">
+  <nav class="pagination" [attr.aria-label]="'pagination.label' | t">
     @if (current() > 1) {
       <button
         class="pagination__arrow pagination__arrow--prev"
         type="button"
-        aria-label="Previous page"
+        [attr.aria-label]="'pagination.previous' | t"
         (click)="select(current() - 1)"
       ></button>
     }
@@ -23,7 +23,7 @@
       <button
         class="pagination__arrow"
         type="button"
-        aria-label="Next page"
+        [attr.aria-label]="'pagination.next' | t"
         (click)="select(current() + 1)"
       ></button>
     }

@@ -1,7 +1,9 @@
 import { Component } from '@angular/core';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-main-page-body',
+  imports: [TranslatePipe],
   templateUrl: './main-page-body.component.html',
   styleUrl: './main-page-body.component.css',
 })

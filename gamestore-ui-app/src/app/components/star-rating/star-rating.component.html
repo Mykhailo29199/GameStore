@@ -4,16 +4,18 @@
       <span class="star" [class.star--on]="star <= value()"></span>
     }
   </span>
-  <span class="visually-hidden">{{ label() }}: {{ value() }} of 5</span>
+  <span class="visually-hidden">{{
+    'rating.value' | t: { label: (label() | t), value: value() }
+  }}</span>
 } @else {
   <fieldset class="stars stars--input">
-    <legend class="visually-hidden">{{ label() }}</legend>
+    <legend class="visually-hidden">{{ label() | t }}</legend>
     @for (star of stars; track star) {
       <button
         class="star star--button"
         type="button"
         [class.star--on]="star <= value()"
-        [attr.aria-label]="star + ' of 5'"
+        [attr.aria-label]="'rating.star' | t: { value: star }"
         [attr.aria-pressed]="star <= value()"
         (click)="select(star)"
       ></button>

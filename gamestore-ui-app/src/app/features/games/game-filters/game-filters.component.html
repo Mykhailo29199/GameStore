@@ -1,23 +1,25 @@
 <form class="filters" novalidate>
   <fieldset class="filters__group">
-    <legend class="filters__title">Sorting</legend>
+    <legend class="filters__title">{{ 'filters.sorting' | t }}</legend>
     <select
       #sort
       class="field__control select"
-      aria-label="Sorting"
+      [attr.aria-label]="'filters.sorting' | t"
       (change)="filterChange.emit({ sort: sort.value })"
     >
       @for (option of options().sorting; track option) {
-        <option [value]="option" [selected]="option === filter().sort">{{ option }}</option>
+        <option [value]="option" [selected]="option === filter().sort">
+          {{ option | tv: 'sorting' }}
+        </option>
       }
     </select>
   </fieldset>
 
   <fieldset class="filters__group">
-    <legend class="filters__title">Price Range</legend>
+    <legend class="filters__title">{{ 'filters.priceRange' | t }}</legend>
     <div class="filters__prices">
       <label class="field">
-        <span>From</span>
+        <span>{{ 'common.from' | t }}</span>
         <input
           #min
           class="field__control"
@@ -30,7 +32,7 @@
         />
       </label>
       <label class="field">
-        <span>To</span>
+        <span>{{ 'common.to' | t }}</span>
         <input
           #max
           class="field__control"
@@ -46,7 +48,7 @@
   </fieldset>
 
   <fieldset class="filters__group">
-    <legend class="filters__title">Publisher</legend>
+    <legend class="filters__title">{{ 'filters.publisher' | t }}</legend>
     @for (publisher of publishers(); track publisher.id) {
       <label class="choice">
         <input
@@ -62,7 +64,7 @@
   </fieldset>
 
   <fieldset class="filters__group">
-    <legend class="filters__title">Release Date</legend>
+    <legend class="filters__title">{{ 'filters.releaseDate' | t }}</legend>
     @for (option of options().publishDates; track option; let index = $index) {
       <label class="choice">
         <input
@@ -72,13 +74,13 @@
           [checked]="isSelectedDate(option, index)"
           (change)="filterChange.emit({ datePublishing: option })"
         />
-        {{ option }}
+        {{ option | tv: 'dates' }}
       </label>
     }
   </fieldset>
 
   <fieldset class="filters__group">
-    <legend class="filters__title">Genre</legend>
+    <legend class="filters__title">{{ 'filters.genre' | t }}</legend>
     @for (genre of genres(); track genre.id) {
       <label class="choice">
         <input
@@ -94,7 +96,7 @@
   </fieldset>
 
   <fieldset class="filters__group">
-    <legend class="filters__title">Platform</legend>
+    <legend class="filters__title">{{ 'filters.platform' | t }}</legend>
     @for (platform of platforms(); track platform.id) {
       <label class="choice">
         <input
@@ -110,15 +112,17 @@
   </fieldset>
 
   <fieldset class="filters__group">
-    <legend class="filters__title">Games per Page</legend>
+    <legend class="filters__title">{{ 'filters.perPage' | t }}</legend>
     <select
       #size
       class="field__control select"
-      aria-label="Games per page"
+      [attr.aria-label]="'filters.perPage' | t"
       (change)="filterChange.emit({ pageCount: size.value })"
     >
       @for (option of options().pageSizes; track option) {
-        <option [value]="option" [selected]="option === filter().pageCount">{{ option }}</option>
+        <option [value]="option" [selected]="option === filter().pageCount">
+          {{ option | tv: 'pageSize' }}
+        </option>
       }
     </select>
   </fieldset>

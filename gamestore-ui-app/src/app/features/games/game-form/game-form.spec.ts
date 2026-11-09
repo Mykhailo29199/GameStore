@@ -16,13 +16,13 @@ describe('validateGame', () => {
   });
 
   it.each<[Partial<GameFormFields>, string]>([
-    [{ name: '  ' }, 'Name is required.'],
-    [{ publisher: '' }, 'Choose a publisher.'],
-    [{ price: '-1' }, 'Price and units in stock must not be negative.'],
+    [{ name: '  ' }, 'common.nameRequired'],
+    [{ publisher: '' }, 'gameForm.publisherRequired'],
+    [{ price: '-1' }, 'gameForm.negative'],
     [{ price: '' }, ''],
-    [{ unitInStock: '1.5' }, 'Price and units in stock must not be negative.'],
-    [{ discount: '101' }, 'Discount must be a whole number from 0 to 100.'],
-    [{ discount: '2.5' }, 'Discount must be a whole number from 0 to 100.'],
+    [{ unitInStock: '1.5' }, 'gameForm.negative'],
+    [{ discount: '101' }, 'gameForm.discountRange'],
+    [{ discount: '2.5' }, 'gameForm.discountRange'],
   ])('checks %o', (change, message) => {
     expect(validateGame({ ...VALID, ...change })).toBe(message);
   });

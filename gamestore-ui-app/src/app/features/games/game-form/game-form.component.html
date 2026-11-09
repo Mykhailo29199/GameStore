@@ -1,126 +1,144 @@
 <section class="container">
-  <form
-    class="panel"
-    novalidate
-    (submit)="
-      $event.preventDefault();
-      save({
-        name: name.value,
-        key: gameKey.value,
-        description: description.value,
-        price: price.value,
-        unitInStock: stock.value,
-        discount: discount.value,
-        publisher: publisher.value
-      })
-    "
-  >
-    <h2 class="page-title">{{ key() ? 'Edit Game' : 'New Game' }}</h2>
+  @if (creationBlocked()) {
+    <div class="panel">
+      <h2 class="page-title">{{ 'gameForm.newTitle' | t }}</h2>
+      <app-create-in-english />
+    </div>
+  } @else {
+    <form
+      class="panel"
+      novalidate
+      (submit)="
+        $event.preventDefault();
+        save({
+          name: name.value,
+          key: gameKey.value,
+          description: description.value,
+          price: price.value,
+          unitInStock: stock.value,
+          discount: discount.value,
+          publisher: publisher.value,
+        })
+      "
+    >
+      <h2 class="page-title">{{ (key() ? 'gameForm.editTitle' : 'gameForm.newTitle') | t }}</h2>
+      <p class="form-note">{{ 'gameForm.languageNote' | t: { language: languageName() } }}</p>
 
-    <div class="form-grid">
-      <label class="field">
-        <span>Name</span>
-        <input #name class="field__control" type="text" maxlength="200" [value]="game()?.name ?? ''" />
-      </label>
-      <label class="field">
-        <span>Key (optional)</span>
-        <input #gameKey class="field__control" type="text" [value]="game()?.key ?? ''" />
-      </label>
-      <label class="field">
-        <span>Price</span>
-        <input
-          #price
-          class="field__control"
-          type="number"
-          min="0"
-          step="0.01"
-          [value]="game()?.price ?? 0"
-        />
-      </label>
-      <label class="field">
-        <span>Units in stock</span>
-        <input
-          #stock
-          class="field__control"
-          type="number"
-          min="0"
-          step="1"
-          [value]="game()?.unitInStock ?? 0"
-        />
-      </label>
-      <label class="field">
-        <span>Discount, %</span>
-        <input
-          #discount
-          class="field__control"
-          type="number"
-          min="0"
-          max="100"
-          step="1"
-          [value]="game()?.discount ?? 0"
-        />
-      </label>
-      <label class="field">
-        <span>Publisher</span>
-        <select #publisher class="field__control select">
-          <option value="" [selected]="!publisherId()">Choose a publisher</option>
-          @for (option of publishers(); track option.id) {
-            <option [value]="option.id" [selected]="option.id === publisherId()">
-              {{ option.companyName }}
+      <div class="form-grid">
+        <label class="field">
+          <span>{{ 'common.name' | t }}</span>
+          <input
+            #name
+            class="field__control"
+            type="text"
+            maxlength="200"
+            [value]="game()?.name ?? ''"
+          />
+        </label>
+        <label class="field">
+          <span>{{ 'gameForm.key' | t }}</span>
+          <input #gameKey class="field__control" type="text" [value]="game()?.key ?? ''" />
+        </label>
+        <label class="field">
+          <span>{{ 'gameForm.price' | t }}</span>
+          <input
+            #price
+            class="field__control"
+            type="number"
+            min="0"
+            step="0.01"
+            [value]="game()?.price ?? 0"
+          />
+        </label>
+        <label class="field">
+          <span>{{ 'gameForm.stock' | t }}</span>
+          <input
+            #stock
+            class="field__control"
+            type="number"
+            min="0"
+            step="1"
+            [value]="game()?.unitInStock ?? 0"
+          />
+        </label>
+        <label class="field">
+          <span>{{ 'gameForm.discount' | t }}</span>
+          <input
+            #discount
+            class="field__control"
+            type="number"
+            min="0"
+            max="100"
+            step="1"
+            [value]="game()?.discount ?? 0"
+          />
+        </label>
+        <label class="field">
+          <span>{{ 'gameForm.publisher' | t }}</span>
+          <select #publisher class="field__control select">
+            <option value="" [selected]="!publisherId()">
+              {{ 'gameForm.choosePublisher' | t }}
             </option>
-          }
-        </select>
-      </label>
-      <label class="field form-grid__wide">
-        <span>Description</span>
-        <textarea
-          #description
-          class="field__control"
-          rows="5"
-          [value]="game()?.description ?? ''"
-        ></textarea>
-      </label>
-    </div>
-
-    <fieldset class="choices">
-      <legend>Genres</legend>
-      @for (genre of genres(); track genre.id) {
-        <label class="choice">
-          <input
-            #box
-            class="choice__input"
-            type="checkbox"
-            [checked]="selected().genres.includes(genre.id)"
-            (change)="toggle('genres', genre.id, box.checked)"
-          />
-          {{ genre.name }}
+            @for (option of publishers(); track option.id) {
+              <option [value]="option.id" [selected]="option.id === publisherId()">
+                {{ option.companyName }}
+              </option>
+            }
+          </select>
         </label>
-      }
-    </fieldset>
-
-    <fieldset class="choices">
-      <legend>Platforms</legend>
-      @for (platform of platforms(); track platform.id) {
-        <label class="choice">
-          <input
-            #box
-            class="choice__input"
-            type="checkbox"
-            [checked]="selected().platforms.includes(platform.id)"
-            (change)="toggle('platforms', platform.id, box.checked)"
-          />
-          {{ platform.type }}
+        <label class="field form-grid__wide">
+          <span>{{ 'common.description' | t }}</span>
+          <textarea
+            #description
+            class="field__control"
+            rows="5"
+            [value]="game()?.description ?? ''"
+          ></textarea>
         </label>
+      </div>
+
+      <fieldset class="choices">
+        <legend>{{ 'gameForm.genres' | t }}</legend>
+        @for (genre of genres(); track genre.id) {
+          <label class="choice">
+            <input
+              #box
+              class="choice__input"
+              type="checkbox"
+              [checked]="selected().genres.includes(genre.id)"
+              (change)="toggle('genres', genre.id, box.checked)"
+            />
+            {{ genre.name }}
+          </label>
+        }
+      </fieldset>
+
+      <fieldset class="choices">
+        <legend>{{ 'gameForm.platforms' | t }}</legend>
+        @for (platform of platforms(); track platform.id) {
+          <label class="choice">
+            <input
+              #box
+              class="choice__input"
+              type="checkbox"
+              [checked]="selected().platforms.includes(platform.id)"
+              (change)="toggle('platforms', platform.id, box.checked)"
+            />
+            {{ platform.type }}
+          </label>
+        }
+      </fieldset>
+
+      @if (error()) {
+        <p class="form-error" role="alert">{{ error() }}</p>
       }
-    </fieldset>
 
-    @if (error()) {
-      <p class="form-error" role="alert">{{ error() }}</p>
-    }
-
-    <div class="panel__actions">
-      <a class="btn btn--ghost" [routerLink]="key() ? ['/games', key()] : ['/games']">Cancel</a>
-      <button class="btn" type="submit" [disabled]="saving()">Save</button>
-    </div>
-  </form>
+      <div class="panel__actions">
+        <a class="btn btn--ghost" [routerLink]="key() ? ['/games', key()] : ['/games']">{{
+          'common.cancel' | t
+        }}</a>
+        <button class="btn" type="submit" [disabled]="saving()">{{ 'common.save' | t }}</button>
+      </div>
+    </form>
+  }
 </section>

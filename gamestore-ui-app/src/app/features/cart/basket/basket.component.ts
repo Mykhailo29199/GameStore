@@ -6,18 +6,21 @@ import { PriceComponent } from '../../../components/price/price.component';
 import { APP_SETTINGS } from '../../../core/config/app-settings';
 import { gameCoverUrl } from '../../../core/games/game-cover';
 import { apiErrorMessage } from '../../../core/http/api-error';
+import { LanguageService } from '../../../core/i18n/language.service';
 import { orderTotals } from '../../../core/pricing/pricing';
 import { OrderLine } from '../../../models/order.model';
 import { CartService } from '../../../services/cart.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-basket',
-  imports: [CurrencyPipe, RouterLink, PriceComponent],
+  imports: [CurrencyPipe, RouterLink, PriceComponent, TranslatePipe],
   templateUrl: './basket.component.html',
   styleUrl: './basket.component.css',
 })
 export class BasketComponent {
   private readonly cart = inject(CartService);
+  private readonly i18n = inject(LanguageService);
   private readonly taxPercent = inject(APP_SETTINGS).taxPercent;
 
   protected readonly lines = signal<OrderLine[] | null>(null);
@@ -55,7 +58,7 @@ export class BasketComponent {
     request.subscribe({
       next: () => this.reload(),
       error: (error: unknown) => {
-        this.error.set(apiErrorMessage(error, 'The cart could not be updated.'));
+        this.error.set(apiErrorMessage(error, this.i18n.translate('cart.updateFailed')));
         this.reload();
       },
     });

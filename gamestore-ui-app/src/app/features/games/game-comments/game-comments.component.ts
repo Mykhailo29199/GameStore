@@ -8,15 +8,23 @@ import { loginUrl } from '../../../core/auth/permission.guard';
 import { Permissions } from '../../../core/auth/permissions';
 import { countComments } from '../../../core/comments/comment-text';
 import { apiErrorMessage } from '../../../core/http/api-error';
+import { LanguageService } from '../../../core/i18n/language.service';
 import { GameComment, NewComment } from '../../../models/comment.model';
 import { CommentService } from '../../../services/comment.service';
 import { CommentItemComponent, CommentResponse } from '../comment-item/comment-item.component';
+import { TranslatePipe, TranslateValuePipe } from '../../../core/i18n/translate.pipe';
 
 const COMMENTS_PER_PAGE = 5;
 
 @Component({
   selector: 'app-game-comments',
-  imports: [CommentItemComponent, PaginationComponent, StarRatingComponent],
+  imports: [
+    CommentItemComponent,
+    PaginationComponent,
+    StarRatingComponent,
+    TranslatePipe,
+    TranslateValuePipe,
+  ],
   templateUrl: './game-comments.component.html',
   styleUrl: './game-comments.component.css',
 })
@@ -24,6 +32,7 @@ export class GameCommentsComponent {
   private readonly commentService = inject(CommentService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly i18n = inject(LanguageService);
 
   readonly gameKey = input.required<string>();
   readonly rating = input(0);
@@ -88,7 +97,7 @@ export class GameCommentsComponent {
       },
       error: (error: unknown) => {
         this.sending.set(false);
-        this.error.set(apiErrorMessage(error, 'The comment could not be sent.'));
+        this.error.set(apiErrorMessage(error, this.i18n.translate('comments.sendFailed')));
       },
     });
   }
@@ -102,7 +111,9 @@ export class GameCommentsComponent {
     this.error.set('');
     this.banTarget.set(comment);
     if (this.banDurations().length === 0) {
-      this.commentService.getBanDurations().subscribe((durations) => this.banDurations.set(durations));
+      this.commentService
+        .getBanDurations()
+        .subscribe((durations) => this.banDurations.set(durations));
     }
   }
 
@@ -110,7 +121,13 @@ export class GameCommentsComponent {
     const user = this.banTarget()?.name;
 
     if (user && duration) {
-      this.moderate(this.commentService.banUser(user, duration), `${user} was banned for ${duration}.`);
+      this.moderate(
+        this.commentService.banUser(user, duration),
+        this.i18n.translate('comments.banned', {
+          name: user,
+          duration: this.i18n.translateValue('banDuration', duration),
+        }),
+      );
     }
   }
 
@@ -123,7 +140,7 @@ export class GameCommentsComponent {
         this.load(this.gameKey());
       },
       error: (error: unknown) =>
-        this.error.set(apiErrorMessage(error, 'The action could not be completed.')),
+        this.error.set(apiErrorMessage(error, this.i18n.translate('comments.actionFailed'))),
     });
   }
 

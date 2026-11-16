@@ -17,17 +17,29 @@ As a result of completing this task, you will receive an application that implem
 - **Logging and Error Handling**: The system logs critical events and handles errors effectively.
 - **Multi-language Support**: Localization is implemented to support multiple languages.
 - **NoSQL Integration**: The application works with multiple databases, including a NoSQL database.
-- **Notifications**: Users receive notifications for game updates, promotions, and purchases.
 - **UI Design Implementation**: The application follows a structured UI design based on provided mock-ups.
 - **Game Reviews and Moderation**: Users can leave reviews and admins can moderate content.
 - **Game Image Support**: Each game has an associated image for better user experience.
-- **Big Data Processing**: The system is designed to handle large amounts of data efficiently.
 
 ## .NET Platform
 
 The task uses the .NET Core CLI command-line tool and references applications that target .NET 8.
 
 Visual Studio 2022 is the most convenient tool to get the task done. However, if your work machine is not configured to run this IDE, development can be done with Visual Studio Code and the .NET Core SDK (or another IDE).
+
+## Running locally
+
+The application depends on external services that are not included in this repository:
+
+| Service | Expected address | Used for |
+|---------|------------------|----------|
+| Payment service | `http://localhost:5000` (`PaymentService:BaseUrl`) | Visa and IBox payments |
+| Auth service | `https://localhost:5037/` (`AuthService:BaseUrl`) | External user sign-in |
+| MongoDB | `mongodb://localhost:27017` | Northwind database |
+
+Without the payment and auth services the rest of the store works, but those payment methods and external sign-in return errors.
+
+MongoDB binaries are not included either. Install MongoDB Community Server and MongoDB Database Tools, then import the Northwind data from `mongo/data` with `mongo/dbInit.cmd`. SQL Server connection settings are in `Gamestore/appsettings.json`.
 
 ## Branching
 
@@ -44,16 +56,8 @@ The task consists of multiple epics. The description of each epic is in the corr
 | 7.   | Filters | Implement game filtering and pagination features. | [game-store-epic-07](epic-07.md) |
 | 8.   | NoSQL Database | Integrate a NoSQL database alongside the existing relational database. | [game-store-epic-08](epic-08.md) |
 | 9.   | Authorization | Implement role-based access control for different user types. | [game-store-epic-09](epic-09.md) |
-| 10.  | Game Picture [Microsoft Azure] | Enable game image uploads and display them on game details pages. | [game-store-epic-10](epic-10.md) |
-|      | Game Picture [AWS] | Enable game image uploads and display them on game details pages. | [game-store-epic-10-aws](epic-10.md) |
-| 11.  | Big Data [Microsoft Azure] | Optimize the system for handling large-scale game data. | [game-store-epic-11](epic-11.md) |
-|      | Big Data [AWS]  | Optimize the system for handling large-scale game data. | [game-store-epic-11-aws](epic-11.md) |
-| 12.  | Notifications [Microsoft Azure] | Implement user notifications for important events. | [game-store-epic-12](epic-12.md) |
-|      | Notifications [AWS] | Implement user notifications for important events. | [game-store-epic-12-aws](epic-12.md) |
 | 13.  | UI Design [Angular] | Apply UI designs based on given mock-ups. | [game-store-epic-13](epic-13.md) |
-|      | UI Design [React] | Apply UI designs based on given mock-ups. | [game-store-epic-13-react](epic-13.md) |
 | 14.  | Localization [Angular]| Support multiple languages for the application. | [game-store-epic-14](epic-14.md) |
-|      | Localization [React] | Support multiple languages for the application. | [game-store-epic-14-react](epic-14.md) |
 
 
 Each feature is developed in its corresponding branch. Once all features are completed and merged, you will get the final version of the application in the `main` branch.
